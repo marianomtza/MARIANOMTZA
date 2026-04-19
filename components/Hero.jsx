@@ -2,7 +2,6 @@ function Hero({ audio }) {
   const [rev, setRev] = React.useState(false);
   const [roleIdx, setRoleIdx] = React.useState(0);
   const titleRef = React.useRef(null);
-  const pianoCtxRef = React.useRef(null);
 
   const ROLES = [
     "Productor de Eventos",
@@ -27,7 +26,6 @@ function Hero({ audio }) {
   const TITLE = "MARIANOMTZA";
 
   const lastChar = React.useRef(-1);
-  const lastPlayedDrumRef = React.useRef(-1);
 
   // Precise magnification: ONLY exact letter under cursor
   const getMagnifiedCharIndex = (e) => {
@@ -42,39 +40,6 @@ function Hero({ audio }) {
       }
     }
     return -1;
-  };
-
-  const playPianoNote = (freq) => {
-    try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!pianoCtxRef.current) {
-        pianoCtxRef.current = new AC();
-      }
-      const ctx = pianoCtxRef.current;
-      if (ctx.state === "suspended") ctx.resume();
-
-      const now = ctx.currentTime;
-      const master = ctx.createGain();
-      master.gain.value = 0;
-      master.gain.linearRampToValueAtTime(0.12, now + 0.008);
-      master.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
-      master.connect(ctx.destination);
-
-      const partials = [
-        { f: freq, t: "sine", g: 1.0 },
-        { f: freq * 2, t: "sine", g: 0.35 },
-        { f: freq * 3, t: "triangle", g: 0.12 }
-      ];
-      partials.forEach(p => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = p.t; o.frequency.value = p.f;
-        g.gain.value = p.g;
-        o.connect(g); g.connect(master);
-        o.start(now);
-        o.stop(now + 0.8);
-      });
-    } catch (e) { }
   };
 
   const applyMagnification = (idx) => {
@@ -112,11 +77,7 @@ function Hero({ audio }) {
       lastChar.current = i;
       if (i >= 0) {
         applyMagnification(i);
-        if (lastPlayedDrumRef.current !== i) {
-          lastPlayedDrumRef.current = i;
-          const freq = window.PIANO_SCALE?.[i % window.PIANO_SCALE.length];
-          if (freq) playPianoNote(freq);
-        }
+        if (audio?.ensureContext) audio.ensureContext();
       } else {
         resetMagnification();
       }
@@ -125,7 +86,6 @@ function Hero({ audio }) {
 
   const onLetterLeave = () => {
     lastChar.current = -1;
-    lastPlayedDrumRef.current = -1;
     resetMagnification();
   };
 
