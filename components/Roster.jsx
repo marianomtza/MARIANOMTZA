@@ -161,6 +161,7 @@ function ArtistModal({ artist, index, onClose, audio }) {
         <div className="artist-modal-info">
           <h3 className="artist-modal-name">{a.name}</h3>
           <p className="artist-modal-genre">{a.genre}</p>
+          {a.label && a.name !== "3DELINCUENTES" && <div className="artist-modal-label-centered">{a.label}</div>}
 
           <div className="artist-modal-links">
             {a.ig && (

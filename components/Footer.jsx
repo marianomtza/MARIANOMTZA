@@ -8,9 +8,13 @@ function Footer() {
         <div>© {year} · marianomtza.com</div>
         <div>{cfg.city || "Ciudad de México · MX"}</div>
         <div className="footer-social">
-          {cfg.instagram && <a href={cfg.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>}
-          {cfg.email && <a href={`mailto:${cfg.email}`}>Email</a>}
-          <a href="#top">↑ Top</a>
+          {cfg.instagram && (
+            <a href={cfg.instagram} target="_blank" rel="noopener noreferrer" onMouseEnter={() => window.useAudio?.()?.hover?.()} onClick={() => window.useAudio?.()?.click?.()}>Instagram</a>
+          )}
+          {cfg.email && (
+            <a href={`mailto:${cfg.email}`} onMouseEnter={() => window.useAudio?.()?.hover?.()} onClick={() => window.useAudio?.()?.click?.()}>Email</a>
+          )}
+          <a href="#top" onMouseEnter={() => window.useAudio?.()?.hover?.()} onClick={() => window.useAudio?.()?.click?.()}>↑ Top</a>
         </div>
       </footer>
     </>

@@ -81,9 +81,8 @@ function Hero({ audio }) {
         if (audio?.ensureContext) audio.ensureContext();
         if (lastPlayedDrumRef.current !== i) {
           lastPlayedDrumRef.current = i;
-          const drumSequence = [audio?.kick, audio?.snare, audio?.hihat, audio?.tom, audio?.clap, audio?.cowbell, audio?.kick, audio?.snare, audio?.hihat, audio?.tom, audio?.clap];
-          const drum = drumSequence[i % drumSequence.length];
-          drum?.(0.7);
+          const freq = window.PIANO_SCALE?.[i % window.PIANO_SCALE.length];
+          if (freq) audio?.note?.(freq, 0.18);
         }
       } else {
         resetMagnification();
