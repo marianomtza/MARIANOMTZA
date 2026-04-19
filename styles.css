@@ -274,7 +274,7 @@ body.no-motion .blob { animation: none; }
 .hero-title {
   font-family: var(--sans);
   font-weight: 800;
-  font-size: clamp(72px, 14vw, 220px);
+  font-size: clamp(56px, 12vw, 180px);
   line-height: 0.88;
   letter-spacing: -0.04em;
   text-transform: uppercase;
@@ -283,6 +283,13 @@ body.no-motion .blob { animation: none; }
   position: relative;
   display: flex; flex-wrap: wrap;
   gap: 0 0.2em;
+  word-break: break-word;
+}
+@media (max-width: 768px) {
+  .hero-title { margin-bottom: 24px; }
+}
+@media (max-width: 480px) {
+  .hero-title { font-size: clamp(40px, 11vw, 100px); }
 }
 .hero-title .word {
   display: inline-flex; overflow: hidden;
@@ -671,16 +678,28 @@ body.no-motion .band-track { animation: none; }
    FOOTER
    ============================================ */
 .footer-big {
-  padding: 60px var(--pad) 0;
+  padding: 40px var(--pad) 0;
   max-width: var(--maxw); margin: 0 auto;
   font-family: var(--sans); font-weight: 800;
-  font-size: clamp(80px, 18vw, 280px);
-  line-height: 0.85; letter-spacing: -0.045em;
+  font-size: clamp(48px, 12vw, 140px);
+  line-height: 0.95; letter-spacing: -0.045em;
   text-transform: uppercase;
-  white-space: nowrap; overflow: hidden;
+  word-wrap: break-word;
+  white-space: normal;
+  overflow: visible;
   color: var(--fg);
+  cursor: pointer;
+  transition: opacity .3s;
 }
-.footer-big .ital { font-family: var(--serif); font-weight: 400; font-style: italic; color: var(--accent); }
+.footer-big:hover { opacity: 0.7; }
+@media (max-width: 768px) {
+  .footer-big { font-size: clamp(32px, 10vw, 80px); padding: 32px var(--pad) 0; }
+}
+.footer-big .ital {
+  font-family: var(--serif); font-weight: 400; font-style: italic; color: var(--accent);
+  display: inline-block;
+  margin: 0 0.15em;
+}
 .footer {
   padding: 40px var(--pad);
   border-top: 1px solid var(--line);
@@ -1002,6 +1021,10 @@ body.no-motion .band-track { animation: none; }
   line-height: 1;
   color: var(--fg);
   text-align: center;
+  background: radial-gradient(circle 80px at center, rgba(124, 58, 237, 0.25), transparent 70%);
+  padding: 16px;
+  border-radius: 8px;
+  backdrop-filter: blur(2px);
 }
 
 .stats3d-label {

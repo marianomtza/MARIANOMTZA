@@ -71,13 +71,20 @@ function Hero({ audio }) {
     });
   };
 
+  const playPianoNote = (index) => {
+    if (audio?.ensureContext) audio.ensureContext();
+    const scale = window.PIANO_SCALE || [];
+    const freq = scale[index % scale.length];
+    if (audio?.note) audio.note(freq, 0.16);
+  };
+
   const onLetterMove = (e) => {
     const i = getMagnifiedCharIndex(e);
     if (i !== lastChar.current) {
       lastChar.current = i;
       if (i >= 0) {
         applyMagnification(i);
-        if (audio?.ensureContext) audio.ensureContext();
+        playPianoNote(i);
       } else {
         resetMagnification();
       }
