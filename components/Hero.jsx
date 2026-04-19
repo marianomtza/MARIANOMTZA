@@ -2,6 +2,7 @@ function Hero({ audio }) {
   const [rev, setRev] = React.useState(false);
   const [roleIdx, setRoleIdx] = React.useState(0);
   const titleRef = React.useRef(null);
+  const pianoCtxRef = React.useRef(null);
 
   const ROLES = [
     "Productor de Eventos",
@@ -43,6 +44,39 @@ function Hero({ audio }) {
     return -1;
   };
 
+  const playPianoNote = (freq) => {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!pianoCtxRef.current) {
+        pianoCtxRef.current = new AC();
+      }
+      const ctx = pianoCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume();
+
+      const now = ctx.currentTime;
+      const master = ctx.createGain();
+      master.gain.value = 0;
+      master.gain.linearRampToValueAtTime(0.12, now + 0.008);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+      master.connect(ctx.destination);
+
+      const partials = [
+        { f: freq, t: "sine", g: 1.0 },
+        { f: freq * 2, t: "sine", g: 0.35 },
+        { f: freq * 3, t: "triangle", g: 0.12 }
+      ];
+      partials.forEach(p => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = p.t; o.frequency.value = p.f;
+        g.gain.value = p.g;
+        o.connect(g); g.connect(master);
+        o.start(now);
+        o.stop(now + 0.8);
+      });
+    } catch (e) { }
+  };
+
   const applyMagnification = (idx) => {
     if (!titleRef.current) return;
     const chars = titleRef.current.querySelectorAll(".char");
@@ -78,11 +112,10 @@ function Hero({ audio }) {
       lastChar.current = i;
       if (i >= 0) {
         applyMagnification(i);
-        if (audio?.ensureContext) audio.ensureContext();
         if (lastPlayedDrumRef.current !== i) {
           lastPlayedDrumRef.current = i;
           const freq = window.PIANO_SCALE?.[i % window.PIANO_SCALE.length];
-          if (freq) audio?.note?.(freq, 0.18);
+          if (freq) playPianoNote(freq);
         }
       } else {
         resetMagnification();
