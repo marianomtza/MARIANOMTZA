@@ -85,7 +85,7 @@ function Hero({ audio }) {
             </p>
           </div>
         </div>
-        <div className="hero-scroll">Scroll · pasa el mouse por mi nombre</div>
+
       </div>
     </section>
   );

@@ -110,7 +110,7 @@ function useAudio() {
     const next = !enabledRef.current;
     enabledRef.current = next;
     setEnabled(next);
-    if (next) { init(); if (ctxRef.current.state === "suspended") ctxRef.current.resume(); startDrone(); blip(660, 0.1, "triangle", 0.1); }
+    if (next) { init(); if (ctxRef.current.state === "suspended") ctxRef.current.resume(); }
     else { stopDrone(); }
   };
 

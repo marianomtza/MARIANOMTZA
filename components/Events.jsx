@@ -51,7 +51,6 @@ function Events({ audio }) {
               target="_blank"
               rel="noopener noreferrer"
               key={i}
-              onMouseEnter={() => audio?.hover()}
               onClick={() => audio?.click()}
             >
               <span className="idx">— {e.idx}</span>

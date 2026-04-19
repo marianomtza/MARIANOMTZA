@@ -19,10 +19,10 @@ function Nav({ audio }) {
             <span>Mariano</span> <span className="dim">Martínez</span>
           </a>
           <div className="nav-links">
-            <a href="#events" onMouseEnter={() => audio?.hover()}>Eventos</a>
-            <a href="#roster" onMouseEnter={() => audio?.hover()}>Roster</a>
-            <a href="#booking" onMouseEnter={() => audio?.hover()}>Contacto</a>
-            <a href="#booking" onMouseEnter={() => audio?.hover()}>Booking</a>
+            <a href="#events">Eventos</a>
+            <a href="#roster">Roster</a>
+            <a href="#booking">Contacto</a>
+            <a href="#booking">Booking</a>
           </div>
           <div className="nav-right">
             <button

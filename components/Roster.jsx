@@ -59,7 +59,6 @@ function Roster({ audio }) {
               key={a.n}
               onMouseMove={onMove}
               onMouseLeave={onLeave}
-              onMouseEnter={() => audio?.hover()}
               onClick={() => { audio?.click(); setActive(i); }}
               aria-label={`Ver ${a.name}`}
             >

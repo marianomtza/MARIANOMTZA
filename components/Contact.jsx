@@ -79,7 +79,7 @@ function Booking({ audio }) {
               <div className="binfo-block">
                 <span className="label">Booking directo</span>
                 <span className="v">
-                  <a href={`mailto:${cfg.email || "hola@marianomtza.com"}`} onMouseEnter={() => audio?.hover()}>
+                  <a href={`mailto:${cfg.email || "hola@marianomtza.com"}`}>
                     {cfg.email || "hola@marianomtza.com"} →
                   </a>
                 </span>
@@ -88,7 +88,7 @@ function Booking({ audio }) {
                 <div className="binfo-block">
                   <span className="label">WhatsApp</span>
                   <span className="v">
-                    <a href={`https://wa.me/${cfg.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" onMouseEnter={() => audio?.hover()}>
+                    <a href={`https://wa.me/${cfg.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
                       {cfg.whatsapp} →
                     </a>
                   </span>
@@ -99,10 +99,10 @@ function Booking({ audio }) {
                 <span className="v" style={{ fontSize: 15, fontWeight: 400, color: "var(--fg-dim)" }}>{cfg.city || "Ciudad de México · MX"}</span>
               </div>
               <div className="binfo-socials">
-                {cfg.instagram && <a href={cfg.instagram} target="_blank" rel="noopener noreferrer" onMouseEnter={() => audio?.hover()}>Instagram</a>}
-                {cfg.spotifyUrl && <a href={cfg.spotifyUrl} target="_blank" rel="noopener noreferrer" onMouseEnter={() => audio?.hover()}>Spotify</a>}
-                {cfg.soundcloudUrl && <a href={cfg.soundcloudUrl} target="_blank" rel="noopener noreferrer" onMouseEnter={() => audio?.hover()}>Soundcloud</a>}
-                {cfg.raUrl && <a href={cfg.raUrl} target="_blank" rel="noopener noreferrer" onMouseEnter={() => audio?.hover()}>RA</a>}
+                {cfg.instagram && <a href={cfg.instagram} target="_blank" rel="noopener noreferrer">Instagram</a>}
+                {cfg.spotifyUrl && <a href={cfg.spotifyUrl} target="_blank" rel="noopener noreferrer">Spotify</a>}
+                {cfg.soundcloudUrl && <a href={cfg.soundcloudUrl} target="_blank" rel="noopener noreferrer">Soundcloud</a>}
+                {cfg.raUrl && <a href={cfg.raUrl} target="_blank" rel="noopener noreferrer">RA</a>}
               </div>
             </div>
           </div>

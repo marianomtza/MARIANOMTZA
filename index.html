@@ -128,7 +128,7 @@ img, svg { display: block; max-width: 100%; }
    ============================================ */
 .cursor {
   position: fixed; top: 0; left: 0;
-  width: 10px; height: 10px;
+  width: 5px; height: 5px;
   border-radius: 50%;
   background: var(--accent);
   pointer-events: none;
@@ -139,20 +139,20 @@ img, svg { display: block; max-width: 100%; }
   will-change: transform;
 }
 .cursor.hovering {
-  width: 60px; height: 60px;
-  background: rgba(155, 95, 214, 0.5);
+  width: 36px; height: 36px;
+  background: rgba(155, 95, 214, 0.4);
   backdrop-filter: blur(4px);
 }
-.cursor.text { width: 2px; height: 28px; border-radius: 1px; background: var(--fg); }
+.cursor.text { width: 1px; height: 22px; border-radius: 1px; background: var(--fg); }
 .cursor-trail {
   position: fixed; top: 0; left: 0;
-  width: 40px; height: 40px;
-  border: 1px solid var(--accent);
+  width: 24px; height: 24px;
+  border: 0.5px solid var(--accent);
   border-radius: 50%;
   pointer-events: none;
   z-index: 9998;
   transform: translate(-50%, -50%);
-  opacity: 0.4;
+  opacity: 0.35;
   will-change: transform;
 }
 
