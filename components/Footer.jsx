@@ -3,7 +3,7 @@ function Footer({ audio }) {
   const year = new Date().getFullYear();
   return (
     <>
-      <div className="footer-big">Mariano<span className="ital">·</span>Martínez</div>
+      <div className="footer-big" onClick={() => { audio?.click?.(); window.scrollTo({ top: 0, behavior: "smooth" }); }} role="button" tabIndex="0" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { audio?.click?.(); window.scrollTo({ top: 0, behavior: "smooth" }); } }} onMouseEnter={() => { audio?.ensureContext?.(); audio?.hover?.(); }}>Mariano<span className="ital">·</span>Martínez</div>
       <footer className="footer">
         <div>© {year} · marianomtza.com</div>
         <div>{cfg.city || "Ciudad de México · MX"}</div>
