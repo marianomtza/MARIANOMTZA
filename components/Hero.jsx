@@ -23,12 +23,7 @@ function Hero({ audio }) {
     return () => clearInterval(id);
   }, []);
 
-  // MARIANOMTZA — 10 letters mapped to C major diatonic
   const TITLE = "MARIANOMTZA";
-  const noteFor = (i) => {
-    const scale = window.PIANO_SCALE || [];
-    return scale[i % scale.length];
-  };
 
   const lastChar = React.useRef(-1);
   const lastPlayedDrumRef = React.useRef(-1);
