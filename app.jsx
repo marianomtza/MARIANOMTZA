@@ -181,7 +181,7 @@ function App() {
         <Band items={BRANDS} reverse label="Colaboraciones con marcas" />
         <Roster audio={audio} />
         <Booking audio={audio} />
-        <Footer />
+        <Footer audio={audio} />
       </div>
       <EasterEggs audio={audio} />
       <ColorPalette values={values} setValues={setValues} />

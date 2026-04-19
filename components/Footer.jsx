@@ -1,4 +1,4 @@
-function Footer() {
+function Footer({ audio }) {
   const cfg = window.SITE_CONFIG || {};
   const year = new Date().getFullYear();
   return (
@@ -9,12 +9,12 @@ function Footer() {
         <div>{cfg.city || "Ciudad de México · MX"}</div>
         <div className="footer-social">
           {cfg.instagram && (
-            <a href={cfg.instagram} target="_blank" rel="noopener noreferrer" onMouseEnter={() => window.useAudio?.()?.hover?.()} onClick={() => window.useAudio?.()?.click?.()}>Instagram</a>
+            <a href={cfg.instagram} target="_blank" rel="noopener noreferrer" onMouseEnter={() => { audio?.ensureContext?.(); audio?.hover?.(); }}>Instagram</a>
           )}
           {cfg.email && (
-            <a href={`mailto:${cfg.email}`} onMouseEnter={() => window.useAudio?.()?.hover?.()} onClick={() => window.useAudio?.()?.click?.()}>Email</a>
+            <a href={`mailto:${cfg.email}`} onMouseEnter={() => { audio?.ensureContext?.(); audio?.hover?.(); }}>Email</a>
           )}
-          <a href="#top" onMouseEnter={() => window.useAudio?.()?.hover?.()} onClick={() => window.useAudio?.()?.click?.()}>↑ Top</a>
+          <a href="#top" onMouseEnter={() => { audio?.ensureContext?.(); audio?.hover?.(); }}>↑ Top</a>
         </div>
       </footer>
     </>
