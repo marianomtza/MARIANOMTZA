@@ -8,10 +8,13 @@ const OUT = path.join(ROOT, "dist");
 // Component load order matters — dependencies first, app last
 const COMPONENTS = [
   "components/audio.jsx",
+  "components/DrumKit.jsx",
+  "components/PremiumCursor.jsx",
+  "components/Background3D.jsx",
   "components/Cursor.jsx",
   "components/Loader.jsx",
   "components/Nav.jsx",
-  "components/Hero.jsx",
+  "components/Hero-Updated.jsx",
   "components/Band.jsx",
   "components/Stats.jsx",
   "components/Events.jsx",

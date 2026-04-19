@@ -150,7 +150,7 @@ function SpeedInsightsWrapper() {
 function App() {
   const [values, setValues] = React.useState(window.TWEAK_DEFAULTS);
   const [loaded, setLoaded] = React.useState(false);
-  const audio = useAudio();
+  const audio = useDrumKit();
 
   React.useEffect(() => {
     const r = document.documentElement;
@@ -168,10 +168,10 @@ function App() {
   return (
     <>
       {!loaded && <Loader onDone={() => setLoaded(true)} />}
-      {values.cursor && <Cursor />}
+      {values.cursor && <PremiumCursor />}
       {values.grain && <div className="grain" />}
       <div className="vignette" />
-      <BlobBG showStars={values.stars} />
+      <Background3D showStars={values.stars} />
       <div className="content">
         <Nav audio={audio} />
         <Hero audio={audio} />
