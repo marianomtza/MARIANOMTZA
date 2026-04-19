@@ -82,15 +82,6 @@ function Stats() {
                   }} />
 
                   <div className="stats3d-ring-wrap">
-                    <svg className="stats3d-ring" viewBox="0 0 100 100">
-                      <circle className="stats3d-ring-track" cx="50" cy="50" r={R} />
-                      <circle
-                        className="stats3d-ring-fill"
-                        cx="50" cy="50" r={R}
-                        strokeDasharray={C}
-                        strokeDashoffset={dashoffset}
-                      />
-                    </svg>
                     <div className="stats3d-n">{counts[i].toLocaleString()}{it.suffix}</div>
                   </div>
 
