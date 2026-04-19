@@ -14,7 +14,7 @@ const COMPONENTS = [
   "components/Cursor.jsx",
   "components/Loader.jsx",
   "components/Nav.jsx",
-  "components/Hero-Updated.jsx",
+  "components/Hero.jsx",
   "components/Band.jsx",
   "components/Stats.jsx",
   "components/Events.jsx",

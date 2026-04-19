@@ -31,17 +31,38 @@ function Hero({ audio }) {
   };
 
   const lastChar = React.useRef(-1);
+  const lastPlayedDrumRef = React.useRef(-1);
 
-  // Magnification: scale up hovered letter and neighbours
+  // Precise magnification: ONLY exact letter under cursor
+  const getMagnifiedCharIndex = (e) => {
+    if (!titleRef.current) return -1;
+    const chars = titleRef.current.querySelectorAll(".char");
+    const cursorX = e.clientX;
+    const cursorY = e.clientY;
+    for (let i = 0; i < chars.length; i++) {
+      const rect = chars[i].getBoundingClientRect();
+      if (cursorX >= rect.left && cursorX <= rect.right && cursorY >= rect.top && cursorY <= rect.bottom) {
+        return i;
+      }
+    }
+    return -1;
+  };
+
   const applyMagnification = (idx) => {
     if (!titleRef.current) return;
     const chars = titleRef.current.querySelectorAll(".char");
     chars.forEach((el, i) => {
-      const dist = Math.abs(i - idx);
-      if (dist === 0)      { el.style.transform = "translateY(-12px) scale(1.55)"; el.style.color = "var(--accent)"; el.style.zIndex = "10"; }
-      else if (dist === 1) { el.style.transform = "translateY(-6px) scale(1.25)"; el.style.color = ""; el.style.zIndex = "5"; }
-      else if (dist === 2) { el.style.transform = "translateY(-2px) scale(1.08)"; el.style.color = ""; el.style.zIndex = "2"; }
-      else                 { el.style.transform = "translateY(0) scale(1)"; el.style.color = ""; el.style.zIndex = ""; }
+      if (i === idx) {
+        el.style.transform = "scale(1.8) translateY(-8px)";
+        el.style.color = "var(--accent)";
+        el.style.zIndex = "10";
+        el.style.textShadow = "0 0 20px var(--accent)";
+      } else {
+        el.style.transform = "scale(1)";
+        el.style.color = "";
+        el.style.zIndex = "";
+        el.style.textShadow = "";
+      }
     });
   };
 
@@ -52,19 +73,32 @@ function Hero({ audio }) {
       el.style.transform = "";
       el.style.color = "";
       el.style.zIndex = "";
+      el.style.textShadow = "";
     });
   };
 
-  const onLetterEnter = (i) => {
-    if (lastChar.current === i) return;
-    lastChar.current = i;
-    applyMagnification(i);
-    if (audio?.ensureContext) audio.ensureContext();
-    if (audio?.note) audio.note(noteFor(i), 0.22);
+  const onLetterMove = (e) => {
+    const i = getMagnifiedCharIndex(e);
+    if (i !== lastChar.current) {
+      lastChar.current = i;
+      if (i >= 0) {
+        applyMagnification(i);
+        if (audio?.ensureContext) audio.ensureContext();
+        if (lastPlayedDrumRef.current !== i) {
+          lastPlayedDrumRef.current = i;
+          const drumSequence = [audio?.kick, audio?.snare, audio?.hihat, audio?.tom, audio?.clap, audio?.cowbell, audio?.kick, audio?.snare, audio?.hihat, audio?.tom, audio?.clap];
+          const drum = drumSequence[i % drumSequence.length];
+          drum?.(0.7);
+        }
+      } else {
+        resetMagnification();
+      }
+    }
   };
 
   const onLetterLeave = () => {
     lastChar.current = -1;
+    lastPlayedDrumRef.current = -1;
     resetMagnification();
   };
 
@@ -85,12 +119,14 @@ function Hero({ audio }) {
                 key={i}
                 style={{
                   transitionDelay: `${i * 50 + 400}ms`,
-                  transition: "transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), color 0.18s, transform 0.22s cubic-bezier(0.22,1,0.36,1)",
+                  transition: "transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), color 0.15s, text-shadow 0.15s",
                   display: "inline-block",
                   position: "relative",
-                  transformOrigin: "bottom center",
+                  transformOrigin: "center center",
+                  willChange: "transform, color, text-shadow",
+                  cursor: "pointer",
                 }}
-                onMouseEnter={() => onLetterEnter(i)}
+                onMouseMove={onLetterMove}
                 onMouseLeave={onLetterLeave}
                 data-note={i}
               >{ch}</span>
@@ -107,13 +143,13 @@ function Hero({ audio }) {
             </div>
             <div className="hero-ctas">
               <a href="#booking" className="btn primary magnetic"
-                 onClick={() => audio?.click()}
-                 onMouseEnter={() => audio?.whoosh()}>
+                 onClick={() => { audio?.ensureContext?.(); audio?.click?.(); }}
+                 onMouseEnter={() => { audio?.ensureContext?.(); audio?.hover?.(); }}>
                 Booking <span className="arr">→</span>
               </a>
               <a href="#events" className="btn ghost magnetic"
-                 onClick={() => audio?.click()}
-                 onMouseEnter={() => audio?.hover()}>
+                 onClick={() => { audio?.ensureContext?.(); audio?.snare?.(0.8); }}
+                 onMouseEnter={() => { audio?.ensureContext?.(); audio?.hihat?.(0.6); }}>
                 Eventos
               </a>
             </div>
