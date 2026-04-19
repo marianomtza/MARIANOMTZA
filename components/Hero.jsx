@@ -4,10 +4,13 @@ function Hero({ audio }) {
   const titleRef = React.useRef(null);
 
   const ROLES = [
-    { role: "Productor de Eventos", tag: "Muevo gente" },
-    { role: "Manager",              tag: "Conecto puntos" },
-    { role: "A&R",                  tag: "Documento todo" },
-    { role: "Director Creativo",    tag: "Dirijo la noche" }
+    "Productor de Eventos",
+    "Muevo Gente",
+    "Manager",
+    "Conecto Puntos",
+    "A&R",
+    "Documento Todo",
+    "Director Creativo"
   ];
 
   React.useEffect(() => {
@@ -20,14 +23,24 @@ function Hero({ audio }) {
     return () => clearInterval(id);
   }, []);
 
-  // MARIANOMTZA — 10 letters mapped to C major diatonic
   const TITLE = "MARIANOMTZA";
-  const noteFor = (i) => {
-    const scale = window.PIANO_SCALE || [];
-    return scale[i % scale.length];
-  };
 
   const lastChar = React.useRef(-1);
+
+  // Precise magnification: ONLY exact letter under cursor
+  const getMagnifiedCharIndex = (e) => {
+    if (!titleRef.current) return -1;
+    const chars = titleRef.current.querySelectorAll(".char");
+    const cursorX = e.clientX;
+    const cursorY = e.clientY;
+    for (let i = 0; i < chars.length; i++) {
+      const rect = chars[i].getBoundingClientRect();
+      if (cursorX >= rect.left && cursorX <= rect.right && cursorY >= rect.top && cursorY <= rect.bottom) {
+        return i;
+      }
+    }
+    return -1;
+  };
 
   // Magnification: scale up hovered letter and neighbours (Mac Dock style)
   const applyMagnification = (idx) => {
@@ -75,15 +88,28 @@ function Hero({ audio }) {
       el.style.transform = "";
       el.style.color = "";
       el.style.zIndex = "";
+      el.style.textShadow = "";
     });
   };
 
-  const onLetterEnter = (i) => {
-    if (lastChar.current === i) return;
-    lastChar.current = i;
-    applyMagnification(i);
+  const playPianoNote = (index) => {
     if (audio?.ensureContext) audio.ensureContext();
-    if (audio?.note) audio.note(noteFor(i), 0.22);
+    const scale = window.PIANO_SCALE || [];
+    const freq = scale[index % scale.length];
+    if (audio?.note) audio.note(freq, 0.16);
+  };
+
+  const onLetterMove = (e) => {
+    const i = getMagnifiedCharIndex(e);
+    if (i !== lastChar.current) {
+      lastChar.current = i;
+      if (i >= 0) {
+        applyMagnification(i);
+        playPianoNote(i);
+      } else {
+        resetMagnification();
+      }
+    }
   };
 
   const onLetterLeave = () => {
@@ -112,8 +138,10 @@ function Hero({ audio }) {
                   display: "inline-block",
                   position: "relative",
                   transformOrigin: "bottom center",
+                  willChange: "transform, color, text-shadow",
+                  cursor: "pointer",
                 }}
-                onMouseEnter={() => onLetterEnter(i)}
+                onMouseMove={onLetterMove}
                 onMouseLeave={onLetterLeave}
                 data-note={i}
               >{ch}</span>
@@ -126,19 +154,17 @@ function Hero({ audio }) {
         <div className="hero-bottom">
           <div>
             <div className="hero-role" aria-live="polite">
-              <span className="hero-role-label">{ROLES[roleIdx].role}</span>
-              <span className="hero-role-sep">·</span>
-              <span className="hero-role-tag">{ROLES[roleIdx].tag}</span>
+              <span className="hero-role-label">{ROLES[roleIdx]}</span>
             </div>
             <div className="hero-ctas">
               <a href="#booking" className="btn primary magnetic"
-                 onClick={() => audio?.click()}
-                 onMouseEnter={() => audio?.whoosh()}>
+                 onClick={() => { audio?.ensureContext?.(); audio?.click?.(); }}
+                 onMouseEnter={() => { audio?.ensureContext?.(); audio?.hover?.(); }}>
                 Booking <span className="arr">→</span>
               </a>
               <a href="#events" className="btn ghost magnetic"
-                 onClick={() => audio?.click()}
-                 onMouseEnter={() => audio?.hover()}>
+                 onClick={() => { audio?.ensureContext?.(); audio?.snare?.(0.8); }}
+                 onMouseEnter={() => { audio?.ensureContext?.(); audio?.hihat?.(0.6); }}>
                 Eventos
               </a>
             </div>

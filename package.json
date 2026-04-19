@@ -4,15 +4,13 @@
   "description": "Mariano Martínez — portfolio / booking site",
   "private": true,
   "scripts": {
-    "dev": "python3 -m http.server 3000",
+    "dev": "python3 -m http.server 8787 --directory dist",
     "build": "node build.mjs",
     "clean": "rm -rf dist"
   },
-  "devDependencies": {
-    "esbuild": "^0.21.5"
-  },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
-    "@vercel/speed-insights": "^2.0.0"
+    "@vercel/speed-insights": "^2.0.0",
+    "esbuild": "^0.21.5"
   }
 }

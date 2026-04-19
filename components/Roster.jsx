@@ -1,47 +1,209 @@
-function Roster({ audio }) {
-  // lafama flag: all except 3DELINCUENTES (index 0)
-  const ROSTER = [
-    { n: "01", name: "3DELINCUENTES", lafama: false, spotify: null, apple: null, ig: null, photo: null },
-    { n: "02", name: "RUZZO DOBLEZZ", lafama: true,  spotify: null, apple: null, ig: null, photo: null },
-    { n: "03", name: "8.AM",          lafama: true,  spotify: null, apple: null, ig: null, photo: null },
-    { n: "04", name: "MORROW",        lafama: true,  spotify: null, apple: null, ig: null, photo: null },
-    { n: "05", name: "BBBARTEX",      lafama: true,  spotify: null, apple: null, ig: null, photo: null },
-    { n: "06", name: "LEGORRETA",     lafama: true,  spotify: null, apple: null, ig: null, photo: null },
-    { n: "07", name: "TBX",           lafama: true,  spotify: null, apple: null, ig: null, photo: null },
-    { n: "08", name: "NZO",           lafama: true,  spotify: null, apple: null, ig: null, photo: null },
-    { n: "09", name: "ELAKKKA",       lafama: true,  spotify: null, apple: null, ig: null, photo: null },
-    { n: "10", name: "MOODJAAS",      lafama: true,  spotify: null, apple: null, ig: null, photo: null }
-  ];
+const ROSTER = [
+  {
+    name: "3DELINCUENTES",
+    genre: "DJ / Producer",
+    label: "LAFAMA",
+    apple: "",
+    spotify: "",
+    ig: ""
+  },
+  {
+    name: "RUZZO DOBLEZZ",
+    genre: "DJ / Producer",
+    label: "LAFAMA",
+    apple: "",
+    spotify: "",
+    ig: ""
+  },
+  {
+    name: "8.AM",
+    genre: "DJ / Producer",
+    label: "LAFAMA",
+    apple: "",
+    spotify: "",
+    ig: ""
+  },
+  {
+    name: "MORROW",
+    genre: "DJ / Producer",
+    label: "LAFAMA",
+    apple: "",
+    spotify: "",
+    ig: ""
+  },
+  {
+    name: "BBBARTEX",
+    genre: "DJ / Producer",
+    label: "LAFAMA",
+    apple: "",
+    spotify: "",
+    ig: ""
+  },
+  {
+    name: "LEGORRETA",
+    genre: "DJ / Producer",
+    label: "LAFAMA",
+    apple: "",
+    spotify: "",
+    ig: ""
+  },
+  {
+    name: "TBX",
+    genre: "DJ / Producer",
+    label: "LAFAMA",
+    apple: "",
+    spotify: "",
+    ig: ""
+  },
+  {
+    name: "NZO",
+    genre: "DJ / Producer",
+    label: "LAFAMA",
+    apple: "",
+    spotify: "",
+    ig: ""
+  },
+  {
+    name: "ELAKKKA",
+    genre: "DJ / Producer",
+    label: "LAFAMA",
+    apple: "",
+    spotify: "",
+    ig: ""
+  },
+  {
+    name: "MOODJAAS",
+    genre: "DJ / Producer",
+    label: "LAFAMA",
+    apple: "",
+    spotify: "",
+    ig: ""
+  }
+];
 
-  const [active, setActive] = React.useState(null);
+const CARD_COLORS = [
+  "#7C3AED", "#a855f7", "#9333ea", "#8b5cf6",
+  "#c084fc", "#7e22ce", "#6d28d9", "#4c1d95",
+  "#a78bfa", "#5b21b6"
+];
 
-  const onMove = (e) => {
-    const card = e.currentTarget;
-    const r = card.getBoundingClientRect();
-    const x = e.clientX - r.left, y = e.clientY - r.top;
-    const rx = ((y / r.height) - 0.5) * -8;
-    const ry = ((x / r.width) - 0.5) * 8;
-    card.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) translateZ(0)`;
-    card.style.setProperty("--mx", `${(x / r.width) * 100}%`);
-    card.style.setProperty("--my", `${(y / r.height) * 100}%`);
+function ArtistCard({ artist, index, onClick }) {
+  const [popping, setPopping] = React.useState(false);
+  const color = CARD_COLORS[index % CARD_COLORS.length];
+  const initials = artist.name.replace(/[^A-Z0-9]/gi, "").slice(0, 2).toUpperCase();
+
+  const handleClick = () => {
+    setPopping(true);
+    setTimeout(() => { setPopping(false); onClick(index); }, 280);
   };
-  const onLeave = (e) => { e.currentTarget.style.transform = ""; };
+
+  return (
+    <button
+      type="button"
+      className={`roster-card ${popping ? "popping" : ""}`}
+      onClick={handleClick}
+      aria-label={`Ver ${artist.name}`}
+    >
+      <div className="roster-avatar" style={{ background: color }}>
+        {artist.photo
+          ? <img src={artist.photo} alt={artist.name} />
+          : <span>{initials}</span>}
+      </div>
+      <div className="roster-card-info">
+        <div className="roster-name">{artist.name}</div>
+        <div className="roster-genre">{artist.genre}</div>
+        {artist.label && <div className="roster-label-badge">{artist.label}</div>}
+      </div>
+      <div className="roster-cta">Book →</div>
+    </button>
+  );
+}
+
+function ArtistModal({ artist, index, onClose, audio }) {
+  const a = artist;
+  const color = CARD_COLORS[index % CARD_COLORS.length];
+  const initials = a.name.replace(/[^A-Z0-9]/gi, "").slice(0, 2).toUpperCase();
+
+  // Prevent scroll on mount
+  React.useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  const bookArtist = () => {
+    audio?.click();
+    onClose();
+    setTimeout(() => {
+      const sel = document.querySelector("select[name='artist']");
+      if (sel) {
+        sel.value = a.name;
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      const modeBtn = document.querySelector(".mode-btn[data-mode='artista']");
+      if (modeBtn) modeBtn.click();
+      const booking = document.getElementById("booking");
+      if (booking) booking.scrollIntoView({ behavior: "smooth" });
+    }, 350);
+  };
+
+  return (
+    <div className="artist-modal" onClick={onClose} role="dialog" aria-modal="true" aria-label={a.name}>
+      <div className="artist-modal-panel pop-in" onClick={(e) => e.stopPropagation()}>
+        <button className="artist-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
+
+        <div className="artist-modal-photo" style={{ background: color }}>
+          {a.photo
+            ? <img src={a.photo} alt={a.name} />
+            : <div className="artist-photo-placeholder">{initials}</div>}
+          {a.label && <div className="artist-modal-label">{a.label}</div>}
+        </div>
+
+        <div className="artist-modal-info">
+          <h3 className="artist-modal-name">{a.name}</h3>
+          <p className="artist-modal-genre">{a.genre}</p>
+          {a.label && a.name !== "3DELINCUENTES" && <div className="artist-modal-label-centered">{a.label}</div>}
+
+          <div className="artist-modal-links">
+            {a.ig && (
+              <a href={a.ig} target="_blank" rel="noopener noreferrer" className="artist-link-btn ig">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                Instagram
+              </a>
+            )}
+            {a.spotify && (
+              <a href={a.spotify} target="_blank" rel="noopener noreferrer" className="artist-link-btn spotify">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                Spotify
+              </a>
+            )}
+            {a.apple && (
+              <a href={a.apple} target="_blank" rel="noopener noreferrer" className="artist-link-btn apple">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg>
+                Apple Music
+              </a>
+            )}
+          </div>
+
+          <button
+            className="btn primary big artist-book-btn"
+            onClick={bookArtist}
+          >
+            Bookear a {a.name} <span className="arr">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Roster({ audio }) {
+  const [active, setActive] = React.useState(null);
 
   React.useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") setActive(null); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-
-  React.useEffect(() => {
-    document.body.style.overflow = active !== null ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [active]);
-
-  const initials = (name) => {
-    const parts = name.replace(/[^A-Za-z0-9 ]/g, "").trim().split(/\s+/);
-    return ((parts[0]?.[0] || "") + (parts[1]?.[0] || parts[0]?.[1] || "")).toUpperCase();
-  };
 
   return (
     <section className="section" id="roster">
@@ -52,24 +214,12 @@ function Roster({ audio }) {
         </div>
         <div className="roster-grid reveal-stagger">
           {ROSTER.map((a, i) => (
-            <button
-              type="button"
-              className="roster-card"
-              key={a.n}
-              onMouseMove={onMove}
-              onMouseLeave={onLeave}
-              onClick={() => { audio?.click(); setActive(i); }}
-              aria-label={`Ver ${a.name}`}
-            >
-              <div className="idx">{a.n}</div>
-              <div className="circle">
-                <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M1 13L13 1M13 1H4M13 1v9" stroke="currentColor" strokeWidth="1.2"/></svg>
-              </div>
-              <div className="roster-card-bottom">
-                <div className="name">{a.name}</div>
-                {a.lafama && <div className="lafama-tag">LAFAMA</div>}
-              </div>
-            </button>
+            <ArtistCard
+              key={a.name}
+              artist={a}
+              index={i}
+              onClick={(idx) => { audio?.click(); setActive(idx); }}
+            />
           ))}
         </div>
       </div>
@@ -77,82 +227,12 @@ function Roster({ audio }) {
       {active !== null && (
         <ArtistModal
           artist={ROSTER[active]}
-          initials={initials(ROSTER[active].name)}
+          index={active}
           onClose={() => setActive(null)}
           audio={audio}
         />
       )}
     </section>
-  );
-}
-
-function ArtistModal({ artist, initials, onClose, audio }) {
-  const a = artist;
-  const has = (v) => v && typeof v === "string";
-
-  return (
-    <div className="artist-modal" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="artist-modal-panel" onClick={(e) => e.stopPropagation()}>
-        <button className="artist-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
-
-        <div className="artist-modal-photo">
-          {has(a.photo) ? (
-            <img src={a.photo} alt={a.name} />
-          ) : (
-            <div className="artist-photo-placeholder">{initials}</div>
-          )}
-        </div>
-
-        <div className="artist-modal-info">
-          <div className="artist-modal-eyebrow">{a.n} · Roster</div>
-          <h3 className="artist-modal-name">{a.name}</h3>
-
-          <div className="artist-modal-actions">
-            <a
-              className={`btn small ${has(a.apple) ? "" : "disabled"}`}
-              href={has(a.apple) ? a.apple : "#"}
-              onClick={(e) => { if (!has(a.apple)) e.preventDefault(); audio?.click(); }}
-              target="_blank" rel="noopener noreferrer"
-            >Apple Music</a>
-            <a
-              className={`btn small ${has(a.spotify) ? "" : "disabled"}`}
-              href={has(a.spotify) ? a.spotify : "#"}
-              onClick={(e) => { if (!has(a.spotify)) e.preventDefault(); audio?.click(); }}
-              target="_blank" rel="noopener noreferrer"
-            >Spotify</a>
-            <a
-              className={`btn small ${has(a.ig) ? "" : "disabled"}`}
-              href={has(a.ig) ? a.ig : "#"}
-              onClick={(e) => { if (!has(a.ig)) e.preventDefault(); audio?.click(); }}
-              target="_blank" rel="noopener noreferrer"
-            >Instagram</a>
-          </div>
-
-          {/* Auto-fill booking form with artist name on click */}
-          <a
-            href="#booking"
-            className="btn primary big"
-            onClick={() => {
-              audio?.click();
-              onClose();
-              // Auto-fill: set mode to artista and prefill artist select
-              setTimeout(() => {
-                const sel = document.querySelector("select[name='artist']");
-                if (sel) {
-                  sel.value = a.name;
-                  sel.dispatchEvent(new Event("change", { bubbles: true }));
-                }
-                // Switch to artista mode
-                const artistBtn = document.querySelector(".mode-btn:last-of-type");
-                if (artistBtn && !artistBtn.classList.contains("active")) artistBtn.click();
-              }, 400);
-            }}
-          >
-            Bookear a {a.name} <span className="arr">→</span>
-          </a>
-        </div>
-      </div>
-    </div>
   );
 }
 

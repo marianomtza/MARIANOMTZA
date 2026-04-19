@@ -39,11 +39,11 @@ function BlobBG({ showStars }) {
 
 // Mini color palette picker — always visible bottom-left
 const PALETTE = [
-  { name: "Lila",     v: "#a855f7", soft: "#7c3aed", deep: "#4c1d95" },
-  { name: "Violeta",  v: "#9b5fd6", soft: "#6b3fa8", deep: "#3d1d6e" },
-  { name: "Magenta",  v: "#d946ef", soft: "#a21caf", deep: "#701a75" },
-  { name: "Cian",     v: "#22d3ee", soft: "#0891b2", deep: "#164e63" },
-  { name: "Ámbar",    v: "#f59e0b", soft: "#d97706", deep: "#92400e" },
+  { name: "Deep Violet", v: "#7c3aed", soft: "#6d28d9", deep: "#5b21b6" },
+  { name: "Lila",        v: "#a855f7", soft: "#7c3aed", deep: "#4c1d95" },
+  { name: "Violeta",     v: "#9b5fd6", soft: "#6b3fa8", deep: "#3d1d6e" },
+  { name: "Magenta",     v: "#d946ef", soft: "#a21caf", deep: "#701a75" },
+  { name: "Cian",        v: "#22d3ee", soft: "#0891b2", deep: "#164e63" },
 ];
 
 function ColorPalette({ values, setValues }) {
@@ -168,10 +168,10 @@ function App() {
   return (
     <>
       {!loaded && <Loader onDone={() => setLoaded(true)} />}
-      {values.cursor && <Cursor />}
+      {values.cursor && <PremiumCursor />}
       {values.grain && <div className="grain" />}
       <div className="vignette" />
-      <BlobBG showStars={values.stars} />
+      <Background3D showStars={values.stars} />
       <div className="content">
         <Nav audio={audio} />
         <Hero audio={audio} />
@@ -181,8 +181,9 @@ function App() {
         <Band items={BRANDS} reverse label="Colaboraciones con marcas" />
         <Roster audio={audio} />
         <Booking audio={audio} />
-        <Footer />
+        <Footer audio={audio} />
       </div>
+      <EasterEggs audio={audio} />
       <ColorPalette values={values} setValues={setValues} />
       <Tweaks values={values} setValues={setValues} />
       <SpeedInsightsWrapper />

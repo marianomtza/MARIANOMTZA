@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🔄 Auto-Sync a GitHub y Vercel",
+      "type": "shell",
+      "command": "cd ${workspaceFolder} && ./auto-sync.sh",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^.*$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^🔄 Auto-sync iniciado.*",
+          "endsPattern": "^(?!.)"
+        }
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
+    }
+  ]
+}
