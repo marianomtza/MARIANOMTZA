@@ -150,7 +150,7 @@ function SpeedInsightsWrapper() {
 function App() {
   const [values, setValues] = React.useState(window.TWEAK_DEFAULTS);
   const [loaded, setLoaded] = React.useState(false);
-  const audio = useDrumKit();
+  const audio = useAudio();
 
   React.useEffect(() => {
     const r = document.documentElement;
