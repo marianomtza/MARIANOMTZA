@@ -123,6 +123,30 @@ const BRANDS = [
   { name: "Viuda de Romero" }
 ];
 
+// Vercel Speed Insights wrapper component
+function SpeedInsightsWrapper() {
+  React.useEffect(() => {
+    // Initialize Speed Insights script
+    window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+    
+    // Inject the Speed Insights script
+    const script = document.createElement('script');
+    script.defer = true;
+    script.src = '/_vercel/speed-insights/script.js';
+    document.head.appendChild(script);
+    
+    return () => {
+      // Cleanup on unmount (though this rarely unmounts)
+      const existingScript = document.querySelector('script[src="/_vercel/speed-insights/script.js"]');
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
+  }, []);
+  
+  return null;
+}
+
 function App() {
   const [values, setValues] = React.useState(window.TWEAK_DEFAULTS);
   const [loaded, setLoaded] = React.useState(false);
@@ -161,6 +185,7 @@ function App() {
       </div>
       <ColorPalette values={values} setValues={setValues} />
       <Tweaks values={values} setValues={setValues} />
+      <SpeedInsightsWrapper />
     </>
   );
 }
