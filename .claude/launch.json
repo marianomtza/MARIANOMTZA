@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "marianomtza",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 8787,
+      "autoPort": false,
+      "cwd": "/Users/marianomtz/Downloads/WEB/MARIANOMTZA"
+    }
+  ]
+}

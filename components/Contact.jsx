@@ -119,6 +119,7 @@ function Booking({ audio }) {
               <button
                 type="button"
                 role="tab"
+                data-mode="artista"
                 aria-selected={mode === "artista"}
                 className={`mode-btn ${mode === "artista" ? "active" : ""}`}
                 onClick={() => { setMode("artista"); audio?.click(); }}

@@ -4,10 +4,13 @@ function Hero({ audio }) {
   const titleRef = React.useRef(null);
 
   const ROLES = [
-    { role: "Productor de Eventos", tag: "Muevo gente" },
-    { role: "Manager",              tag: "Conecto puntos" },
-    { role: "A&R",                  tag: "Documento todo" },
-    { role: "Director Creativo",    tag: "Dirijo la noche" }
+    "Productor de Eventos",
+    "Muevo Gente",
+    "Manager",
+    "Conecto Puntos",
+    "A&R",
+    "Documento Todo",
+    "Director Creativo"
   ];
 
   React.useEffect(() => {
@@ -100,9 +103,7 @@ function Hero({ audio }) {
         <div className="hero-bottom">
           <div>
             <div className="hero-role" aria-live="polite">
-              <span className="hero-role-label">{ROLES[roleIdx].role}</span>
-              <span className="hero-role-sep">·</span>
-              <span className="hero-role-tag">{ROLES[roleIdx].tag}</span>
+              <span className="hero-role-label">{ROLES[roleIdx]}</span>
             </div>
             <div className="hero-ctas">
               <a href="#booking" className="btn primary magnetic"
