@@ -183,6 +183,7 @@ function App() {
         <Booking audio={audio} />
         <Footer />
       </div>
+      <EasterEggs audio={audio} />
       <ColorPalette values={values} setValues={setValues} />
       <Tweaks values={values} setValues={setValues} />
       <SpeedInsightsWrapper />

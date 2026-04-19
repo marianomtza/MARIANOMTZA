@@ -854,3 +854,157 @@ body.no-motion .band-track { animation: none; }
   margin-top: 4px;
 }
 
+
+/* ============================================
+   STATS 3D
+   ============================================ */
+.stats3d-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+@media (max-width: 900px) { .stats3d-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .stats3d-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
+
+.stats3d-outer {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity .8s cubic-bezier(0.22,1,0.36,1), transform .8s cubic-bezier(0.22,1,0.36,1);
+}
+.stats3d-outer.in { opacity: 1; transform: none; }
+
+.stats3d-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  padding: 36px 20px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  height: 100%;
+}
+.stats3d-card:hover {
+  border-color: rgba(124,58,237,0.35);
+  box-shadow: 0 20px 60px rgba(124,58,237,0.14), 0 0 0 1px rgba(124,58,237,0.08);
+}
+
+.stats3d-glow {
+  position: absolute;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: var(--accent);
+  filter: blur(80px);
+  top: -70px; left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition: opacity .5s;
+}
+
+.stats3d-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  pointer-events: none;
+  z-index: 0;
+  transition: background .08s linear;
+}
+
+.stats3d-ring-wrap {
+  position: relative;
+  width: 100px; height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.stats3d-ring {
+  position: absolute;
+  inset: 0; width: 100%; height: 100%;
+  transform: rotate(-90deg);
+}
+.stats3d-ring-track {
+  fill: none;
+  stroke: rgba(255,255,255,0.06);
+  stroke-width: 3;
+}
+.stats3d-ring-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 7px var(--accent));
+  transition: stroke-dashoffset .05s linear;
+}
+
+.stats3d-n {
+  position: relative; z-index: 1;
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: clamp(26px, 3.2vw, 42px);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--fg);
+  text-align: center;
+}
+
+.stats3d-label {
+  position: relative; z-index: 1;
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--fg-dim);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.stats3d-sub {
+  position: relative; z-index: 1;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-mute);
+  text-align: center;
+}
+
+/* ============================================
+   EASTER EGGS
+   ============================================ */
+.rave-overlay {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 89;
+  animation: ravePulse .35s ease-in-out infinite alternate;
+}
+@keyframes ravePulse { from { opacity: 0.3; } to { opacity: 0.9; } }
+
+.easter-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: rgba(10,6,16,0.97);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 14px 32px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--accent);
+  z-index: 210;
+  opacity: 0;
+  transition: opacity .4s cubic-bezier(0.22,1,0.36,1), transform .4s cubic-bezier(0.22,1,0.36,1);
+  box-shadow: 0 8px 40px rgba(124,58,237,0.45);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.easter-toast.in {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

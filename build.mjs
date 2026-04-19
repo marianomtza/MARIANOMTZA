@@ -19,6 +19,7 @@ const COMPONENTS = [
   "components/Contact.jsx",
   "components/Footer.jsx",
   "components/Tweaks.jsx",
+  "components/EasterEggs.jsx",
   "app.jsx",
 ];
 

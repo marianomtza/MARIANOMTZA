@@ -81,10 +81,15 @@
       };
     </script>
 
-    <!-- React CDN -->
-    <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <!-- React 18.3.1 — primary CDN: jsDelivr (reliable SLA), fallback: unpkg -->
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+    <script>window.React || document.write('\x3Cscript crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"\x3E\x3C/script\x3E')</script>
+    <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script>window.ReactDOM || document.write('\x3Cscript crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"\x3E\x3C/script\x3E')</script>
     <script>
+      if (!window.React || !window.ReactDOM) {
+        document.getElementById('root').innerHTML = '<div style="color:#f4f1f7;font-family:sans-serif;padding:40px;text-align:center">Cargando…</div>';
+      }
       window.ReactJSXRuntime = {
         jsx: React.createElement,
         jsxs: React.createElement,
