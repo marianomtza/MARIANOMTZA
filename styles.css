@@ -1183,3 +1183,20 @@ body.no-motion .band-track { animation: none; }
   border-radius: 6px;
   margin-top: 12px;
 }
+
+/* Footer social spacing */
+@media (max-width: 768px) {
+  .footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .footer-social {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+  }
+  .footer-social a {
+    flex: 1;
+  }
+}
