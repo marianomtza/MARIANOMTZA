@@ -7,8 +7,13 @@ function BlobBG({ showStars }) {
       const x = (e.clientX / window.innerWidth - 0.5) * 2;
       const y = (e.clientY / window.innerHeight - 0.5) * 2;
       el.querySelectorAll(".blob").forEach((b, i) => {
-        const k = (i + 1) * 30;
+        const k = (i + 1) * 28;
         b.style.translate = `${x * k}px ${y * k}px`;
+      });
+      // Subtle parallax on geo objects
+      el.querySelectorAll(".geo-obj").forEach((g, i) => {
+        const k = (i + 1) * 12;
+        g.style.translate = `${x * k}px ${y * k}px`;
       });
     };
     window.addEventListener("mousemove", onMove);
@@ -20,7 +25,47 @@ function BlobBG({ showStars }) {
       <div className="blob b1" />
       <div className="blob b2" />
       <div className="blob b3" />
+      <div className="blob b4" />
       <div className="blob ring" />
+      {/* 3D geometric objects */}
+      <div className="geo-obj cube" />
+      <div className="geo-obj tri" />
+      <div className="geo-obj diamond" />
+      <div className="geo-obj ring2" />
+      <div className="geo-obj dots" />
+    </div>
+  );
+}
+
+// Mini color palette picker — always visible bottom-left
+const PALETTE = [
+  { name: "Lila",     v: "#a855f7", soft: "#7c3aed", deep: "#4c1d95" },
+  { name: "Violeta",  v: "#9b5fd6", soft: "#6b3fa8", deep: "#3d1d6e" },
+  { name: "Magenta",  v: "#d946ef", soft: "#a21caf", deep: "#701a75" },
+  { name: "Cian",     v: "#22d3ee", soft: "#0891b2", deep: "#164e63" },
+  { name: "Ámbar",    v: "#f59e0b", soft: "#d97706", deep: "#92400e" },
+];
+
+function ColorPalette({ values, setValues }) {
+  const update = (c) => {
+    const next = { ...values, accent: c.v, accentSoft: c.soft, accentDeep: c.deep };
+    setValues(next);
+    const r = document.documentElement;
+    r.style.setProperty("--accent", c.v);
+    r.style.setProperty("--accent-soft", c.soft);
+    r.style.setProperty("--accent-deep", c.deep);
+  };
+  return (
+    <div className="color-palette-btn" aria-label="Cambiar color">
+      {PALETTE.map(c => (
+        <button
+          key={c.v}
+          className={`cp-dot ${values.accent === c.v ? "active" : ""}`}
+          style={{ background: c.v }}
+          title={c.name}
+          onClick={() => update(c)}
+        />
+      ))}
     </div>
   );
 }
@@ -65,7 +110,7 @@ const COLLECTIVES = [
   { name: "LA FAMA",  href: "https://www.instagram.com/es.lafama/" }
 ];
 
-// Brand collabs (marquee que reemplaza manifesto)
+// Brand collabs (marquee)
 const BRANDS = [
   { name: "Spotify" },
   { name: "Hennessy" },
@@ -114,6 +159,7 @@ function App() {
         <Booking audio={audio} />
         <Footer />
       </div>
+      <ColorPalette values={values} setValues={setValues} />
       <Tweaks values={values} setValues={setValues} />
     </>
   );

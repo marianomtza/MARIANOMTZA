@@ -1,17 +1,16 @@
 function Roster({ audio }) {
-  // 10 artistas — placeholders en social hasta que pases links reales
-  // Para activar un link: cambia `null` por la URL.
+  // lafama flag: all except 3DELINCUENTES (index 0)
   const ROSTER = [
-    { n: "01", name: "3DELINCUENTES", spotify: null, apple: null, ig: null, photo: null },
-    { n: "02", name: "RUZZO DOBLEZZ", spotify: null, apple: null, ig: null, photo: null },
-    { n: "03", name: "8.AM",          spotify: null, apple: null, ig: null, photo: null },
-    { n: "04", name: "MORROW",        spotify: null, apple: null, ig: null, photo: null },
-    { n: "05", name: "BBBARTEX",      spotify: null, apple: null, ig: null, photo: null },
-    { n: "06", name: "LEGORRETA",     spotify: null, apple: null, ig: null, photo: null },
-    { n: "07", name: "TBX",           spotify: null, apple: null, ig: null, photo: null },
-    { n: "08", name: "NZO",           spotify: null, apple: null, ig: null, photo: null },
-    { n: "09", name: "ELAKKKA",       spotify: null, apple: null, ig: null, photo: null },
-    { n: "10", name: "MOODJAAS",      spotify: null, apple: null, ig: null, photo: null }
+    { n: "01", name: "3DELINCUENTES", lafama: false, spotify: null, apple: null, ig: null, photo: null },
+    { n: "02", name: "RUZZO DOBLEZZ", lafama: true,  spotify: null, apple: null, ig: null, photo: null },
+    { n: "03", name: "8.AM",          lafama: true,  spotify: null, apple: null, ig: null, photo: null },
+    { n: "04", name: "MORROW",        lafama: true,  spotify: null, apple: null, ig: null, photo: null },
+    { n: "05", name: "BBBARTEX",      lafama: true,  spotify: null, apple: null, ig: null, photo: null },
+    { n: "06", name: "LEGORRETA",     lafama: true,  spotify: null, apple: null, ig: null, photo: null },
+    { n: "07", name: "TBX",           lafama: true,  spotify: null, apple: null, ig: null, photo: null },
+    { n: "08", name: "NZO",           lafama: true,  spotify: null, apple: null, ig: null, photo: null },
+    { n: "09", name: "ELAKKKA",       lafama: true,  spotify: null, apple: null, ig: null, photo: null },
+    { n: "10", name: "MOODJAAS",      lafama: true,  spotify: null, apple: null, ig: null, photo: null }
   ];
 
   const [active, setActive] = React.useState(null);
@@ -49,7 +48,7 @@ function Roster({ audio }) {
       <div className="wrap">
         <div className="section-intro reveal-stagger">
           <div className="side">06 — Roster</div>
-          <h2 className="section-h">Artistas que <span className="ital">trabajo</span>.</h2>
+          <h2 className="section-h">ARTISTAS</h2>
         </div>
         <div className="roster-grid reveal-stagger">
           {ROSTER.map((a, i) => (
@@ -66,7 +65,10 @@ function Roster({ audio }) {
               <div className="circle">
                 <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M1 13L13 1M13 1H4M13 1v9" stroke="currentColor" strokeWidth="1.2"/></svg>
               </div>
-              <div className="name">{a.name}</div>
+              <div className="roster-card-bottom">
+                <div className="name">{a.name}</div>
+                {a.lafama && <div className="lafama-tag">LAFAMA</div>}
+              </div>
             </button>
           ))}
         </div>
@@ -126,10 +128,25 @@ function ArtistModal({ artist, initials, onClose, audio }) {
             >Instagram</a>
           </div>
 
+          {/* Auto-fill booking form with artist name on click */}
           <a
             href="#booking"
             className="btn primary big"
-            onClick={() => { audio?.click(); onClose(); }}
+            onClick={() => {
+              audio?.click();
+              onClose();
+              // Auto-fill: set mode to artista and prefill artist select
+              setTimeout(() => {
+                const sel = document.querySelector("select[name='artist']");
+                if (sel) {
+                  sel.value = a.name;
+                  sel.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+                // Switch to artista mode
+                const artistBtn = document.querySelector(".mode-btn:last-of-type");
+                if (artistBtn && !artistBtn.classList.contains("active")) artistBtn.click();
+              }, 400);
+            }}
           >
             Bookear a {a.name} <span className="arr">→</span>
           </a>

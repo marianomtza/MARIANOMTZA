@@ -1,4 +1,5 @@
 function Stats() {
+  // Stats section kept but "La máquina en cifras" title removed as requested
   const ITEMS = [
     { n: "7+",    label: "años produciendo eventos" },
     { n: "55+",   label: "eventos producidos el último año", sub: "festivales · clubes · conciertos" },
@@ -8,13 +9,6 @@ function Stats() {
   return (
     <section className="section stats-section">
       <div className="wrap">
-        <div className="section-intro reveal-stagger">
-          <div className="side">04 — Números</div>
-          <h2 className="section-h">
-            La máquina <span className="ital">en cifras</span>
-          </h2>
-        </div>
-
         <div className="stats-grid reveal-stagger">
           {ITEMS.map((it, i) => (
             <div className="stat-card" key={i}>

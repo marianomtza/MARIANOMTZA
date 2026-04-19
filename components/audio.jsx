@@ -1,7 +1,6 @@
-// Audio engine: ambient drone, sfx, piano notes via Web Audio API
+// Audio engine: piano notes + click/whoosh SFX only — no ambient drone
 function useAudio() {
   const ctxRef = React.useRef(null);
-  const droneRef = React.useRef(null);
   const [enabled, setEnabled] = React.useState(false);
   const enabledRef = React.useRef(false);
 
@@ -11,49 +10,6 @@ function useAudio() {
     const ctx = new AC();
     ctxRef.current = ctx;
     return ctx;
-  };
-
-  const startDrone = () => {
-    const ctx = init();
-    if (droneRef.current) return;
-    const master = ctx.createGain();
-    master.gain.value = 0;
-    master.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 2);
-    master.connect(ctx.destination);
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.frequency.value = 800;
-    filter.Q.value = 2;
-    filter.connect(master);
-
-    const osc1 = ctx.createOscillator(); osc1.type = "sawtooth"; osc1.frequency.value = 55;
-    const osc2 = ctx.createOscillator(); osc2.type = "sine"; osc2.frequency.value = 82.4;
-    const osc3 = ctx.createOscillator(); osc3.type = "triangle"; osc3.frequency.value = 110;
-    const g1 = ctx.createGain(); g1.gain.value = 0.3;
-    const g2 = ctx.createGain(); g2.gain.value = 0.4;
-    const g3 = ctx.createGain(); g3.gain.value = 0.2;
-    osc1.connect(g1); g1.connect(filter);
-    osc2.connect(g2); g2.connect(filter);
-    osc3.connect(g3); g3.connect(filter);
-
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 0.15;
-    const lfoGain = ctx.createGain(); lfoGain.gain.value = 400;
-    lfo.connect(lfoGain); lfoGain.connect(filter.frequency);
-
-    osc1.start(); osc2.start(); osc3.start(); lfo.start();
-    droneRef.current = { master, osc1, osc2, osc3, lfo };
-  };
-
-  const stopDrone = () => {
-    const ctx = ctxRef.current;
-    const d = droneRef.current;
-    if (!ctx || !d) return;
-    d.master.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.6);
-    setTimeout(() => {
-      try { d.osc1.stop(); d.osc2.stop(); d.osc3.stop(); d.lfo.stop(); } catch(e){}
-      droneRef.current = null;
-    }, 700);
   };
 
   const blip = (freq = 880, dur = 0.08, type = "sine", vol = 0.08) => {
@@ -68,7 +24,7 @@ function useAudio() {
     osc.start(); osc.stop(ctx.currentTime + dur + 0.02);
   };
 
-  // Piano note — layered sines with short attack + long decay to emulate a soft piano
+  // Piano note — layered sines with short attack + long decay
   const note = (freq, vol = 0.18) => {
     const ctx = ctxRef.current;
     if (!ctx || !enabledRef.current) return;
@@ -80,14 +36,13 @@ function useAudio() {
     master.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
     master.connect(ctx.destination);
 
-    // fundamental + 2 harmonics + slight detune
     const partials = [
-      { f: freq,       t: "sine",     g: 1.0 },
-      { f: freq * 2,   t: "sine",     g: 0.35 },
-      { f: freq * 3,   t: "triangle", g: 0.12 },
-      { f: freq * 1.002, t: "sine",   g: 0.22 }
+      { f: freq,         t: "sine",     g: 1.0 },
+      { f: freq * 2,     t: "sine",     g: 0.35 },
+      { f: freq * 3,     t: "triangle", g: 0.12 },
+      { f: freq * 1.002, t: "sine",     g: 0.22 }
     ];
-    const oscs = partials.map(p => {
+    partials.forEach(p => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       o.type = p.t; o.frequency.value = p.f;
@@ -95,13 +50,10 @@ function useAudio() {
       o.connect(g); g.connect(master);
       o.start(now);
       o.stop(now + 1.3);
-      return o;
     });
 
-    // gentle lowpass to soften
     const lp = ctx.createBiquadFilter();
     lp.type = "lowpass"; lp.frequency.value = 4200; lp.Q.value = 0.7;
-    // insert filter between master and destination
     master.disconnect();
     master.connect(lp); lp.connect(ctx.destination);
   };
@@ -111,10 +63,8 @@ function useAudio() {
     enabledRef.current = next;
     setEnabled(next);
     if (next) { init(); if (ctxRef.current.state === "suspended") ctxRef.current.resume(); }
-    else { stopDrone(); }
   };
 
-  // Ensure context is ready for note() triggered on hover (even if sound is "off")
   const ensureContext = () => {
     init();
     if (ctxRef.current.state === "suspended") ctxRef.current.resume();
@@ -126,7 +76,7 @@ function useAudio() {
     ensureContext,
     hover: () => blip(1200 + Math.random() * 400, 0.05, "sine", 0.04),
     click: () => blip(440, 0.12, "triangle", 0.1),
-    note, // freq in Hz
+    note,
     whoosh: () => {
       const ctx = ctxRef.current; if (!ctx || !enabledRef.current) return;
       const noise = ctx.createBufferSource();
