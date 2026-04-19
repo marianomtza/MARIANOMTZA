@@ -9,6 +9,7 @@ const SRC = ROOT;
 const OUT = path.join(ROOT, "dist");
 
 const ORDER = [
+  "components/Analytics.jsx",
   "components/audio.jsx",
   "components/Cursor.jsx",
   "components/Loader.jsx",
@@ -57,18 +58,34 @@ async function main() {
     combined += `\n// ===== ${rel} =====\n${code}\n`;
   }
 
-  // 2. Transform JSX → JS, minify
-  console.log("[build] transforming with esbuild");
-  const result = await esbuild.transform(combined, {
-    loader: "jsx",
+  // 2. Build with esbuild (supports node_modules imports)
+  console.log("[build] building with esbuild");
+  
+  // Write temporary combined file
+  const tempFile = path.join(ROOT, ".temp-bundle.jsx");
+  await fs.writeFile(tempFile, combined, "utf8");
+  
+  const result = await esbuild.build({
+    entryPoints: [tempFile],
+    bundle: true,
     minify: true,
     target: ["es2018"],
     format: "iife",
-    legalComments: "none"
+    legalComments: "none",
+    external: ["react", "react-dom"],
+    write: false,
+    jsx: "transform",
+    jsxFactory: "React.createElement",
+    jsxFragment: "React.Fragment"
   });
+  
+  // Clean up temp file
+  await fs.unlink(tempFile);
+  
+  const bundleCode = result.outputFiles[0].text;
 
-  await fs.writeFile(path.join(OUT, "bundle.js"), result.code, "utf8");
-  console.log(`[build] bundle.js: ${(result.code.length / 1024).toFixed(1)}kB`);
+  await fs.writeFile(path.join(OUT, "bundle.js"), bundleCode, "utf8");
+  console.log(`[build] bundle.js: ${(bundleCode.length / 1024).toFixed(1)}kB`);
 
   // 3. Rewrite index.html for production
   console.log("[build] writing index.html");
