@@ -1008,3 +1008,164 @@ body.no-motion .band-track { animation: none; }
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ============================================
+   PREMIUM CURSOR — Thin, refined, eased
+   ============================================ */
+.cursor-premium {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--accent);
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%) scale(1);
+  will-change: transform;
+  box-shadow: 0 0 8px var(--accent);
+  transition: box-shadow 0.2s ease-out;
+}
+
+.cursor-premium.cursor-interactive {
+  width: 3px;
+  height: 3px;
+  box-shadow: 0 0 16px var(--accent), 0 0 32px rgba(124, 58, 237, 0.3);
+}
+
+.cursor-premium.cursor-text {
+  width: 1px;
+  height: 24px;
+  border-radius: 1px;
+  background: var(--fg);
+  box-shadow: none;
+}
+
+.cursor-inner {
+  position: absolute;
+  inset: -8px;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ============================================
+   3D BACKGROUND LAYERS
+   ============================================ */
+.bg-3d-container {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  perspective: 1000px;
+}
+
+.bg-3d-webgl {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.bg-3d-layers {
+  position: absolute;
+  inset: 0;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.bg-3d-layer {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+
+.bg-3d-layer.layer-1 {
+  background: radial-gradient(
+    ellipse 600px 500px at 20% 30%,
+    rgba(124, 58, 237, 0.12),
+    transparent 70%
+  );
+  animation: float-3d-1 8s ease-in-out infinite;
+}
+
+.bg-3d-layer.layer-2 {
+  background: radial-gradient(
+    ellipse 700px 600px at 80% 70%,
+    rgba(168, 85, 247, 0.08),
+    transparent 60%
+  );
+  animation: float-3d-2 10s ease-in-out infinite;
+}
+
+.bg-3d-layer.layer-3 {
+  background: radial-gradient(
+    ellipse 500px 400px at 50% 50%,
+    rgba(217, 70, 239, 0.06),
+    transparent 65%
+  );
+  animation: float-3d-3 12s ease-in-out infinite;
+}
+
+.bg-3d-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 20%, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 70% 75%, rgba(255, 255, 255, 0.2), transparent),
+    radial-gradient(1px 1px at 85% 15%, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1px 1px at 30% 80%, rgba(255, 255, 255, 0.25), transparent),
+    radial-gradient(1px 1px at 95% 65%, rgba(255, 255, 255, 0.3), transparent);
+  background-size: 200% 200%;
+  animation: twinkle-stars 6s ease-in-out infinite alternate;
+}
+
+@keyframes float-3d-1 {
+  0%, 100% { transform: translate3d(0, 0, 0) rotateZ(0deg); }
+  50% { transform: translate3d(40px, -60px, 20px) rotateZ(2deg); }
+}
+
+@keyframes float-3d-2 {
+  0%, 100% { transform: translate3d(0, 0, -10px) rotateZ(0deg); }
+  50% { transform: translate3d(-50px, 40px, -30px) rotateZ(-2deg); }
+}
+
+@keyframes float-3d-3 {
+  0%, 100% { transform: translate3d(0, 0, -5px) rotateZ(0deg); }
+  50% { transform: translate3d(30px, -40px, 10px) rotateZ(1deg); }
+}
+
+@keyframes twinkle-stars {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+  100% { opacity: 0.3; }
+}
+
+/* Responsive: disable 3D on low-performance devices */
+@media (prefers-reduced-motion: reduce) {
+  .bg-3d-layer {
+    animation: none;
+  }
+  .bg-3d-stars {
+    animation: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .bg-3d-layer {
+    opacity: 0.7;
+  }
+}
+
+/* ============================================
+   MAGNIFIED LETTER ENHANCEMENT
+   ============================================ */
+.char {
+  will-change: transform, color, text-shadow;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              color 0.15s ease-out,
+              text-shadow 0.15s ease-out;
+}
