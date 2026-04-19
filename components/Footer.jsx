@@ -3,7 +3,7 @@ function Footer() {
   const year = new Date().getFullYear();
   return (
     <>
-      <div className="footer-big">Mariano<span className="ital">·</span>Martínez</div>
+      <a className="footer-big" href="#top" title="Volver al inicio">Mariano<span className="ital">·</span>Martínez</a>
       <footer className="footer">
         <div>© {year} · marianomtza.com</div>
         <div>{cfg.city || "Ciudad de México · MX"}</div>

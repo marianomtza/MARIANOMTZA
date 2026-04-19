@@ -5,15 +5,27 @@ function Band({ items, reverse, label }) {
   return (
     <div className={`band ${reverse ? "reverse" : ""}`} aria-label={label || "marquee"}>
       <div className="band-track">
-        {list.map((x, i) => (
-          x.href ? (
-            <a className="band-item band-link" key={i} href={x.href} target="_blank" rel="noopener noreferrer">
+        {list.map((x, i) => {
+          const isLaFama = x.name === "LA FAMA";
+          return x.href ? (
+            <a 
+              className={`band-item band-link ${isLaFama ? "la-fama" : ""}`} 
+              key={i} 
+              href={x.href} 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
               {x.name}<span className="sep">✦</span>
             </a>
           ) : (
-            <span className="band-item" key={i}>{x.name}<span className="sep">✦</span></span>
-          )
-        ))}
+            <span 
+              className={`band-item ${isLaFama ? "la-fama" : ""}`} 
+              key={i}
+            >
+              {x.name}<span className="sep">✦</span>
+            </span>
+          );
+        })}
       </div>
     </div>
   );

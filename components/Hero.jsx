@@ -29,16 +29,42 @@ function Hero({ audio }) {
 
   const lastChar = React.useRef(-1);
 
-  // Magnification: scale up hovered letter and neighbours
+  // Magnification: scale up hovered letter and neighbours (Mac Dock style)
   const applyMagnification = (idx) => {
     if (!titleRef.current) return;
     const chars = titleRef.current.querySelectorAll(".char");
     chars.forEach((el, i) => {
       const dist = Math.abs(i - idx);
-      if (dist === 0)      { el.style.transform = "translateY(-12px) scale(1.55)"; el.style.color = "var(--accent)"; el.style.zIndex = "10"; }
-      else if (dist === 1) { el.style.transform = "translateY(-6px) scale(1.25)"; el.style.color = ""; el.style.zIndex = "5"; }
-      else if (dist === 2) { el.style.transform = "translateY(-2px) scale(1.08)"; el.style.color = ""; el.style.zIndex = "2"; }
-      else                 { el.style.transform = "translateY(0) scale(1)"; el.style.color = ""; el.style.zIndex = ""; }
+      if (dist === 0)      { 
+        el.style.transform = "translateY(-18px) scale(1.85)"; 
+        el.style.color = "var(--accent)"; 
+        el.style.textShadow = "0 0 20px var(--accent), 0 0 40px rgba(168, 85, 247, 0.4)";
+        el.style.zIndex = "10"; 
+      }
+      else if (dist === 1) { 
+        el.style.transform = "translateY(-10px) scale(1.45)"; 
+        el.style.textShadow = "0 0 12px rgba(168, 85, 247, 0.3)";
+        el.style.color = ""; 
+        el.style.zIndex = "5"; 
+      }
+      else if (dist === 2) { 
+        el.style.transform = "translateY(-4px) scale(1.18)"; 
+        el.style.textShadow = "0 0 6px rgba(168, 85, 247, 0.15)";
+        el.style.color = ""; 
+        el.style.zIndex = "2"; 
+      }
+      else if (dist === 3) { 
+        el.style.transform = "translateY(-1px) scale(1.06)";
+        el.style.textShadow = "";
+        el.style.color = ""; 
+        el.style.zIndex = ""; 
+      }
+      else                 { 
+        el.style.transform = "translateY(0) scale(1)"; 
+        el.style.textShadow = "";
+        el.style.color = ""; 
+        el.style.zIndex = ""; 
+      }
     });
   };
 
@@ -82,7 +108,7 @@ function Hero({ audio }) {
                 key={i}
                 style={{
                   transitionDelay: `${i * 50 + 400}ms`,
-                  transition: "transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), color 0.18s, transform 0.22s cubic-bezier(0.22,1,0.36,1)",
+                  transition: "transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.18s, text-shadow 0.18s",
                   display: "inline-block",
                   position: "relative",
                   transformOrigin: "bottom center",
