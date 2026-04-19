@@ -1,0 +1,14 @@
+{
+  "name": "marianomtza-web",
+  "version": "1.0.0",
+  "description": "Mariano Martínez — portfolio / booking site",
+  "private": true,
+  "scripts": {
+    "dev": "python3 -m http.server 3000",
+    "build": "node build.mjs",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.5"
+  }
+}
