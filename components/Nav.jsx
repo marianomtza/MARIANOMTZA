@@ -2,7 +2,7 @@ function Nav({ audio }) {
   const [revealed, setRevealed] = React.useState(false);
   const [open, setOpen] = React.useState(false);
 
-  React.useEffect(() => { setTimeout(() => setRevealed(true), 600); }, []);
+  React.useEffect(() => { setTimeout(() => setRevealed(true), 100); }, []);
 
   React.useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
