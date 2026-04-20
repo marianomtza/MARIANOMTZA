@@ -14,8 +14,7 @@ function Hero({ audio }) {
   ];
 
   React.useEffect(() => {
-    const t = setTimeout(() => setRev(true), 200);
-    return () => clearTimeout(t);
+    setRev(true);
   }, []);
 
   React.useEffect(() => {
