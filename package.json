@@ -1,16 +1,23 @@
 {
   "name": "marianomtza-web",
-  "version": "1.0.0",
-  "description": "Mariano Martínez — portfolio / booking site",
+  "version": "2.0.0",
+  "description": "Mariano Martínez — production-ready portfolio, booking & creative direction",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "python3 -m http.server 8787 --directory dist",
-    "build": "node build.mjs",
-    "clean": "rm -rf dist"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "@vercel/analytics": "^2.0.1",
-    "@vercel/speed-insights": "^2.0.0",
-    "esbuild": "^0.21.5"
+    "@vercel/speed-insights": "^2.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.8"
   }
 }
