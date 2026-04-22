@@ -1,84 +1,33 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef } from 'react'
+import { useMotion, useMotionFrame } from '../contexts/MotionContext'
 
-/**
- * Background3D — Lightweight 3D parallax with WebGL fallback
- * Features: Mouse-reactive parallax depth layers, optimized rendering, TTFB-safe
- * Fallback: CSS-based 3D transforms for unsupported browsers
- * Performance: Clamped 60fps via RAF, uses will-change for GPU acceleration
- */
 export function Background3D({ showStars = true }) {
-  const containerRef = useRef(null)
-  const canvasRef = useRef(null)
   const layersRef = useRef([])
-  const stateRef = useRef({ mouseX: 0, mouseY: 0 })
+  const smoothedRef = useRef({ x: 0, y: 0 })
+  const { pointerRef } = useMotion()
 
-  useEffect(() => {
-    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return
+  useMotionFrame(({ reducedMotion }) => {
+    if (window.matchMedia('(pointer: coarse)').matches) return
+    const px = (pointerRef.current.nx - 0.5) * 2
+    const py = (pointerRef.current.ny - 0.5) * 2
 
-    const canvas = canvasRef.current
-    if (!canvas) return
-    let stopRenderer = () => {}
-    let removeResize = () => {}
-    let cleanup = () => {}
-    let useWebGL = false
+    const easing = reducedMotion ? 0.03 : 0.08
+    smoothedRef.current.x += (px - smoothedRef.current.x) * easing
+    smoothedRef.current.y += (py - smoothedRef.current.y) * easing
 
-    try {
-      const gl = canvas.getContext('webgl2', {
-        alpha: true,
-        antialias: false,
-        powerPreference: 'low-power',
-      })
-
-      if (gl) {
-        canvas.style.display = 'block'
-        useWebGL = true
-        const webglRuntime = initWebGL(gl, canvas, stateRef.current)
-        cleanup = webglRuntime.cleanup
-        stopRenderer = webglRuntime.stop
-        removeResize = webglRuntime.removeResize
-      }
-    } catch (_error) {
-      useWebGL = false
-    }
-
-    if (!useWebGL) {
-      canvas.style.display = 'none'
-      const cssRuntime = initCSS3DParallax(layersRef.current, stateRef.current)
-      cleanup = cssRuntime.cleanup
-      stopRenderer = cssRuntime.stop
-    }
-
-    const onMove = (e) => {
-      stateRef.current.mouseX = e.clientX
-      stateRef.current.mouseY = e.clientY
-    }
-
-    const onVisibilityChange = () => {
-      if (document.hidden) {
-        stopRenderer()
-      }
-    }
-
-    window.addEventListener('mousemove', onMove)
-    document.addEventListener('visibilitychange', onVisibilityChange)
-
-    return () => {
-      window.removeEventListener('mousemove', onMove)
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-      removeResize()
-      cleanup()
-    }
-  }, [])
+    layersRef.current.forEach((layer, i) => {
+      if (!layer) return
+      const depth = 1 + i
+      const tx = smoothedRef.current.x * depth * 22
+      const ty = smoothedRef.current.y * depth * 18
+      const rz = smoothedRef.current.x * depth * 1.2
+      layer.style.transform = `translate3d(${tx}px, ${ty}px, 0) rotateZ(${rz}deg)`
+    })
+  })
 
   return (
-    <div className="bg-3d-container" ref={containerRef}>
-      <canvas
-        ref={canvasRef}
-        className="bg-3d-webgl"
-        style={{ display: 'none' }}
-      />
+    <div className="bg-3d-container">
       <div className="bg-3d-layers">
-        {/* Parallax depth layers */}
         <div className="bg-3d-layer layer-1" ref={(el) => (layersRef.current[0] = el)} />
         <div className="bg-3d-layer layer-2" ref={(el) => (layersRef.current[1] = el)} />
         <div className="bg-3d-layer layer-3" ref={(el) => (layersRef.current[2] = el)} />
@@ -86,206 +35,4 @@ export function Background3D({ showStars = true }) {
       </div>
     </div>
   )
-}
-
-function initWebGL(gl, canvas, state) {
-  let rafId = null
-  let destroyed = false
-
-  const setCanvasSize = () => {
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-    gl.viewport(0, 0, canvas.width, canvas.height)
-  }
-
-  setCanvasSize()
-  window.addEventListener('resize', setCanvasSize)
-
-  gl.clearColor(0, 0, 0, 0)
-  gl.enable(gl.BLEND)
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-
-  // Simple vertex + fragment shaders
-  const vsSource = `
-    attribute vec4 aPosition;
-    uniform mat4 uMatrix;
-    void main() {
-      gl_Position = uMatrix * aPosition;
-    }
-  `
-
-  const fsSource = `
-    precision mediump float;
-    uniform vec3 uColor;
-    void main() {
-      gl_FragColor = vec4(uColor, 0.15);
-    }
-  `
-
-  const program = gl.createProgram()
-  const vs = compileShader(gl, gl.VERTEX_SHADER, vsSource)
-  const fs = compileShader(gl, gl.FRAGMENT_SHADER, fsSource)
-  gl.attachShader(program, vs)
-  gl.attachShader(program, fs)
-  gl.linkProgram(program)
-  gl.useProgram(program)
-
-  // Simple cube geometry
-  const vertices = new Float32Array([
-    -1, -1, -1, 1, -1, -1, 1, 1, -1, -1, 1, -1,
-    -1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1,
-  ])
-
-  const buffer = gl.createBuffer()
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-  gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW)
-
-  const aPosition = gl.getAttribLocation(program, 'aPosition')
-  gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0)
-  gl.enableVertexAttribArray(aPosition)
-
-  let rotation = 0
-  const render = () => {
-    if (destroyed) return
-    gl.clear(gl.COLOR_BUFFER_BIT)
-
-    const mx = (state.mouseX / window.innerWidth - 0.5) * 0.2
-    const my = (state.mouseY / window.innerHeight - 0.5) * 0.2
-
-    rotation += 0.003
-
-    // Simple perspective matrix
-    const fov = Math.PI / 4
-    const aspect = canvas.width / canvas.height
-    const near = 0.1
-    const far = 100
-    const matrix = perspective(fov, aspect, near, far)
-    multiplyMatrix(matrix, rotateY(rotation + mx))
-    multiplyMatrix(matrix, rotateX(my))
-    multiplyMatrix(matrix, translate(0, 0, -5))
-
-    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'uMatrix'), false, matrix)
-    gl.uniform3f(gl.getUniformLocation(program, 'uColor'), 0.5, 0.3, 1)
-
-    gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 3)
-    rafId = requestAnimationFrame(render)
-  }
-
-  rafId = requestAnimationFrame(render)
-
-  return {
-    stop() {
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId)
-        rafId = null
-      }
-    },
-    removeResize() {
-      window.removeEventListener('resize', setCanvasSize)
-    },
-    cleanup() {
-      destroyed = true
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId)
-      }
-      window.removeEventListener('resize', setCanvasSize)
-      gl.deleteBuffer(buffer)
-      gl.deleteShader(vs)
-      gl.deleteShader(fs)
-      gl.deleteProgram(program)
-    },
-  }
-}
-
-function initCSS3DParallax(layers, state) {
-  let rafId = null
-  let destroyed = false
-
-  const render = () => {
-    if (destroyed) return
-    const mx = (state.mouseX / window.innerWidth - 0.5) * 40
-    const my = (state.mouseY / window.innerHeight - 0.5) * 40
-
-    layers.forEach((layer, i) => {
-      if (!layer) return
-      const depth = (i + 1) * 15
-      layer.style.transform = `
-        translate3d(${mx * depth}px, ${my * depth}px, 0)
-        rotateX(${my * 0.3}deg)
-        rotateY(${mx * 0.3}deg)
-      `
-    })
-
-    rafId = requestAnimationFrame(render)
-  }
-
-  rafId = requestAnimationFrame(render)
-
-  return {
-    stop() {
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId)
-        rafId = null
-      }
-    },
-    cleanup() {
-      destroyed = true
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId)
-      }
-    },
-  }
-}
-
-// Shader compilation helper
-function compileShader(gl, type, source) {
-  const shader = gl.createShader(type)
-  gl.shaderSource(shader, source)
-  gl.compileShader(shader)
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(gl.getShaderInfoLog(shader))
-  }
-  return shader
-}
-
-// Matrix math helpers (simplified)
-function perspective(fov, aspect, near, far) {
-  const f = 1 / Math.tan(fov / 2)
-  const nf = 1 / (near - far)
-  return [
-    f / aspect, 0, 0, 0,
-    0, f, 0, 0,
-    0, 0, (far + near) * nf, -1,
-    0, 0, 2 * far * near * nf, 0,
-  ]
-}
-
-function rotateX(angle) {
-  const c = Math.cos(angle), s = Math.sin(angle)
-  return [
-    1, 0, 0, 0,
-    0, c, s, 0,
-    0, -s, c, 0,
-    0, 0, 0, 1,
-  ]
-}
-
-function rotateY(angle) {
-  const c = Math.cos(angle), s = Math.sin(angle)
-  return [
-    c, 0, -s, 0,
-    0, 1, 0, 0,
-    s, 0, c, 0,
-    0, 0, 0, 1,
-  ]
-}
-
-function translate(x, y, z) {
-  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]
-}
-
-function multiplyMatrix(a, b) {
-  for (let i = 0; i < 16; i++) {
-    a[i] = b[i * 4] * a[i % 4] + b[i * 4 + 1] * a[(i + 4) % 16] + b[i * 4 + 2] * a[(i + 8) % 16] + b[i * 4 + 3] * a[(i + 12) % 16]
-  }
 }
