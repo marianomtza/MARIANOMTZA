@@ -27,6 +27,7 @@ export const SITE_CONFIG = {
   spotifyUrl: '',
   soundcloudUrl: '',
   raUrl: '',
+  formspreeId: (import.meta.env.VITE_FORMSPREE_ID || '').trim(),
 }
 
 /**
