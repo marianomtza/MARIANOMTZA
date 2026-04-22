@@ -3,6 +3,40 @@ import { useAudio } from '../contexts/AudioContext'
 import { useBooking } from '../contexts/BookingContext'
 import { SITE_CONFIG } from '../constants'
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MAX_NOTES_LENGTH = 2000
+
+function getClientTimeZone() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+}
+
+function sanitizeText(value) {
+  if (typeof value !== 'string') return ''
+  return value.trim().replace(/\s+/g, ' ')
+}
+
+function validateBookingPayload(payload) {
+  if (!payload.name || payload.name.length < 2) {
+    return 'Ingresa un nombre válido (mínimo 2 caracteres).'
+  }
+  if (!EMAIL_REGEX.test(payload.email)) {
+    return 'Ingresa un email válido.'
+  }
+  if (!payload.notes || payload.notes.length < 10) {
+    return 'Agrega más contexto en notas (mínimo 10 caracteres).'
+  }
+  if (payload.notes.length > MAX_NOTES_LENGTH) {
+    return `Notas demasiado largas (máximo ${MAX_NOTES_LENGTH} caracteres).`
+  }
+  if (payload.mode === 'artista' && !payload.artist) {
+    return 'Selecciona un artista para continuar.'
+  }
+  if (payload.mode === 'servicio' && !payload.service) {
+    return 'Selecciona un tipo de servicio.'
+  }
+  return ''
+}
+
 export function Booking() {
   const audio = useAudio()
   const { selectedArtist, setSelectedArtist, bookingSectionRef } = useBooking()
@@ -11,6 +45,7 @@ export function Booking() {
   const [err, setErr] = useState('')
   const [venue, setVenue] = useState('')
   const venueRef = useRef(null)
+  const timeoutRef = useRef(null)
 
   // Sync mode with selected artist
   useEffect(() => {
@@ -47,8 +82,18 @@ export function Booking() {
     return () => clearInterval(id)
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
+
   const submit = async (e) => {
     e.preventDefault()
+    if (state === 'sending') return
+
     const form = e.currentTarget
     const data = new FormData(form)
 
@@ -59,7 +104,29 @@ export function Booking() {
       return
     }
 
+    const payload = {
+      mode,
+      name: sanitizeText(data.get('name')),
+      email: sanitizeText(data.get('email')),
+      notes: sanitizeText(data.get('notes')),
+      artist: sanitizeText(data.get('artist')),
+      service: sanitizeText(data.get('service')),
+    }
+
+    const validationError = validateBookingPayload(payload)
+    if (validationError) {
+      setErr(validationError)
+      setState('error')
+      return
+    }
+
+    data.set('name', payload.name)
+    data.set('email', payload.email)
+    data.set('notes', payload.notes)
+    if (payload.artist) data.set('artist', payload.artist)
+    if (payload.service) data.set('service', payload.service)
     data.append('_mode', mode)
+    data.append('_timezone', getClientTimeZone())
 
     setState('sending')
     setErr('')
@@ -68,10 +135,11 @@ export function Booking() {
     const formspreeId = SITE_CONFIG.formspreeId
     if (!formspreeId || formspreeId === 'YOUR_FORMSPREE_ID') {
       // No formspree configured — simulate success for dev
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         setState('ok')
         form.reset()
         setVenue('')
+        setSelectedArtist('')
       }, 700)
       return
     }
@@ -86,7 +154,8 @@ export function Booking() {
         setState('ok')
         form.reset()
         setVenue('')
-        setTimeout(() => setState('idle'), 4500)
+        setSelectedArtist('')
+        timeoutRef.current = setTimeout(() => setState('idle'), 4500)
       } else {
         const j = await res.json().catch(() => ({}))
         setErr(j?.errors?.[0]?.message || 'Error al enviar')
@@ -214,7 +283,7 @@ export function Booking() {
                   <label>
                     Tu nombre <span className="req">*</span>
                   </label>
-                  <input name="name" required placeholder="Tu nombre o crew" />
+                  <input name="name" required minLength={2} maxLength={120} placeholder="Tu nombre o crew" />
                 </div>
                 <div className="field">
                   <label>
@@ -231,6 +300,7 @@ export function Booking() {
                     <select 
                       name="artist" 
                       value={selectedArtist || ''} 
+                      required={mode === 'artista'}
                       onChange={(e) => setSelectedArtist(e.target.value)}
                     >
                       <option value="" disabled>
@@ -260,7 +330,7 @@ export function Booking() {
                 <div className="form-row">
                   <div className="field">
                     <label>Tipo de servicio</label>
-                    <select name="service" defaultValue="">
+                    <select name="service" required={mode === 'servicio'} defaultValue="">
                       <option value="" disabled>
                         Booking · Producción · Dirección...
                       </option>
@@ -334,6 +404,8 @@ export function Booking() {
                 <textarea
                   name="notes"
                   required={mode === 'servicio'}
+                  minLength={10}
+                  maxLength={MAX_NOTES_LENGTH}
                   placeholder={
                     mode === 'artista'
                       ? 'Contexto, line-up, rider, lo que sea útil'
