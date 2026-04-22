@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useAudio } from '../contexts/AudioContext'
-import { useBooking } from '../contexts/BookingContext'
+import { useBookingActions, useBookingState } from '../contexts/BookingContext'
 import { SITE_CONFIG } from '../constants'
 import { ARTIST_NAMES } from '../data/roster'
 
@@ -13,6 +13,13 @@ const SOCIAL_LINKS = [
   { key: 'soundcloudUrl', label: 'Soundcloud' },
   { key: 'raUrl', label: 'RA' },
 ]
+const EVENT_TYPE_OPTIONS = ['Festival', 'Club', 'Rave / Warehouse', 'Brand activation', 'Privado', 'Corporativo', 'Otro']
+const FORM_STATE = {
+  IDLE: 'idle',
+  SENDING: 'sending',
+  OK: 'ok',
+  ERROR: 'error',
+}
 
 function getClientTimeZone() {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -47,69 +54,79 @@ function validateBookingPayload(payload) {
 
 export function Booking() {
   const audio = useAudio()
-  const { selectedArtist, setSelectedArtist, bookingSectionRef } = useBooking()
-  const [mode, setMode] = useState('servicio') // "servicio" | "artista"
-  const [state, setState] = useState('idle')   // idle | sending | ok | error
-  const [err, setErr] = useState('')
-  const [quickPickActive, setQuickPickActive] = useState(false)
+  const sectionRef = useRef(null)
   const venueRef = useRef(null)
-  const timeoutRef = useRef(null)
+  const lastScrollRequestRef = useRef(0)
+  const placesListenerRef = useRef(null)
+  const autocompleteRef = useRef(null)
 
-  // Sync mode with selected artist
-  useEffect(() => {
-    if (selectedArtist) {
-      setMode('artista')
-    }
-  }, [selectedArtist])
+  const { selectedArtist, scrollRequest } = useBookingState()
+  const { setSelectedArtist, clearSelectedArtist } = useBookingActions()
+  const [manualMode, setManualMode] = useState('servicio')
+  const [state, setState] = useState(FORM_STATE.IDLE)
+  const [err, setErr] = useState('')
+  const mode = useMemo(() => (selectedArtist ? 'artista' : manualMode), [manualMode, selectedArtist])
 
-  // Google Places autocomplete — se activa solo si existe window.google.maps
   useEffect(() => {
     if (!venueRef.current) return
-    const tryInit = () => {
-      if (!(window.google && window.google.maps && window.google.maps.places)) return false
-      try {
-        const ac = new window.google.maps.places.Autocomplete(venueRef.current, {
-          fields: ['name', 'formatted_address', 'geometry'],
-          types: ['establishment', 'geocode'],
-        })
-        ac.addListener('place_changed', () => {
-          const p = ac.getPlace()
-          const value = p.formatted_address || p.name || venueRef.current.value || ''
-          venueRef.current.value = value
-        })
-        return true
-      } catch (e) {
-        return false
-      }
+    if (!(window.google && window.google.maps && window.google.maps.places)) return
+
+    try {
+      autocompleteRef.current = new window.google.maps.places.Autocomplete(venueRef.current, {
+        fields: ['name', 'formatted_address', 'geometry'],
+        types: ['establishment', 'geocode'],
+      })
+      placesListenerRef.current = autocompleteRef.current.addListener('place_changed', () => {
+        const place = autocompleteRef.current.getPlace()
+        if (venueRef.current) {
+          venueRef.current.value = place.formatted_address || place.name || venueRef.current.value || ''
+        }
+      })
+    } catch (_error) {
+      autocompleteRef.current = null
     }
-    if (tryInit()) return
-    // Poll briefly if script loads after mount
-    const id = setInterval(() => {
-      if (tryInit()) clearInterval(id)
-    }, 400)
-    setTimeout(() => clearInterval(id), 8000)
-    return () => clearInterval(id)
+
+    return () => {
+      if (placesListenerRef.current?.remove) {
+        placesListenerRef.current.remove()
+      }
+      placesListenerRef.current = null
+      autocompleteRef.current = null
+    }
   }, [])
 
   useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-    }
-  }, [])
+    if (!sectionRef.current) return
+    if (scrollRequest <= lastScrollRequestRef.current) return
+    lastScrollRequestRef.current = scrollRequest
+    sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [scrollRequest])
 
-  const submit = async (e) => {
+  const resetForm = useCallback((form) => {
+    form.reset()
+    clearSelectedArtist()
+    if (venueRef.current) {
+      venueRef.current.value = ''
+    }
+  }, [clearSelectedArtist])
+
+  const setModeExplicitly = useCallback((nextMode) => {
+    setManualMode(nextMode)
+    if (nextMode === 'servicio') {
+      clearSelectedArtist()
+    }
+  }, [clearSelectedArtist])
+
+  const submit = useCallback(async (e) => {
     e.preventDefault()
-    if (state === 'sending') return
+    if (state === FORM_STATE.SENDING) return
 
     const form = e.currentTarget
     const data = new FormData(form)
 
-    // honeypot antispam
     if (data.get('_gotcha')) {
-      setState('ok')
-      form.reset()
+      setState(FORM_STATE.OK)
+      resetForm(form)
       return
     }
 
@@ -125,7 +142,7 @@ export function Booking() {
     const validationError = validateBookingPayload(payload)
     if (validationError) {
       setErr(validationError)
-      setState('error')
+      setState(FORM_STATE.ERROR)
       return
     }
 
@@ -137,19 +154,14 @@ export function Booking() {
     data.append('_mode', mode)
     data.append('_timezone', getClientTimeZone())
 
-    setState('sending')
+    setState(FORM_STATE.SENDING)
     setErr('')
     audio?.click?.()
 
     const formspreeId = SITE_CONFIG.formspreeId
     if (!formspreeId || formspreeId === 'YOUR_FORMSPREE_ID') {
-      // No formspree configured — simulate success for dev
-      timeoutRef.current = setTimeout(() => {
-        setState('ok')
-        form.reset()
-        setSelectedArtist('')
-        setQuickPickActive(false)
-      }, 700)
+      setErr('Formulario no configurado. Escríbenos por email o WhatsApp.')
+      setState(FORM_STATE.ERROR)
       return
     }
 
@@ -160,24 +172,21 @@ export function Booking() {
         headers: { Accept: 'application/json' },
       })
       if (res.ok) {
-        setState('ok')
-        form.reset()
-        setSelectedArtist('')
-        setQuickPickActive(false)
-        timeoutRef.current = setTimeout(() => setState('idle'), 4500)
+        setState(FORM_STATE.OK)
+        resetForm(form)
       } else {
         const j = await res.json().catch(() => ({}))
         setErr(j?.errors?.[0]?.message || 'Error al enviar')
-        setState('error')
+        setState(FORM_STATE.ERROR)
       }
-    } catch (err) {
+    } catch (_error) {
       setErr('No se pudo enviar — revisa tu conexión')
-      setState('error')
+      setState(FORM_STATE.ERROR)
     }
-  }
+  }, [audio, mode, resetForm, state])
 
   return (
-    <section className="section" id="booking" ref={bookingSectionRef}>
+    <section className="section" id="booking" ref={sectionRef}>
       <div className="wrap">
         <div className="booking reveal">
           <div className="booking-left">
@@ -256,7 +265,7 @@ export function Booking() {
                 aria-selected={mode === 'servicio'}
                 className={`mode-btn ${mode === 'servicio' ? 'active' : ''}`}
                 onClick={() => {
-                  setMode('servicio')
+                  setModeExplicitly('servicio')
                   audio?.click?.()
                 }}
               >
@@ -269,7 +278,7 @@ export function Booking() {
                 aria-selected={mode === 'artista'}
                 className={`mode-btn ${mode === 'artista' ? 'active' : ''}`}
                 onClick={() => {
-                  setMode('artista')
+                  setModeExplicitly('artista')
                   audio?.click?.()
                 }}
               >
@@ -308,9 +317,9 @@ export function Booking() {
                 <div className="form-row">
                   <div className="field">
                     <label>Artista a bookear</label>
-                    <select 
-                      name="artist" 
-                      value={selectedArtist || ''} 
+                    <select
+                      name="artist"
+                      value={selectedArtist}
                       required={mode === 'artista'}
                       onChange={(e) => setSelectedArtist(e.target.value)}
                     >
@@ -362,7 +371,6 @@ export function Booking() {
                           className={`artist-pill ${selectedArtist === artistName ? 'active' : ''}`}
                           onClick={() => {
                             setSelectedArtist(artistName)
-                            setQuickPickActive(true)
                             audio?.click?.()
                           }}
                         >
@@ -370,7 +378,7 @@ export function Booking() {
                         </button>
                       ))}
                     </div>
-                    {quickPickActive && (
+                    {Boolean(selectedArtist) && (
                       <span className="note">Tip: ya preseleccionaste un artista desde los botones.</span>
                     )}
                   </div>
@@ -396,13 +404,9 @@ export function Booking() {
                         <option value="" disabled>
                           Festival · Club · Privado...
                         </option>
-                        <option>Festival</option>
-                        <option>Club</option>
-                        <option>Rave / Warehouse</option>
-                        <option>Brand activation</option>
-                        <option>Privado</option>
-                        <option>Corporativo</option>
-                        <option>Otro</option>
+                        {EVENT_TYPE_OPTIONS.map((eventType) => (
+                          <option key={eventType}>{eventType}</option>
+                        ))}
                       </select>
                     </div>
                     <div className="field">
@@ -438,21 +442,21 @@ export function Booking() {
                 <span className="note">Respuesta en &lt; 48h</span>
                 <button
                   type="submit"
-                  className={`submit-btn ${state === 'ok' ? 'ok' : ''}`}
+                  className={`submit-btn ${state === FORM_STATE.OK ? 'ok' : ''}`}
                   onMouseEnter={() => audio?.whoosh?.()}
-                  disabled={state === 'sending'}
+                  disabled={state === FORM_STATE.SENDING}
                 >
-                  {state === 'sending' && 'Enviando…'}
-                  {state === 'ok' && '✓ Enviado'}
-                  {state === 'error' && 'Reintentar'}
-                  {state === 'idle' && (
+                  {state === FORM_STATE.SENDING && 'Enviando…'}
+                  {state === FORM_STATE.OK && '✓ Enviado'}
+                  {state === FORM_STATE.ERROR && 'Reintentar'}
+                  {state === FORM_STATE.IDLE && (
                     <>
                       Enviar <span>→</span>
                     </>
                   )}
                 </button>
               </div>
-              {state === 'error' && <div className="form-err">{err}</div>}
+              {state === FORM_STATE.ERROR && <div className="form-err">{err}</div>}
             </form>
           </div>
         </div>
