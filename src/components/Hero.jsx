@@ -14,6 +14,7 @@ export function Hero() {
   const [rev, setRev] = useState(false)
   const [roleIdx, setRoleIdx] = useState(0)
   const titleRef = useRef(null)
+  const charRefs = useRef([])
   const lastCharRef = useRef(-1)
 
   const TITLE = 'MARIANOMTZA'
@@ -38,11 +39,12 @@ export function Hero() {
 
   // Get precise character under cursor
   const getMagnifiedCharIndex = (e) => {
-    if (!titleRef.current) return -1
-    const chars = titleRef.current.querySelectorAll('.char')
+    if (!charRefs.current.length) return -1
+    const chars = charRefs.current
     const cursorX = e.clientX
     const cursorY = e.clientY
     for (let i = 0; i < chars.length; i++) {
+      if (!chars[i]) continue
       const rect = chars[i].getBoundingClientRect()
       if (cursorX >= rect.left && cursorX <= rect.right && cursorY >= rect.top && cursorY <= rect.bottom) {
         return i
@@ -53,9 +55,10 @@ export function Hero() {
 
   // Apply Mac Dock-style magnification
   const applyMagnification = (idx) => {
-    if (!titleRef.current) return
-    const chars = titleRef.current.querySelectorAll('.char')
+    if (!charRefs.current.length) return
+    const chars = charRefs.current
     chars.forEach((el, i) => {
+      if (!el) return
       const dist = Math.abs(i - idx)
       if (dist === 0) {
         el.style.transform = 'translateY(-18px) scale(1.85)'
@@ -87,9 +90,10 @@ export function Hero() {
   }
 
   const resetMagnification = () => {
-    if (!titleRef.current) return
-    const chars = titleRef.current.querySelectorAll('.char')
+    if (!charRefs.current.length) return
+    const chars = charRefs.current
     chars.forEach((el) => {
+      if (!el) return
       el.style.transform = ''
       el.style.color = ''
       el.style.zIndex = ''
@@ -130,6 +134,7 @@ export function Hero() {
             {TITLE.split('').map((ch, i) => (
               <span
                 key={i}
+                ref={(el) => (charRefs.current[i] = el)}
                 className="char piano-char"
                 style={{
                   transitionDelay: `${i * 50 + 400}ms`,
