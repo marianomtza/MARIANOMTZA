@@ -375,6 +375,8 @@ body.no-motion .blob { animation: none; }
 
 @media (max-width: 800px) {
   .hero-bottom { grid-template-columns: 1fr; gap: 32px; }
+  .hero { min-height: auto; padding-top: 96px; }
+  .hero-title { font-size: clamp(44px, 17vw, 120px); }
 }
 
 /* ============================================
