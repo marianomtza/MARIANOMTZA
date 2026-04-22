@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { useMotionFrame } from '../contexts/MotionContext'
 
 /**
  * Loader Component - Progress animation on mount
@@ -7,29 +8,24 @@ export function Loader({ onDone }) {
   const [p, setP] = useState(0)
   const [gone, setGone] = useState(false)
   const doneRef = useRef(false)
+  const startedAtRef = useRef(0)
+  const finishedRef = useRef(false)
 
   useEffect(() => {
-    let rafId = null
-    const durationMs = 1500
-    const start = performance.now()
-
-    const animate = (now) => {
-      const progress = Math.min(1, (now - start) / durationMs)
-      setP(Math.floor(progress * 100))
-      if (progress < 1) {
-        rafId = requestAnimationFrame(animate)
-      } else {
-        setGone(true)
-      }
-    }
-
-    rafId = requestAnimationFrame(animate)
-    return () => {
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId)
-      }
-    }
+    startedAtRef.current = performance.now()
+    finishedRef.current = false
   }, [])
+
+  useMotionFrame(({ now }) => {
+    if (finishedRef.current) return
+    const durationMs = 1500
+    const progress = Math.min(1, (now - startedAtRef.current) / durationMs)
+    setP(Math.floor(progress * 100))
+    if (progress >= 1) {
+      finishedRef.current = true
+      setGone(true)
+    }
+  })
 
   const handleTransitionEnd = useCallback((event) => {
     if (doneRef.current) return
