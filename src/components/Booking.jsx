@@ -2,9 +2,17 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useAudio } from '../contexts/AudioContext'
 import { useBooking } from '../contexts/BookingContext'
 import { SITE_CONFIG } from '../constants'
+import { ARTIST_NAMES } from '../data/roster'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MAX_NOTES_LENGTH = 2000
+const SERVICE_OPTIONS = ['Booking', 'Producción', 'Dirección creativa', 'Curaduría', 'A&R', 'Management', 'Otro']
+const SOCIAL_LINKS = [
+  { key: 'instagram', label: 'Instagram' },
+  { key: 'spotifyUrl', label: 'Spotify' },
+  { key: 'soundcloudUrl', label: 'Soundcloud' },
+  { key: 'raUrl', label: 'RA' },
+]
 
 function getClientTimeZone() {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
@@ -43,7 +51,7 @@ export function Booking() {
   const [mode, setMode] = useState('servicio') // "servicio" | "artista"
   const [state, setState] = useState('idle')   // idle | sending | ok | error
   const [err, setErr] = useState('')
-  const [venue, setVenue] = useState('')
+  const [quickPickActive, setQuickPickActive] = useState(false)
   const venueRef = useRef(null)
   const timeoutRef = useRef(null)
 
@@ -66,7 +74,8 @@ export function Booking() {
         })
         ac.addListener('place_changed', () => {
           const p = ac.getPlace()
-          setVenue(p.formatted_address || p.name || venueRef.current.value)
+          const value = p.formatted_address || p.name || venueRef.current.value || ''
+          venueRef.current.value = value
         })
         return true
       } catch (e) {
@@ -138,8 +147,8 @@ export function Booking() {
       timeoutRef.current = setTimeout(() => {
         setState('ok')
         form.reset()
-        setVenue('')
         setSelectedArtist('')
+        setQuickPickActive(false)
       }, 700)
       return
     }
@@ -153,8 +162,8 @@ export function Booking() {
       if (res.ok) {
         setState('ok')
         form.reset()
-        setVenue('')
         setSelectedArtist('')
+        setQuickPickActive(false)
         timeoutRef.current = setTimeout(() => setState('idle'), 4500)
       } else {
         const j = await res.json().catch(() => ({}))
@@ -213,24 +222,26 @@ export function Booking() {
                 </span>
               </div>
               <div className="binfo-socials">
-                {SITE_CONFIG.instagram && (
-                  <a href={SITE_CONFIG.instagram} target="_blank" rel="noopener noreferrer">
-                    Instagram
-                  </a>
+                {SOCIAL_LINKS.map((social) =>
+                  SITE_CONFIG[social.key] ? (
+                    <a key={social.key} href={SITE_CONFIG[social.key]} target="_blank" rel="noopener noreferrer">
+                      {social.label}
+                    </a>
+                  ) : null
                 )}
-                {SITE_CONFIG.spotifyUrl && (
-                  <a href={SITE_CONFIG.spotifyUrl} target="_blank" rel="noopener noreferrer">
-                    Spotify
-                  </a>
-                )}
-                {SITE_CONFIG.soundcloudUrl && (
-                  <a href={SITE_CONFIG.soundcloudUrl} target="_blank" rel="noopener noreferrer">
-                    Soundcloud
-                  </a>
-                )}
-                {SITE_CONFIG.raUrl && (
-                  <a href={SITE_CONFIG.raUrl} target="_blank" rel="noopener noreferrer">
-                    RA
+              </div>
+              <div className="booking-quick-actions">
+                <a className="quick-action-btn" href={`mailto:${SITE_CONFIG.email}`}>
+                  Email →
+                </a>
+                {SITE_CONFIG.whatsapp && (
+                  <a
+                    className="quick-action-btn"
+                    href={`https://wa.me/${SITE_CONFIG.whatsapp.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    WhatsApp →
                   </a>
                 )}
               </div>
@@ -306,16 +317,9 @@ export function Booking() {
                       <option value="" disabled>
                         Selecciona un artista
                       </option>
-                      <option>3DELINCUENTES</option>
-                      <option>RUZZO DOBLEZZ</option>
-                      <option>8.AM</option>
-                      <option>MORROW</option>
-                      <option>BBBARTEX</option>
-                      <option>LEGORRETA</option>
-                      <option>TBX</option>
-                      <option>NZO</option>
-                      <option>ELAKKKA</option>
-                      <option>MOODJAAS</option>
+                      {ARTIST_NAMES.map((artistName) => (
+                        <option key={artistName}>{artistName}</option>
+                      ))}
                       <option>Otro / No sé aún</option>
                     </select>
                   </div>
@@ -334,13 +338,9 @@ export function Booking() {
                       <option value="" disabled>
                         Booking · Producción · Dirección...
                       </option>
-                      <option>Booking</option>
-                      <option>Producción</option>
-                      <option>Dirección creativa</option>
-                      <option>Curaduría</option>
-                      <option>A&R</option>
-                      <option>Management</option>
-                      <option>Otro</option>
+                      {SERVICE_OPTIONS.map((service) => (
+                        <option key={service}>{service}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="field">
@@ -352,14 +352,34 @@ export function Booking() {
 
               {mode === 'artista' && (
                 <>
+                  <div className="field">
+                    <label>Selección rápida de artista</label>
+                    <div className="artist-quick-picks">
+                      {ARTIST_NAMES.map((artistName) => (
+                        <button
+                          key={artistName}
+                          type="button"
+                          className={`artist-pill ${selectedArtist === artistName ? 'active' : ''}`}
+                          onClick={() => {
+                            setSelectedArtist(artistName)
+                            setQuickPickActive(true)
+                            audio?.click?.()
+                          }}
+                        >
+                          {artistName}
+                        </button>
+                      ))}
+                    </div>
+                    {quickPickActive && (
+                      <span className="note">Tip: ya preseleccionaste un artista desde los botones.</span>
+                    )}
+                  </div>
                   <div className="form-row">
                     <div className="field">
                       <label>Ciudad y lugar</label>
                       <input
                         name="venue"
                         ref={venueRef}
-                        value={venue}
-                        onChange={(e) => setVenue(e.target.value)}
                         placeholder="Club, venue o ciudad"
                         autoComplete="off"
                       />
