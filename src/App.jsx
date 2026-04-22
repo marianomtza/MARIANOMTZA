@@ -3,6 +3,7 @@ import { Hero } from './components/Hero'
 import { Loader } from './components/Loader'
 import { PremiumCursor } from './components/PremiumCursor'
 import { Nav, Footer, Band, Stats, BlobBG, Roster, Booking, Background3D, EasterEggs, Tweaks } from './components/index'
+import { BookingProvider } from './contexts/BookingContext'
 import { useTheme } from './contexts/ThemeContext'
 import { COLECTIVOS, MARCAS } from './constants'
 import './styles/main.css'
@@ -18,7 +19,7 @@ function App() {
     <>
       {!loaded && <Loader onDone={() => setLoaded(true)} />}
       {loaded && (
-        <>
+        <BookingProvider>
           <PremiumCursor />
           <div className="content">
             <Nav />
@@ -36,7 +37,7 @@ function App() {
           <Background3D showStars={false} />
           <EasterEggs />
           <Tweaks />
-        </>
+        </BookingProvider>
       )}
     </>
   )
