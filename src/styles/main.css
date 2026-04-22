@@ -225,6 +225,13 @@ body.no-motion .blob { animation: none; }
 @keyframes twinkle { from { opacity: 0.5; } to { opacity: 1; } }
 
 .content { position: relative; z-index: 1; }
+.layer { position: relative; }
+.layer-bg { z-index: 0; }
+.layer-ui { z-index: 2; }
+.layer-interaction { z-index: 40; pointer-events: none; }
+.layer-interaction .tweaks,
+.layer-interaction .easter-toast,
+.layer-interaction .rave-overlay { pointer-events: auto; }
 
 .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--pad); }
 
