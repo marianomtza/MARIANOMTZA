@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react'
-import { useInterval } from '../hooks/useAnimations'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 
 /**
  * Loader Component - Progress animation on mount
@@ -7,24 +6,42 @@ import { useInterval } from '../hooks/useAnimations'
 export function Loader({ onDone }) {
   const [p, setP] = useState(0)
   const [gone, setGone] = useState(false)
+  const doneRef = useRef(false)
 
   useEffect(() => {
-    let cur = 0
-    const tick = () => {
-      cur = Math.min(100, cur + Math.random() * 18 + 4)
-      setP(Math.floor(cur))
-      if (cur >= 100) {
-        setTimeout(() => setGone(true), 400)
-        setTimeout(() => onDone(), 1400)
+    let rafId = null
+    const durationMs = 1500
+    const start = performance.now()
+
+    const animate = (now) => {
+      const progress = Math.min(1, (now - start) / durationMs)
+      setP(Math.floor(progress * 100))
+      if (progress < 1) {
+        rafId = requestAnimationFrame(animate)
+      } else {
+        setGone(true)
       }
     }
 
-    const interval = setInterval(tick, 140)
-    return () => clearInterval(interval)
-  }, [onDone])
+    rafId = requestAnimationFrame(animate)
+    return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+      }
+    }
+  }, [])
+
+  const handleTransitionEnd = useCallback((event) => {
+    if (doneRef.current) return
+    if (!gone) return
+    if (event.target !== event.currentTarget) return
+    if (event.propertyName !== 'transform') return
+    doneRef.current = true
+    onDone()
+  }, [gone, onDone])
 
   return (
-    <div className={`loader ${gone ? 'done' : ''}`} style={{ '--p': p / 100 }}>
+    <div className={`loader ${gone ? 'done' : ''}`} style={{ '--p': p / 100 }} onTransitionEnd={handleTransitionEnd}>
       <div className="loader-top">
         <div>init</div>
         <div>marianomtza.com</div>
