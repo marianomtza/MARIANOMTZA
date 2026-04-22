@@ -127,31 +127,12 @@ export function Band({ items, label, reverse = false }) {
   )
 }
 
-/**
- * Stats Component - Key statistics with glow effect
- */
-export function Stats() {
-  const stats = [
-    { label: 'Noches', value: '500+' },
-    { label: 'Asistentes', value: '4000+' },
-    { label: 'Años', value: '10+' },
-  ]
-
-  return (
-    <section className="stats-section">
-      <div className="wrap">
-        <div className="stats-grid">
-          {stats.map((stat, i) => (
-            <div key={i} className="stat-card">
-              <div className="stat-label">{stat.label}</div>
-              <div className="stat-n">{stat.value}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
+export { Stats } from './Stats'
+export { Booking } from './Booking'
+export { Roster } from './Roster'
+export { Background3D } from './Background3D'
+export { EasterEggs } from './EasterEggs'
+export { Tweaks } from './Tweaks'
 
 /**
  * BlobBG Component - Animated background with parallax
