@@ -3,6 +3,7 @@ import { useAudio } from '../contexts/AudioContext'
 import { useBookingActions, useBookingState } from '../contexts/BookingContext'
 import { SITE_CONFIG } from '../constants'
 import { ARTIST_NAMES } from '../data/roster'
+import { hasSupabaseConfig, supabase } from '../lib/supabase'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MAX_NOTES_LENGTH = 2000
@@ -158,29 +159,38 @@ export function Booking() {
     setErr('')
     audio?.click?.()
 
-    const formspreeId = SITE_CONFIG.formspreeId
-    if (!formspreeId || formspreeId === 'YOUR_FORMSPREE_ID') {
-      setErr('Formulario no configurado. Escríbenos por email o WhatsApp.')
+    if (!hasSupabaseConfig || !supabase) {
+      setErr('Booking temporalmente no disponible. Escríbenos por email o WhatsApp.')
       setState(FORM_STATE.ERROR)
       return
     }
 
     try {
-      const res = await fetch(`https://formspree.io/f/${formspreeId}`, {
-        method: 'POST',
-        body: data,
-        headers: { Accept: 'application/json' },
-      })
-      if (res.ok) {
-        setState(FORM_STATE.OK)
-        resetForm(form)
-      } else {
-        const j = await res.json().catch(() => ({}))
-        setErr(j?.errors?.[0]?.message || 'Error al enviar')
-        setState(FORM_STATE.ERROR)
+      const bookingRow = {
+        mode,
+        name: payload.name,
+        email: payload.email,
+        artist: payload.artist || null,
+        service: payload.service || null,
+        date_label: sanitizeText(data.get('date')),
+        venue: sanitizeText(data.get('venue')) || null,
+        capacity: Number(data.get('capacity')) || null,
+        event_type: sanitizeText(data.get('eventType')) || null,
+        event_name: sanitizeText(data.get('eventName')) || null,
+        budget: sanitizeText(data.get('budget')) || null,
+        notes: payload.notes,
+        timezone: getClientTimeZone(),
+        source: 'website',
+        status: 'new',
       }
+
+      const { error } = await supabase.from('bookings').insert(bookingRow)
+      if (error) throw error
+
+      setState(FORM_STATE.OK)
+      resetForm(form)
     } catch (_error) {
-      setErr('No se pudo enviar — revisa tu conexión')
+      setErr('No se pudo enviar tu solicitud. Intenta de nuevo en un momento.')
       setState(FORM_STATE.ERROR)
     }
   }, [audio, mode, resetForm, state])
@@ -252,6 +262,9 @@ export function Booking() {
                   >
                     WhatsApp →
                   </a>
+                )}
+                {!hasSupabaseConfig && (
+                  <span className="note">Setup pendiente: VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY.</span>
                 )}
               </div>
             </div>
