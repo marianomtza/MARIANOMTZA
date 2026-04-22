@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAudio } from '../contexts/AudioContext'
-import { useBooking } from '../contexts/BookingContext'
+import { useBookingActions } from '../contexts/BookingContext'
 import { buildWhatsAppLink } from '../utils/whatsapp'
 import { SITE_CONFIG } from '../constants'
 import { ROSTER_ARTISTS } from '../data/roster'
@@ -19,26 +19,17 @@ const CARD_COLORS = [
 ]
 
 function ArtistCard({ artist, index, onClick }) {
-  const [popping, setPopping] = useState(false)
   const color = CARD_COLORS[index % CARD_COLORS.length]
   const initials = artist.name
     .replace(/[^A-Z0-9]/gi, '')
     .slice(0, 2)
     .toUpperCase()
 
-  const handleClick = () => {
-    setPopping(true)
-    setTimeout(() => {
-      setPopping(false)
-      onClick(index)
-    }, 280)
-  }
-
   return (
     <button
       type="button"
-      className={`roster-card ${popping ? 'popping' : ''}`}
-      onClick={handleClick}
+      className="roster-card"
+      onClick={() => onClick(index)}
       aria-label={`Ver ${artist.name}`}
     >
       <div className="roster-avatar" style={{ background: color }}>
@@ -58,23 +49,34 @@ function ArtistCard({ artist, index, onClick }) {
   )
 }
 
-function ArtistModal({ artist, index, onClose, audio }) {
+function ArtistModal({ artist, index, onClose, onBookArtist, audio }) {
   const a = artist
+  const closeButtonRef = useRef(null)
+  const previousActiveElementRef = useRef(null)
   const color = CARD_COLORS[index % CARD_COLORS.length]
   const initials = a.name
     .replace(/[^A-Z0-9]/gi, '')
     .slice(0, 2)
     .toUpperCase()
 
-  const { setSelectedArtist, scrollToBooking } = useBooking()
-
-  // Prevent scroll on mount
   useEffect(() => {
+    previousActiveElementRef.current = document.activeElement
     document.body.style.overflow = 'hidden'
+    closeButtonRef.current?.focus()
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
     return () => {
       document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKeyDown)
+      previousActiveElementRef.current?.focus?.()
     }
-  }, [])
+  }, [onClose])
 
   const bookArtist = () => {
     audio?.click?.()
@@ -82,14 +84,11 @@ function ArtistModal({ artist, index, onClose, audio }) {
     if (SITE_CONFIG.whatsapp) {
       const url = buildWhatsAppLink(SITE_CONFIG.whatsapp, `RESERVA TU NOCHE - ${a.name}`)
       window.open(url, '_blank')
-    } else {
-      // Fallback: trigger form via React state
-      onClose()
-      setSelectedArtist(a.name)
-      setTimeout(() => {
-        scrollToBooking()
-      }, 100)
+      return
     }
+
+    onBookArtist(a.name)
+    onClose()
   }
 
   return (
@@ -104,7 +103,7 @@ function ArtistModal({ artist, index, onClose, audio }) {
         className="artist-modal-panel pop-in"
         onClick={(e) => e.stopPropagation()}
       >
-        <button className="artist-modal-close" onClick={onClose} aria-label="Cerrar">
+        <button ref={closeButtonRef} className="artist-modal-close" onClick={onClose} aria-label="Cerrar">
           ×
         </button>
 
@@ -180,15 +179,15 @@ function ArtistModal({ artist, index, onClose, audio }) {
 
 export function Roster() {
   const audio = useAudio()
+  const { setSelectedArtist, requestBookingScroll } = useBookingActions()
   const [active, setActive] = useState(null)
 
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') setActive(null)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  const activeArtist = useMemo(() => (active === null ? null : ROSTER_ARTISTS[active]), [active])
+
+  const handleBookArtist = useCallback((artistName) => {
+    setSelectedArtist(artistName)
+    requestBookingScroll()
+  }, [requestBookingScroll, setSelectedArtist])
 
   return (
     <section className="section" id="roster">
@@ -214,9 +213,10 @@ export function Roster() {
 
       {active !== null && (
         <ArtistModal
-          artist={ROSTER_ARTISTS[active]}
+          artist={activeArtist}
           index={active}
           onClose={() => setActive(null)}
+          onBookArtist={handleBookArtist}
           audio={audio}
         />
       )}
