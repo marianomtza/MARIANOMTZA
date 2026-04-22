@@ -2,6 +2,7 @@ export const ROSTER_ARTISTS = [
   {
     name: '3DELINCUENTES',
     genre: 'DJ / Producer',
+    featured: true,
     apple: '',
     spotify: '',
     ig: '',
@@ -10,6 +11,7 @@ export const ROSTER_ARTISTS = [
     name: 'RUZZO DOBLEZZ',
     genre: 'DJ / Producer',
     label: 'LAFAMA',
+    featured: true,
     apple: '',
     spotify: '',
     ig: '',
@@ -18,6 +20,7 @@ export const ROSTER_ARTISTS = [
     name: '8.AM',
     genre: 'DJ / Producer',
     label: 'LAFAMA',
+    featured: true,
     apple: '',
     spotify: '',
     ig: '',
