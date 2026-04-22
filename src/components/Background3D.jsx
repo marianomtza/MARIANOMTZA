@@ -9,6 +9,7 @@ import React, { useRef, useEffect } from 'react'
 export function Background3D({ showStars = true }) {
   const containerRef = useRef(null)
   const canvasRef = useRef(null)
+  const layersRef = useRef([])
   const stateRef = useRef({ x: 0, y: 0, mouseX: 0, mouseY: 0 })
   const isWebGLRef = useRef(false)
 
@@ -41,7 +42,7 @@ export function Background3D({ showStars = true }) {
 
     // If WebGL failed, use CSS 3D transforms
     if (!isWebGLRef.current) {
-      cleanup = initCSS3DParallax(container, stateRef.current)
+      cleanup = initCSS3DParallax(layersRef.current, stateRef.current)
     }
 
     const onMove = (e) => {
@@ -65,9 +66,9 @@ export function Background3D({ showStars = true }) {
       />
       <div className="bg-3d-layers">
         {/* Parallax depth layers */}
-        <div className="bg-3d-layer layer-1" />
-        <div className="bg-3d-layer layer-2" />
-        <div className="bg-3d-layer layer-3" />
+        <div className="bg-3d-layer layer-1" ref={(el) => (layersRef.current[0] = el)} />
+        <div className="bg-3d-layer layer-2" ref={(el) => (layersRef.current[1] = el)} />
+        <div className="bg-3d-layer layer-3" ref={(el) => (layersRef.current[2] = el)} />
         {showStars && <div className="bg-3d-stars" />}
       </div>
     </div>
@@ -158,8 +159,7 @@ function initWebGL(gl, canvas, state) {
 }
 
 // CSS 3D fallback: GPU-accelerated layers with parallax
-function initCSS3DParallax(container, state) {
-  const layers = container.querySelectorAll('.bg-3d-layer')
+function initCSS3DParallax(layers, state) {
   let raf
 
   const render = () => {
@@ -167,6 +167,7 @@ function initCSS3DParallax(container, state) {
     const my = (state.mouseY / window.innerHeight - 0.5) * 40
 
     layers.forEach((layer, i) => {
+      if (!layer) return
       const depth = (i + 1) * 15
       layer.style.transform = `
         translate3d(${mx * depth}px, ${my * depth}px, 0)
