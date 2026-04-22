@@ -30,7 +30,9 @@ body {
   overflow-x: hidden;
   position: relative;
   cursor: none;
+  width: 100%;
 }
+html { overflow-x: hidden; }
 @media (pointer: coarse) { body { cursor: auto; } .cursor { display: none !important; } }
 a, button { cursor: none; }
 @media (pointer: coarse) { a, button { cursor: pointer; } }
