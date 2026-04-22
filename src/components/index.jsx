@@ -100,30 +100,84 @@ export function Footer() {
  * Band Component - Marquee for colectivos/brands
  */
 export function Band({ items, label, reverse = false }) {
+  const trackRef = useRef(null)
+  const dragStateRef = useRef({ dragging: false, startX: 0, offsetX: 0, baseOffset: 0 })
+  const speedRef = useRef(reverse ? 0.4 : -0.4)
+
+  useMotionFrame(() => {
+    const track = trackRef.current
+    if (!track || dragStateRef.current.dragging) return
+    dragStateRef.current.offsetX += speedRef.current
+    track.style.transform = `translate3d(${dragStateRef.current.offsetX}px, 0, 0)`
+  })
+
+  const onPointerDown = (event) => {
+    dragStateRef.current.dragging = true
+    dragStateRef.current.startX = event.clientX
+    dragStateRef.current.baseOffset = dragStateRef.current.offsetX
+  }
+
+  const onPointerMove = (event) => {
+    if (!dragStateRef.current.dragging) return
+    dragStateRef.current.offsetX = dragStateRef.current.baseOffset + (event.clientX - dragStateRef.current.startX)
+  }
+
+  const onPointerUp = () => {
+    dragStateRef.current.dragging = false
+  }
+
+  const onItemClick = (index) => {
+    const sectionTargets = ['#top', '#stats', '#roster', '#booking']
+    const target = document.querySelector(sectionTargets[index % sectionTargets.length])
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
-    <section className={`band ${reverse ? 'reverse' : ''}`}>
-      <div className="band-track">
+    <section className={`band ${reverse ? 'reverse' : ''}`} aria-label={label}>
+      <div
+        ref={trackRef}
+        className="band-track is-interactive"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
+      >
         {items.map((item, i) => (
           <React.Fragment key={`${item.name}-${i}`}>
             {item.href ? (
-              <a href={item.href} target="_blank" rel="noopener noreferrer" className={`band-item ${item.name === 'LA FAMA' ? 'la-fama' : ''}`}>
+              <a
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`band-item ${item.name === 'LA FAMA' ? 'la-fama' : ''}`}
+                onClick={() => onItemClick(i)}
+              >
                 {item.name}
               </a>
             ) : (
-              <span className={`band-item ${item.name === 'LA FAMA' ? 'la-fama' : ''}`}>{item.name}</span>
+              <button type="button" className={`band-item ${item.name === 'LA FAMA' ? 'la-fama' : ''}`} onClick={() => onItemClick(i)}>
+                {item.name}
+              </button>
             )}
             {i < items.length - 1 && <span className="band-item sep">·</span>}
           </React.Fragment>
         ))}
-        {/* Duplicate for seamless loop */}
         {items.map((item, i) => (
           <React.Fragment key={`${item.name}-${i}-dup`}>
             {item.href ? (
-              <a href={item.href} target="_blank" rel="noopener noreferrer" className={`band-item ${item.name === 'LA FAMA' ? 'la-fama' : ''}`}>
+              <a
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`band-item ${item.name === 'LA FAMA' ? 'la-fama' : ''}`}
+                onClick={() => onItemClick(i)}
+              >
                 {item.name}
               </a>
             ) : (
-              <span className={`band-item ${item.name === 'LA FAMA' ? 'la-fama' : ''}`}>{item.name}</span>
+              <button type="button" className={`band-item ${item.name === 'LA FAMA' ? 'la-fama' : ''}`} onClick={() => onItemClick(i)}>
+                {item.name}
+              </button>
             )}
             {i < items.length - 1 && <span className="band-item sep">·</span>}
           </React.Fragment>
