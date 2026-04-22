@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useAudio } from '../contexts/AudioContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useEventListener, useInterval } from '../hooks/useAnimations'
@@ -11,10 +11,11 @@ import { PIANO_SCALE } from '../constants'
 export function Hero() {
   const audio = useAudio()
   const theme = useTheme()
-  const [rev, setRev] = useState(false)
+  const [revealed, setRevealed] = useState(false)
   const [roleIdx, setRoleIdx] = useState(0)
   const titleRef = useRef(null)
   const charRefs = useRef([])
+  const metricsRef = useRef([])
   const lastCharRef = useRef(-1)
 
   const TITLE = 'MARIANOMTZA'
@@ -28,33 +29,44 @@ export function Hero() {
     'Director Creativo',
   ]
 
-  // Initial reveal animation
   useEffect(() => {
-    const timer = setTimeout(() => setRev(true), 200)
-    return () => clearTimeout(timer)
+    setRevealed(true)
   }, [])
 
-  // Cycle through roles
   useInterval(() => setRoleIdx((i) => (i + 1) % ROLES.length), 2600)
 
-  // Get precise character under cursor
-  const getMagnifiedCharIndex = (e) => {
-    if (!charRefs.current.length) return -1
-    const chars = charRefs.current
-    const cursorX = e.clientX
-    const cursorY = e.clientY
-    for (let i = 0; i < chars.length; i++) {
-      if (!chars[i]) continue
-      const rect = chars[i].getBoundingClientRect()
-      if (cursorX >= rect.left && cursorX <= rect.right && cursorY >= rect.top && cursorY <= rect.bottom) {
+  const updateCharMetrics = useCallback(() => {
+    metricsRef.current = charRefs.current.map((charEl) => {
+      if (!charEl) return null
+      const rect = charEl.getBoundingClientRect()
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    updateCharMetrics()
+  }, [updateCharMetrics])
+
+  useEventListener('resize', updateCharMetrics, window)
+
+  const getMagnifiedCharIndex = useCallback((clientX, clientY) => {
+    const metrics = metricsRef.current
+    for (let i = 0; i < metrics.length; i++) {
+      const rect = metrics[i]
+      if (!rect) continue
+      if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
         return i
       }
     }
     return -1
-  }
+  }, [])
 
-  // Apply Mac Dock-style magnification
-  const applyMagnification = (idx) => {
+  const applyMagnification = useCallback((idx) => {
     if (!charRefs.current.length) return
     const chars = charRefs.current
     chars.forEach((el, i) => {
@@ -87,9 +99,9 @@ export function Hero() {
         el.style.zIndex = ''
       }
     })
-  }
+  }, [theme.currentTheme.accent])
 
-  const resetMagnification = () => {
+  const resetMagnification = useCallback(() => {
     if (!charRefs.current.length) return
     const chars = charRefs.current
     chars.forEach((el) => {
@@ -99,16 +111,16 @@ export function Hero() {
       el.style.zIndex = ''
       el.style.textShadow = ''
     })
-  }
+  }, [])
 
-  const playPianoNote = (index) => {
+  const playPianoNote = useCallback((index) => {
     audio.ensureContext()
     const freq = PIANO_SCALE[index % PIANO_SCALE.length]
     if (audio.note) audio.note(freq, 0.16)
-  }
+  }, [audio])
 
-  const handleLetterMove = (e) => {
-    const i = getMagnifiedCharIndex(e)
+  const handleLetterMove = useCallback((e) => {
+    const i = getMagnifiedCharIndex(e.clientX, e.clientY)
     if (i !== lastCharRef.current) {
       lastCharRef.current = i
       if (i >= 0) {
@@ -118,18 +130,24 @@ export function Hero() {
         resetMagnification()
       }
     }
-  }
+  }, [applyMagnification, getMagnifiedCharIndex, playPianoNote, resetMagnification])
 
-  const handleLetterLeave = () => {
+  const handleLetterLeave = useCallback(() => {
     lastCharRef.current = -1
     resetMagnification()
-  }
+  }, [resetMagnification])
 
   return (
     <section className="hero" id="top">
       <div>
         <div className="hero-eyebrow">→ Ciudad de México</div>
-        <h1 className={`hero-title ${rev ? 'revealed' : ''}`} aria-label={TITLE} ref={titleRef} style={{ overflow: 'visible' }}>
+        <h1
+          className={`hero-title ${revealed ? 'revealed' : ''}`}
+          aria-label={TITLE}
+          ref={titleRef}
+          style={{ overflow: 'visible' }}
+          onMouseEnter={updateCharMetrics}
+        >
           <span className="word" style={{ overflow: 'visible' }}>
             {TITLE.split('').map((ch, i) => (
               <span
