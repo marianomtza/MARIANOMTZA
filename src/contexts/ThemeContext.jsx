@@ -36,6 +36,17 @@ const THEME_PRESETS = {
   },
 }
 
+function parseStoredBoolean(key, fallback) {
+  if (typeof window === 'undefined') return fallback
+  const saved = localStorage.getItem(key)
+  if (saved === null) return fallback
+  try {
+    return JSON.parse(saved)
+  } catch (_error) {
+    return fallback
+  }
+}
+
 /**
  * ThemeProvider - Manage theme colors and animations
  * Persists to localStorage
@@ -50,27 +61,15 @@ export function ThemeProvider({ children }) {
   })
 
   const [motionEnabled, setMotionEnabled] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('motionEnabled')
-      return saved === null ? true : JSON.parse(saved)
-    }
-    return true
+    return parseStoredBoolean('motionEnabled', true)
   })
 
   const [starsVisible, setStarsVisible] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('starsVisible')
-      return saved === null ? true : JSON.parse(saved)
-    }
-    return true
+    return parseStoredBoolean('starsVisible', true)
   })
 
   const [grainVisible, setGrainVisible] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('grainVisible')
-      return saved === null ? true : JSON.parse(saved)
-    }
-    return true
+    return parseStoredBoolean('grainVisible', true)
   })
 
   const currentTheme = THEME_PRESETS[themeKey] || THEME_PRESETS.violet
@@ -87,6 +86,7 @@ export function ThemeProvider({ children }) {
   // Persist other settings
   useEffect(() => {
     localStorage.setItem('motionEnabled', JSON.stringify(motionEnabled))
+    document.body.classList.toggle('no-motion', !motionEnabled)
   }, [motionEnabled])
 
   useEffect(() => {
