@@ -786,7 +786,7 @@ body.no-motion .band-track { animation: none; }
 /* ============================================
    STATS
    ============================================ */
-.stats-section { padding: clamp(120px, 14vh, 200px) 0; }
+.stats-section { padding: clamp(60px, 8vh, 120px) 0; }
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
