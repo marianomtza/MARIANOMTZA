@@ -214,7 +214,7 @@ export function Hero() {
         <div>
           <div className="hero-role">{ROLES[roleIdx]}</div>
           <div className="hero-desc">
-            Dirijo noches que mueven gente. Booking y A&R en <strong>Ciudad de México</strong>.
+            Plataforma de booking y roster curado. Conectando talento en <strong>Ciudad de México</strong>.
           </div>
           <div className="hero-ctas">
             <a href="#booking" className="btn primary">
