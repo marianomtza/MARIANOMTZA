@@ -30,11 +30,11 @@ function App() {
           <div className="layer layer-ui content">
             <Nav />
             <Hero />
+            <Roster />
+            <Booking />
             <Band items={COLECTIVOS} label="Colectivos" />
             <Stats />
-            <Roster />
             <Band items={MARCAS} reverse label="Marcas" />
-            <Booking />
             <Footer />
           </div>
 
