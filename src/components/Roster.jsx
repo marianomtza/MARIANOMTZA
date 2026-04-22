@@ -3,82 +3,7 @@ import { useAudio } from '../contexts/AudioContext'
 import { useBooking } from '../contexts/BookingContext'
 import { buildWhatsAppLink } from '../utils/whatsapp'
 import { SITE_CONFIG } from '../constants'
-
-const ROSTER = [
-  {
-    name: '3DELINCUENTES',
-    apple: '',
-    spotify: '',
-    ig: '',
-  },
-  {
-    name: 'RUZZO DOBLEZZ',
-    label: 'LAFAMA',
-    apple: '',
-    spotify: '',
-    ig: '',
-  },
-  {
-    name: '8.AM',
-    label: 'LAFAMA',
-    apple: '',
-    spotify: '',
-    ig: '',
-  },
-  {
-    name: 'MORROW',
-    label: 'LAFAMA',
-    apple: '',
-    spotify: '',
-    ig: '',
-  },
-  {
-    name: 'BBBARTEX',
-    label: 'LAFAMA',
-    apple: '',
-    spotify: '',
-    ig: '',
-  },
-  {
-    name: 'LEGORRETA',
-    genre: 'DJ / Producer',
-    label: 'LAFAMA',
-    apple: '',
-    spotify: '',
-    ig: '',
-  },
-  {
-    name: 'TBX',
-    genre: 'DJ / Producer',
-    label: 'LAFAMA',
-    apple: '',
-    spotify: '',
-    ig: '',
-  },
-  {
-    name: 'NZO',
-    label: 'LAFAMA',
-    apple: '',
-    spotify: '',
-    ig: '',
-  },
-  {
-    name: 'ELAKKKA',
-    genre: 'Producer',
-    label: 'LAFAMA',
-    apple: '',
-    spotify: '',
-    ig: '',
-  },
-  {
-    name: 'MOODJAAS',
-    genre: 'DJ / Producer',
-    label: 'LAFAMA',
-    apple: '',
-    spotify: '',
-    ig: '',
-  },
-]
+import { ROSTER_ARTISTS } from '../data/roster'
 
 const CARD_COLORS = [
   '#7C3AED',
@@ -273,7 +198,7 @@ export function Roster() {
           <h2 className="section-h">ARTISTAS</h2>
         </div>
         <div className="roster-grid reveal-stagger">
-          {ROSTER.map((a, i) => (
+          {ROSTER_ARTISTS.map((a, i) => (
             <ArtistCard
               key={a.name}
               artist={a}
@@ -289,7 +214,7 @@ export function Roster() {
 
       {active !== null && (
         <ArtistModal
-          artist={ROSTER[active]}
+          artist={ROSTER_ARTISTS[active]}
           index={active}
           onClose={() => setActive(null)}
           audio={audio}
