@@ -10,11 +10,16 @@ import { SITE_CONFIG } from '../constants'
 export function Nav() {
   const audio = useAudio()
   const [revealed, setRevealed] = useState(false)
+  const revealedRef = useRef(false)
 
   useEventListener(
     'scroll',
     () => {
-      setRevealed(window.scrollY > 100)
+      const nextRevealed = window.scrollY > 100
+      if (nextRevealed !== revealedRef.current) {
+        revealedRef.current = nextRevealed
+        setRevealed(nextRevealed)
+      }
     },
     window
   )
@@ -27,8 +32,8 @@ export function Nav() {
         </div>
         <div className="nav-links">
           <a href="#top">Inicio</a>
-          <a href="#eventos">Eventos</a>
-          <a href="#equipo">Equipo</a>
+          <a href="#stats">Eventos</a>
+          <a href="#roster">Equipo</a>
           <a href="#booking">Booking</a>
         </div>
         <div className="nav-right">
@@ -141,21 +146,30 @@ export function BlobBG({ showStars = true }) {
   const refRef = useRef(null)
   const blobsRef = useRef([])
   const geoObjsRef = useRef([])
+  const rafRef = useRef(null)
+  const pointerRef = useRef({ x: 0, y: 0 })
+  const hasPendingFrameRef = useRef(false)
 
   useEventListener(
     'mousemove',
     (e) => {
-      const x = (e.clientX / window.innerWidth - 0.5) * 2
-      const y = (e.clientY / window.innerHeight - 0.5) * 2
-      blobsRef.current.forEach((b, i) => {
-        if (!b) return
-        const k = (i + 1) * 28
-        b.style.translate = `${x * k}px ${y * k}px`
-      })
-      geoObjsRef.current.forEach((g, i) => {
-        if (!g) return
-        const k = (i + 1) * 12
-        g.style.translate = `${x * k}px ${y * k}px`
+      pointerRef.current.x = (e.clientX / window.innerWidth - 0.5) * 2
+      pointerRef.current.y = (e.clientY / window.innerHeight - 0.5) * 2
+      if (hasPendingFrameRef.current) return
+      hasPendingFrameRef.current = true
+      rafRef.current = requestAnimationFrame(() => {
+        const { x, y } = pointerRef.current
+        blobsRef.current.forEach((b, i) => {
+          if (!b) return
+          const k = (i + 1) * 28
+          b.style.translate = `${x * k}px ${y * k}px`
+        })
+        geoObjsRef.current.forEach((g, i) => {
+          if (!g) return
+          const k = (i + 1) * 12
+          g.style.translate = `${x * k}px ${y * k}px`
+        })
+        hasPendingFrameRef.current = false
       })
     },
     window
@@ -165,6 +179,11 @@ export function BlobBG({ showStars = true }) {
     const isMobile = window.matchMedia('(pointer: coarse)').matches
     if (isMobile && refRef.current) {
       refRef.current.style.display = 'none'
+    }
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current)
+      }
     }
   }, [])
 
