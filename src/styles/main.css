@@ -573,6 +573,19 @@ body.no-motion .band-track { animation: none; }
   color: var(--fg-dim); transition: color .2s;
 }
 .binfo-socials a:hover { color: var(--accent); }
+.booking-quick-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+.quick-action-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border: 1px solid var(--line-strong);
+  padding: 10px 16px;
+  border-radius: 999px;
+  color: var(--fg);
+  transition: border-color .2s, color .2s, background .2s;
+}
+.quick-action-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(155, 95, 214, 0.08); }
 
 .form { display: flex; flex-direction: column; gap: 28px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
@@ -591,6 +604,25 @@ body.no-motion .band-track { animation: none; }
 .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
 .field select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='none' stroke='%238a7fa0' stroke-width='1.2' d='M1 1l5 5 5-5'/></svg>"); background-repeat: no-repeat; background-position: right 0 center; padding-right: 20px; }
 .field select option { background: var(--bg); color: var(--fg); }
+.artist-quick-picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+.artist-pill {
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 10px 14px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  transition: border-color .2s, color .2s, background .2s;
+}
+.artist-pill:hover { border-color: var(--accent); color: var(--fg); }
+.artist-pill.active { border-color: var(--accent); color: #fff; background: rgba(155, 95, 214, 0.4); }
 
 .form-foot { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-top: 20px; flex-wrap: wrap; }
 .form-foot .note { font-family: var(--mono); font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--fg-dim); }
