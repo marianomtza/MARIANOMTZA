@@ -43,11 +43,11 @@ export function PremiumCursor() {
     if (!dotRef.current || !trailRef.current) return
     const s = state.current
     const pointer = pointerRef.current
-    s.tx += (pointer.x - s.tx) * 0.18
-    s.ty += (pointer.y - s.ty) * 0.18
-    s.scale += (s.tScale - s.scale) * 0.18
-    s.trailX += (pointer.x - s.trailX) * 0.1
-    s.trailY += (pointer.y - s.trailY) * 0.1
+    s.tx += (pointer.x - s.tx) * 0.25
+    s.ty += (pointer.y - s.ty) * 0.25
+    s.scale += (s.tScale - s.scale) * 0.2
+    s.trailX += (pointer.x - s.trailX) * 0.15
+    s.trailY += (pointer.y - s.trailY) * 0.15
 
     dotRef.current.style.transform = `translate3d(${s.tx}px, ${s.ty}px, 0) translate(-50%, -50%) scale(${s.scale})`
     trailRef.current.style.transform = `translate3d(${s.trailX}px, ${s.trailY}px, 0) translate(-50%, -50%)`
