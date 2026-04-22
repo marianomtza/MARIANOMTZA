@@ -1,9 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react'
 
 export function Stats() {
-  const R = 44
-  const C = 2 * Math.PI * R
-
   const ITEMS = [
     { n: 7, suffix: '+', label: 'años produciendo eventos', sub: 'desde 2017', p: 0.78 },
     { n: 55, suffix: '+', label: 'eventos el último año', sub: 'festivales · clubes · conciertos', p: 0.92 },
@@ -13,9 +10,7 @@ export function Stats() {
 
   const cardRefs = useRef([])
   const [counts, setCounts] = useState(ITEMS.map(() => 0))
-  const [rings, setRings] = useState(ITEMS.map(() => 0))
   const [visible, setVisible] = useState(ITEMS.map(() => false))
-  const [tilts, setTilts] = useState(ITEMS.map(() => ({ rx: 0, ry: 0, gx: 50, gy: 50 })))
 
   useEffect(() => {
     let isMounted = true
@@ -52,11 +47,6 @@ export function Stats() {
               nc[i] = Math.round(e * item.n)
               return nc
             })
-            setRings((r) => {
-              const nr = [...r]
-              nr[i] = e * item.p
-              return nr
-            })
 
             if (t < 1) {
               rafs[i] = requestAnimationFrame(tick)
@@ -82,77 +72,45 @@ export function Stats() {
 
   const onMove = useCallback((e, i) => {
     if (window.matchMedia?.('(pointer: coarse)').matches) return
-    const rect = e.currentTarget.getBoundingClientRect()
+    const cardEl = cardRefs.current[i]
+    if (!cardEl) return
+    const rect = cardEl.getBoundingClientRect()
     const x = (e.clientX - rect.left) / rect.width - 0.5
     const y = (e.clientY - rect.top) / rect.height - 0.5
-    setTilts((t) => {
-      const nt = [...t]
-      nt[i] = { rx: y * -14, ry: x * 14, gx: 50 + x * 50, gy: 50 + y * 50 }
-      return nt
-    })
+    cardEl.style.transform = `rotateX(${y * -14}deg) rotateY(${x * 14}deg)`
+    cardEl.style.setProperty('--mx', `${50 + x * 50}%`)
+    cardEl.style.setProperty('--my', `${50 + y * 50}%`)
   }, [])
 
   const onLeave = useCallback((i) => {
-    setTilts((t) => {
-      const nt = [...t]
-      nt[i] = { rx: 0, ry: 0, gx: 50, gy: 50 }
-      return nt
-    })
+    const cardEl = cardRefs.current[i]
+    if (!cardEl) return
+    cardEl.style.transform = 'rotateX(0deg) rotateY(0deg)'
+    cardEl.style.setProperty('--mx', '50%')
+    cardEl.style.setProperty('--my', '50%')
   }, [])
 
   return (
     <section className="section stats-section" id="stats">
       <div className="wrap">
-        <div className="stats3d-grid">
-          {ITEMS.map((it, i) => {
-            const { rx, ry, gx, gy } = tilts[i]
-            const resting = rx === 0 && ry === 0
-            
-            // eslint-disable-next-line no-unused-vars
-            const dashoffset = C * (1 - rings[i]) // Used if SVG circle is implemented
-            
-            return (
-              <div
-                key={i}
-                ref={(el) => (cardRefs.current[i] = el)}
-                className={'stats3d-outer' + (visible[i] ? ' in' : '')}
-                style={{ perspective: '700px', transitionDelay: `${i * 90}ms` }}
-                onMouseMove={(e) => onMove(e, i)}
-                onMouseLeave={() => onLeave(i)}
-              >
-                <div
-                  className="stats3d-card"
-                  style={{
-                    transform: `rotateX(${rx}deg) rotateY(${ry}deg)`,
-                    transition: resting
-                      ? 'transform .7s cubic-bezier(0.22,1,0.36,1), box-shadow .4s'
-                      : 'transform .08s linear',
-                  }}
-                >
-                  <div
-                    className="stats3d-glow"
-                    style={{ opacity: resting ? 0 : 0.16 }}
-                  />
-                  <div
-                    className="stats3d-shine"
-                    style={{
-                      background: `radial-gradient(circle at ${gx}% ${gy}%, rgba(255,255,255,0.08) 0%, transparent 62%)`,
-                    }}
-                  />
-
-                  <div className="stats3d-ring-wrap">
-                    <div className="stats3d-n">
-                      {counts[i].toLocaleString()}
-                      {it.suffix}
-                    </div>
-                  </div>
-
-                  <div className="stats3d-label">{it.label}</div>
-                  {it.sub && <div className="stats3d-sub">{it.sub}</div>}
-                </div>
+        <div className="stats-grid">
+          {ITEMS.map((it, i) => (
+            <article
+              key={it.label}
+              ref={(el) => (cardRefs.current[i] = el)}
+              className={'stat-card' + (visible[i] ? ' in' : '')}
+              style={{ transitionDelay: `${i * 90}ms` }}
+              onMouseMove={(e) => onMove(e, i)}
+              onMouseLeave={() => onLeave(i)}
+            >
+              <div className="stat-n">
+                {counts[i].toLocaleString()}
+                {it.suffix}
               </div>
-            )
-          })}
+              <div className="stat-label">{it.label}</div>
+              {it.sub && <div className="stat-sub">{it.sub}</div>}
+            </article>
+          ))}
         </div>
       </div>
     </section>
