@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useAudio } from '../contexts/AudioContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useEventListener } from '../hooks/useAnimations'
+import { useMotionFrame, useMotion } from '../contexts/MotionContext'
 import { SITE_CONFIG } from '../constants'
 
 /**
@@ -146,44 +147,33 @@ export function BlobBG({ showStars = true }) {
   const refRef = useRef(null)
   const blobsRef = useRef([])
   const geoObjsRef = useRef([])
-  const rafRef = useRef(null)
-  const pointerRef = useRef({ x: 0, y: 0 })
-  const hasPendingFrameRef = useRef(false)
+  const smoothedRef = useRef({ x: 0, y: 0 })
+  const { pointerRef } = useMotion()
 
-  useEventListener(
-    'mousemove',
-    (e) => {
-      pointerRef.current.x = (e.clientX / window.innerWidth - 0.5) * 2
-      pointerRef.current.y = (e.clientY / window.innerHeight - 0.5) * 2
-      if (hasPendingFrameRef.current) return
-      hasPendingFrameRef.current = true
-      rafRef.current = requestAnimationFrame(() => {
-        const { x, y } = pointerRef.current
-        blobsRef.current.forEach((b, i) => {
-          if (!b) return
-          const k = (i + 1) * 28
-          b.style.translate = `${x * k}px ${y * k}px`
-        })
-        geoObjsRef.current.forEach((g, i) => {
-          if (!g) return
-          const k = (i + 1) * 12
-          g.style.translate = `${x * k}px ${y * k}px`
-        })
-        hasPendingFrameRef.current = false
-      })
-    },
-    window
-  )
+  useMotionFrame(({ reducedMotion }) => {
+    if (reducedMotion) return
+    const px = (pointerRef.current.nx - 0.5) * 2
+    const py = (pointerRef.current.ny - 0.5) * 2
+    smoothedRef.current.x += (px - smoothedRef.current.x) * 0.08
+    smoothedRef.current.y += (py - smoothedRef.current.y) * 0.08
+
+    const { x, y } = smoothedRef.current
+    blobsRef.current.forEach((b, i) => {
+      if (!b) return
+      const k = (i + 1) * 20
+      b.style.translate = `${x * k}px ${y * k}px`
+    })
+    geoObjsRef.current.forEach((g, i) => {
+      if (!g) return
+      const k = (i + 1) * 10
+      g.style.translate = `${x * k}px ${y * k}px`
+    })
+  })
 
   useEffect(() => {
     const isMobile = window.matchMedia('(pointer: coarse)').matches
     if (isMobile && refRef.current) {
       refRef.current.style.display = 'none'
-    }
-    return () => {
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current)
-      }
     }
   }, [])
 
