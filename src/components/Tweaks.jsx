@@ -39,8 +39,8 @@ export function Tweaks() {
         // Find the valid origin if possible, otherwise broadcast to '*' is risky. 
         // In this case, we broadcast to '*' only because the parent domain might not be known 
         // initially, but it's better to broadcast to the specific domain.
-        // For security, if we don't know the parent origin, we shouldn't postMessage sensitive data.
-        window.parent.postMessage({ type: '__edit_mode_available' }, '*')
+        // For security, we strictly broadcast only to our origin instead of '*'
+        window.parent.postMessage({ type: '__edit_mode_available' }, window.location.origin)
       } catch(err) {}
     }
 
@@ -55,7 +55,7 @@ export function Tweaks() {
 
     if (window.parent !== window) {
       try {
-        window.parent.postMessage({ type: '__edit_mode_set_keys', edits: patch }, '*')
+        window.parent.postMessage({ type: '__edit_mode_set_keys', edits: patch }, window.location.origin)
       } catch (err) {}
     }
   }
