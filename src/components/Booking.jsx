@@ -403,7 +403,7 @@ export function Booking() {
                 </label>
                 <textarea
                   name="notes"
-                  required={mode === 'servicio'}
+                  required
                   minLength={10}
                   maxLength={MAX_NOTES_LENGTH}
                   placeholder={
