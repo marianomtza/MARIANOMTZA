@@ -581,7 +581,8 @@ body.no-motion .band-track { animation: none; }
    ROSTER — 3D tilt cards
    ============================================ */
 .roster-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  grid-auto-flow: dense;
   gap: 1px;
   background: var(--line);
   border: 1px solid var(--line);
@@ -590,15 +591,26 @@ body.no-motion .band-track { animation: none; }
   perspective: 1200px;
 }
 .roster-card {
+  grid-column: span 1;
   background: rgba(10, 6, 16, 0.6);
   padding: 36px 28px;
   display: flex; flex-direction: column; gap: 20px;
   min-height: 260px;
   position: relative;
-  transition: background .4s;
+  transition: background .4s, border-color .3s;
   transform-style: preserve-3d;
   will-change: transform;
   overflow: hidden;
+  text-align: left;
+}
+.roster-card.featured {
+  grid-column: span 2;
+  grid-row: span 2;
+  padding: 48px 40px;
+}
+.roster-card.active {
+  background: rgba(155, 95, 214, 0.15);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 .roster-card::before {
   content: "";
@@ -610,27 +622,69 @@ body.no-motion .band-track { animation: none; }
   pointer-events: none;
 }
 .roster-card:hover::before { opacity: 1; }
-.roster-card:hover { background: rgba(155, 95, 214, 0.04); }
-.roster-card .idx { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); letter-spacing: 0.2em; }
-.roster-card .name {
+.roster-card:hover { background: rgba(155, 95, 214, 0.08); }
+.roster-card.active:hover { background: rgba(155, 95, 214, 0.2); }
+.roster-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 20px;
+  color: #fff;
+  overflow: hidden;
+  transform: translateZ(10px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+.roster-card.featured .roster-avatar {
+  width: 80px;
+  height: 80px;
+  font-size: 26px;
+}
+.roster-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.roster-card-info { margin-top: auto; transform: translateZ(20px); }
+.roster-name {
   font-family: var(--sans); font-weight: 600;
   font-size: clamp(24px, 2.4vw, 32px); line-height: 1;
   letter-spacing: -0.02em;
-  margin-top: auto;
-  transform: translateZ(20px);
 }
-.roster-card .circle {
-  position: absolute; top: 20px; right: 20px;
-  width: 28px; height: 28px; border-radius: 50%;
-  border: 1px solid var(--line-strong);
-  display: grid; place-items: center;
-  color: var(--fg-dim);
+.roster-card.featured .roster-name {
+  font-size: clamp(32px, 3vw, 44px);
+}
+.roster-genre {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+  color: var(--fg-dim); margin-top: 8px; text-transform: uppercase;
+}
+.roster-label-badge {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+.roster-cta {
+  position: absolute; top: 24px; right: 24px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--fg-dim);
   transition: all .3s;
   transform: translateZ(30px);
 }
-.roster-card:hover .circle { border-color: var(--accent); color: var(--accent); transform: translateZ(30px) rotate(-45deg); }
+.roster-card:hover .roster-cta { color: var(--accent); }
+.roster-card.active .roster-cta { color: var(--accent); font-weight: 700; }
 
-@media (max-width: 800px) { .roster-grid { grid-template-columns: 1fr; } }
+@media (max-width: 800px) { 
+  .roster-grid { grid-template-columns: 1fr; } 
+  .roster-card.featured { grid-column: span 1; grid-row: span 1; padding: 36px 28px; }
+  .roster-card.featured .roster-avatar { width: 60px; height: 60px; }
+  .roster-card.featured .roster-name { font-size: clamp(24px, 2.4vw, 32px); }
+}
 
 /* ============================================
    BOOKING
