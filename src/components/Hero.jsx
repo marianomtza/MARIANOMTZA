@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useAudio } from '../contexts/AudioContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useEventListener, useInterval } from '../hooks/useAnimations'
+import { useMotion, useMotionFrame } from '../contexts/MotionContext'
 import { PIANO_SCALE } from '../constants'
 
 /**
@@ -17,6 +18,8 @@ export function Hero() {
   const charRefs = useRef([])
   const metricsRef = useRef([])
   const lastCharRef = useRef(-1)
+  const proximityRef = useRef([])
+  const { pointerRef } = useMotion()
 
   const TITLE = 'MARIANOMTZA'
   const ROLES = [
@@ -53,6 +56,7 @@ export function Hero() {
   }, [updateCharMetrics])
 
   useEventListener('resize', updateCharMetrics, window)
+  useEventListener('scroll', updateCharMetrics, window)
 
   const getMagnifiedCharIndex = useCallback((clientX, clientY) => {
     const metrics = metricsRef.current
@@ -118,6 +122,41 @@ export function Hero() {
     const freq = PIANO_SCALE[index % PIANO_SCALE.length]
     if (audio.note) audio.note(freq, 0.16)
   }, [audio])
+
+  useMotionFrame(() => {
+    if (!charRefs.current.length) return
+    const pointer = pointerRef.current
+    const hitIndex = getMagnifiedCharIndex(pointer.x, pointer.y)
+    if (hitIndex !== lastCharRef.current) {
+      lastCharRef.current = hitIndex
+      if (hitIndex >= 0) {
+        playPianoNote(hitIndex)
+      }
+    }
+
+    const metrics = metricsRef.current
+    const maxRadius = 280
+    charRefs.current.forEach((el, index) => {
+      if (!el || !metrics[index]) return
+      const rect = metrics[index]
+      const cx = (rect.left + rect.right) / 2
+      const cy = (rect.top + rect.bottom) / 2
+      const dx = pointer.x - cx
+      const dy = pointer.y - cy
+      const distance = Math.sqrt(dx * dx + dy * dy)
+      const target = Math.max(0, 1 - distance / maxRadius)
+      const prev = proximityRef.current[index] || 0
+      const next = prev + (target - prev) * 0.16
+      proximityRef.current[index] = next
+
+      const lift = -20 * next
+      const scale = 1 + 0.9 * next
+      el.style.transform = `translateY(${lift}px) scale(${scale})`
+      el.style.color = next > 0.08 ? theme.currentTheme.accent : ''
+      el.style.textShadow = next > 0.08 ? `0 0 ${20 * next}px ${theme.currentTheme.accent}` : ''
+      el.style.zIndex = next > 0.1 ? '10' : ''
+    })
+  })
 
   const handleLetterMove = useCallback((e) => {
     const i = getMagnifiedCharIndex(e.clientX, e.clientY)
