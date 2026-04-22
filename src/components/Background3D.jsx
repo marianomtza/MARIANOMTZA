@@ -10,39 +10,42 @@ export function Background3D({ showStars = true }) {
   const containerRef = useRef(null)
   const canvasRef = useRef(null)
   const layersRef = useRef([])
-  const stateRef = useRef({ x: 0, y: 0, mouseX: 0, mouseY: 0 })
-  const isWebGLRef = useRef(false)
+  const stateRef = useRef({ mouseX: 0, mouseY: 0 })
 
   useEffect(() => {
     if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return
 
-    const container = containerRef.current
-    if (!container) return
-
-    let cleanup = () => {}
-
-    // Try WebGL initialization
     const canvas = canvasRef.current
-    if (canvas && canvas.getContext) {
-      try {
-        const gl = canvas.getContext('webgl2', {
-          alpha: true,
-          antialias: false,
-          powerPreference: 'low-power',
-        })
+    if (!canvas) return
+    let stopRenderer = () => {}
+    let removeResize = () => {}
+    let cleanup = () => {}
+    let useWebGL = false
 
-        if (gl) {
-          isWebGLRef.current = true
-          cleanup = initWebGL(gl, canvas, stateRef.current)
-        }
-      } catch (e) {
-        console.warn('WebGL unavailable, using CSS fallback')
+    try {
+      const gl = canvas.getContext('webgl2', {
+        alpha: true,
+        antialias: false,
+        powerPreference: 'low-power',
+      })
+
+      if (gl) {
+        canvas.style.display = 'block'
+        useWebGL = true
+        const webglRuntime = initWebGL(gl, canvas, stateRef.current)
+        cleanup = webglRuntime.cleanup
+        stopRenderer = webglRuntime.stop
+        removeResize = webglRuntime.removeResize
       }
+    } catch (_error) {
+      useWebGL = false
     }
 
-    // If WebGL failed, use CSS 3D transforms
-    if (!isWebGLRef.current) {
-      cleanup = initCSS3DParallax(layersRef.current, stateRef.current)
+    if (!useWebGL) {
+      canvas.style.display = 'none'
+      const cssRuntime = initCSS3DParallax(layersRef.current, stateRef.current)
+      cleanup = cssRuntime.cleanup
+      stopRenderer = cssRuntime.stop
     }
 
     const onMove = (e) => {
@@ -50,9 +53,19 @@ export function Background3D({ showStars = true }) {
       stateRef.current.mouseY = e.clientY
     }
 
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        stopRenderer()
+      }
+    }
+
     window.addEventListener('mousemove', onMove)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+
     return () => {
       window.removeEventListener('mousemove', onMove)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      removeResize()
       cleanup()
     }
   }, [])
@@ -75,12 +88,19 @@ export function Background3D({ showStars = true }) {
   )
 }
 
-// WebGL initialization: simple rotating cube + parallax
 function initWebGL(gl, canvas, state) {
-  // Set canvas size
-  canvas.width = window.innerWidth
-  canvas.height = window.innerHeight
-  gl.viewport(0, 0, canvas.width, canvas.height)
+  let rafId = null
+  let destroyed = false
+
+  const setCanvasSize = () => {
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+    gl.viewport(0, 0, canvas.width, canvas.height)
+  }
+
+  setCanvasSize()
+  window.addEventListener('resize', setCanvasSize)
+
   gl.clearColor(0, 0, 0, 0)
   gl.enable(gl.BLEND)
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -125,9 +145,8 @@ function initWebGL(gl, canvas, state) {
   gl.enableVertexAttribArray(aPosition)
 
   let rotation = 0
-  let raf
-
   const render = () => {
+    if (destroyed) return
     gl.clear(gl.COLOR_BUFFER_BIT)
 
     const mx = (state.mouseX / window.innerWidth - 0.5) * 0.2
@@ -149,20 +168,41 @@ function initWebGL(gl, canvas, state) {
     gl.uniform3f(gl.getUniformLocation(program, 'uColor'), 0.5, 0.3, 1)
 
     gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 3)
-    raf = requestAnimationFrame(render)
+    rafId = requestAnimationFrame(render)
   }
 
-  raf = requestAnimationFrame(render)
+  rafId = requestAnimationFrame(render)
 
-  // Cleanup
-  return () => cancelAnimationFrame(raf)
+  return {
+    stop() {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+        rafId = null
+      }
+    },
+    removeResize() {
+      window.removeEventListener('resize', setCanvasSize)
+    },
+    cleanup() {
+      destroyed = true
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+      }
+      window.removeEventListener('resize', setCanvasSize)
+      gl.deleteBuffer(buffer)
+      gl.deleteShader(vs)
+      gl.deleteShader(fs)
+      gl.deleteProgram(program)
+    },
+  }
 }
 
-// CSS 3D fallback: GPU-accelerated layers with parallax
 function initCSS3DParallax(layers, state) {
-  let raf
+  let rafId = null
+  let destroyed = false
 
   const render = () => {
+    if (destroyed) return
     const mx = (state.mouseX / window.innerWidth - 0.5) * 40
     const my = (state.mouseY / window.innerHeight - 0.5) * 40
 
@@ -176,11 +216,25 @@ function initCSS3DParallax(layers, state) {
       `
     })
 
-    raf = requestAnimationFrame(render)
+    rafId = requestAnimationFrame(render)
   }
 
-  raf = requestAnimationFrame(render)
-  return () => cancelAnimationFrame(raf)
+  rafId = requestAnimationFrame(render)
+
+  return {
+    stop() {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+        rafId = null
+      }
+    },
+    cleanup() {
+      destroyed = true
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId)
+      }
+    },
+  }
 }
 
 // Shader compilation helper
