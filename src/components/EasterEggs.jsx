@@ -1,15 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useAudio } from '../contexts/AudioContext'
 
+const RAVE_COLORS = ['#7c3aed', '#d946ef', '#22d3ee', '#f59e0b', '#ef4444', '#10b981', '#6366f1', '#ec4899']
+const RAVE_DURATION_MS = 8000
+const TOAST_DURATION_MS = 3200
+
 export function EasterEggs() {
   const audio = useAudio()
   const [toastText, setToastText] = useState('')
-  const [raveActive, setRaveActive] = useState(false)
   const [raveColor, setRaveColor] = useState('')
+  const [raveActive, setRaveActive] = useState(false)
 
-  const toastTimeoutRef = useRef(null)
-  const raveIntervalRef = useRef(null)
-  const raveTimeoutRef = useRef(null)
+  const toastUntilRef = useRef(0)
+  const raveStartRef = useRef(0)
+  const originalAccentRef = useRef('')
+  const rafRef = useRef(null)
+  const typedBufferRef = useRef('')
+  const konamiRef = useRef([])
 
   useEffect(() => {
     // Console ASCII art — reward curious devs
@@ -26,92 +33,84 @@ export function EasterEggs() {
       'color: #7c3aed; font-family: monospace; font-size: 10px;'
     )
 
-    const KONAMI = [
-      'ArrowUp',
-      'ArrowUp',
-      'ArrowDown',
-      'ArrowDown',
-    ]
+    const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown']
     const LAFAMA_TARGET = 'LAFAMA'
-    let konamiSeq = []
-    let typedBuf = ''
 
     const triggerRave = () => {
-      const COLORS = [
-        '#7c3aed',
-        '#d946ef',
-        '#22d3ee',
-        '#f59e0b',
-        '#ef4444',
-        '#10b981',
-        '#6366f1',
-        '#ec4899',
-      ]
       const root = document.documentElement
-      const orig = getComputedStyle(root).getPropertyValue('--accent').trim() || '#7c3aed'
-
+      if (!originalAccentRef.current) {
+        originalAccentRef.current = getComputedStyle(root).getPropertyValue('--accent').trim() || '#7c3aed'
+      }
+      raveStartRef.current = performance.now()
       setRaveActive(true)
-
-      let idx = 0
-      raveIntervalRef.current = setInterval(() => {
-        const c = COLORS[idx % COLORS.length]
-        root.style.setProperty('--accent', c)
-        setRaveColor(c)
-        idx++
-      }, 220)
-
-      raveTimeoutRef.current = setTimeout(() => {
-        clearInterval(raveIntervalRef.current)
-        root.style.setProperty('--accent', orig)
-        setRaveActive(false)
-      }, 8000)
-
       audio?.click?.()
     }
 
     const showToast = (text) => {
       setToastText(text)
+      toastUntilRef.current = performance.now() + TOAST_DURATION_MS
       audio?.click?.()
-
-      if (toastTimeoutRef.current) {
-        clearTimeout(toastTimeoutRef.current)
-      }
-
-      toastTimeoutRef.current = setTimeout(() => {
-        setToastText('')
-      }, 3200)
     }
 
     const onKey = (e) => {
-      // Konami
-      konamiSeq.push(e.key)
-      if (konamiSeq.length > KONAMI.length) konamiSeq.shift()
-      if (konamiSeq.join(',') === KONAMI.join(',')) {
+      konamiRef.current.push(e.key)
+      if (konamiRef.current.length > KONAMI.length) konamiRef.current.shift()
+      if (konamiRef.current.join(',') === KONAMI.join(',')) {
         triggerRave()
-        konamiSeq = []
+        konamiRef.current = []
       }
 
-      // LAFAMA — typed while NOT in an input
       const tag = document.activeElement?.tagName?.toLowerCase()
       if (tag === 'input' || tag === 'textarea' || tag === 'select') return
       if (e.key.length === 1) {
-        typedBuf += e.key.toUpperCase()
-        if (typedBuf.length > LAFAMA_TARGET.length) {
-          typedBuf = typedBuf.slice(typedBuf.length - LAFAMA_TARGET.length)
+        typedBufferRef.current += e.key.toUpperCase()
+        if (typedBufferRef.current.length > LAFAMA_TARGET.length) {
+          typedBufferRef.current = typedBufferRef.current.slice(
+            typedBufferRef.current.length - LAFAMA_TARGET.length
+          )
         }
-        if (typedBuf === LAFAMA_TARGET) {
+        if (typedBufferRef.current === LAFAMA_TARGET) {
           showToast('👁  LA FAMA TE VE')
-          typedBuf = ''
+          typedBufferRef.current = ''
         }
       }
     }
 
+    const tick = (now) => {
+      if (toastUntilRef.current && now >= toastUntilRef.current) {
+        setToastText('')
+        toastUntilRef.current = 0
+      }
+
+      if (raveStartRef.current) {
+        const elapsed = now - raveStartRef.current
+        if (elapsed >= RAVE_DURATION_MS) {
+          document.documentElement.style.setProperty('--accent', originalAccentRef.current || '#7c3aed')
+          setRaveActive(false)
+          setRaveColor('')
+          raveStartRef.current = 0
+        } else {
+          const colorIndex = Math.floor(elapsed / 220) % RAVE_COLORS.length
+          const nextColor = RAVE_COLORS[colorIndex]
+          document.documentElement.style.setProperty('--accent', nextColor)
+          setRaveColor(nextColor)
+        }
+      }
+
+      rafRef.current = requestAnimationFrame(tick)
+    }
+
     window.addEventListener('keydown', onKey)
+    rafRef.current = requestAnimationFrame(tick)
+
     return () => {
       window.removeEventListener('keydown', onKey)
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
-      if (raveIntervalRef.current) clearInterval(raveIntervalRef.current)
-      if (raveTimeoutRef.current) clearTimeout(raveTimeoutRef.current)
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current)
+      }
+      if (originalAccentRef.current) {
+        document.documentElement.style.setProperty('--accent', originalAccentRef.current)
+      }
     }
   }, [])
 
