@@ -1,14 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useAudio } from '../contexts/AudioContext'
+import { useBooking } from '../contexts/BookingContext'
 import { SITE_CONFIG } from '../constants'
 
 export function Booking() {
   const audio = useAudio()
+  const { selectedArtist, setSelectedArtist, bookingSectionRef } = useBooking()
   const [mode, setMode] = useState('servicio') // "servicio" | "artista"
   const [state, setState] = useState('idle')   // idle | sending | ok | error
   const [err, setErr] = useState('')
   const [venue, setVenue] = useState('')
   const venueRef = useRef(null)
+
+  // Sync mode with selected artist
+  useEffect(() => {
+    if (selectedArtist) {
+      setMode('artista')
+    }
+  }, [selectedArtist])
 
   // Google Places autocomplete — se activa solo si existe window.google.maps
   useEffect(() => {
@@ -90,7 +99,7 @@ export function Booking() {
   }
 
   return (
-    <section className="section" id="booking">
+    <section className="section" id="booking" ref={bookingSectionRef}>
       <div className="wrap">
         <div className="booking reveal">
           <div className="booking-left">
@@ -219,7 +228,11 @@ export function Booking() {
                 <div className="form-row">
                   <div className="field">
                     <label>Artista a bookear</label>
-                    <select name="artist" defaultValue="">
+                    <select 
+                      name="artist" 
+                      value={selectedArtist || ''} 
+                      onChange={(e) => setSelectedArtist(e.target.value)}
+                    >
                       <option value="" disabled>
                         Selecciona un artista
                       </option>
