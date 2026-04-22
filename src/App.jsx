@@ -20,8 +20,14 @@ function App() {
       {!loaded && <Loader onDone={() => setLoaded(true)} />}
       {loaded && (
         <BookingProvider>
-          <PremiumCursor />
-          <div className="content">
+          <div className="layer layer-bg">
+            <div className={`grain ${!theme.grainVisible ? 'hidden' : ''}`} />
+            <div className="vignette" />
+            <BlobBG showStars={theme.starsVisible} />
+            <Background3D showStars={false} />
+          </div>
+
+          <div className="layer layer-ui content">
             <Nav />
             <Hero />
             <Band items={COLECTIVOS} label="Colectivos" />
@@ -31,12 +37,12 @@ function App() {
             <Booking />
             <Footer />
           </div>
-          <div className={`grain ${!theme.grainVisible ? 'hidden' : ''}`} />
-          <div className="vignette" />
-          <BlobBG showStars={theme.starsVisible} />
-          <Background3D showStars={false} />
-          <EasterEggs />
-          <Tweaks />
+
+          <div className="layer layer-interaction">
+            <PremiumCursor />
+            <EasterEggs />
+            <Tweaks />
+          </div>
         </BookingProvider>
       )}
     </>
