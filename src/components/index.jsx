@@ -139,19 +139,21 @@ export { Tweaks } from './Tweaks'
  */
 export function BlobBG({ showStars = true }) {
   const refRef = useRef(null)
+  const blobsRef = useRef([])
+  const geoObjsRef = useRef([])
 
   useEventListener(
     'mousemove',
     (e) => {
-      const el = refRef.current
-      if (!el) return
       const x = (e.clientX / window.innerWidth - 0.5) * 2
       const y = (e.clientY / window.innerHeight - 0.5) * 2
-      el.querySelectorAll('.blob').forEach((b, i) => {
+      blobsRef.current.forEach((b, i) => {
+        if (!b) return
         const k = (i + 1) * 28
         b.style.translate = `${x * k}px ${y * k}px`
       })
-      el.querySelectorAll('.geo-obj').forEach((g, i) => {
+      geoObjsRef.current.forEach((g, i) => {
+        if (!g) return
         const k = (i + 1) * 12
         g.style.translate = `${x * k}px ${y * k}px`
       })
@@ -169,16 +171,16 @@ export function BlobBG({ showStars = true }) {
   return (
     <div className="blob-bg" ref={refRef}>
       {showStars && <div className="stars" />}
-      <div className="blob b1" />
-      <div className="blob b2" />
-      <div className="blob b3" />
-      <div className="blob b4" />
-      <div className="blob ring" />
-      <div className="geo-obj cube" />
-      <div className="geo-obj tri" />
-      <div className="geo-obj diamond" />
-      <div className="geo-obj ring2" />
-      <div className="geo-obj dots" />
+      <div className="blob b1" ref={el => blobsRef.current[0] = el} />
+      <div className="blob b2" ref={el => blobsRef.current[1] = el} />
+      <div className="blob b3" ref={el => blobsRef.current[2] = el} />
+      <div className="blob b4" ref={el => blobsRef.current[3] = el} />
+      <div className="blob ring" ref={el => blobsRef.current[4] = el} />
+      <div className="geo-obj cube" ref={el => geoObjsRef.current[0] = el} />
+      <div className="geo-obj tri" ref={el => geoObjsRef.current[1] = el} />
+      <div className="geo-obj diamond" ref={el => geoObjsRef.current[2] = el} />
+      <div className="geo-obj ring2" ref={el => geoObjsRef.current[3] = el} />
+      <div className="geo-obj dots" ref={el => geoObjsRef.current[4] = el} />
     </div>
   )
 }
