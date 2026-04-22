@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react'
+import { useMotionFrame } from '../contexts/MotionContext'
 
 export function Stats() {
   const ITEMS = [
@@ -9,14 +10,13 @@ export function Stats() {
   ]
 
   const cardRefs = useRef([])
+  const startedAtRef = useRef(ITEMS.map(() => null))
   const [counts, setCounts] = useState(ITEMS.map(() => 0))
   const [visible, setVisible] = useState(ITEMS.map(() => false))
 
   useEffect(() => {
     let isMounted = true
     const observers = []
-    const rafs = []
-
     ITEMS.forEach((item, i) => {
       const el = cardRefs.current[i]
       if (!el) return
@@ -34,25 +34,7 @@ export function Stats() {
             return nv
           })
 
-          const dur = 1600 + i * 180
-          const t0 = performance.now()
-
-          const tick = (now) => {
-            if (!isMounted) return
-            const t = Math.min((now - t0) / dur, 1)
-            const e = 1 - Math.pow(1 - t, 4)
-
-            setCounts((c) => {
-              const nc = [...c]
-              nc[i] = Math.round(e * item.n)
-              return nc
-            })
-
-            if (t < 1) {
-              rafs[i] = requestAnimationFrame(tick)
-            }
-          }
-          rafs[i] = requestAnimationFrame(tick)
+          startedAtRef.current[i] = performance.now()
         },
         { threshold: 0.2 }
       )
@@ -64,11 +46,28 @@ export function Stats() {
     return () => {
       isMounted = false
       observers.forEach((io) => io.disconnect())
-      rafs.forEach((raf) => {
-        if (raf) cancelAnimationFrame(raf)
-      })
     }
   }, [])
+
+  useMotionFrame(({ now }) => {
+    setCounts((prev) => {
+      let changed = false
+      const next = [...prev]
+      ITEMS.forEach((item, i) => {
+        const startedAt = startedAtRef.current[i]
+        if (!startedAt) return
+        const duration = 1600 + i * 180
+        const t = Math.min((now - startedAt) / duration, 1)
+        const eased = 1 - Math.pow(1 - t, 4)
+        const value = Math.round(eased * item.n)
+        if (value !== next[i]) {
+          changed = true
+          next[i] = value
+        }
+      })
+      return changed ? next : prev
+    })
+  })
 
   const onMove = useCallback((e, i) => {
     if (window.matchMedia?.('(pointer: coarse)').matches) return
