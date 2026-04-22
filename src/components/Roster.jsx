@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAudio } from '../contexts/AudioContext'
+import { useBooking } from '../contexts/BookingContext'
+import { buildWhatsAppLink } from '../utils/whatsapp'
 import { SITE_CONFIG } from '../constants'
 
 const ROSTER = [
@@ -139,6 +141,8 @@ function ArtistModal({ artist, index, onClose, audio }) {
     .slice(0, 2)
     .toUpperCase()
 
+  const { setSelectedArtist, scrollToBooking } = useBooking()
+
   // Prevent scroll on mount
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -151,23 +155,15 @@ function ArtistModal({ artist, index, onClose, audio }) {
     audio?.click?.()
 
     if (SITE_CONFIG.whatsapp) {
-      const phone = SITE_CONFIG.whatsapp.replace(/\D/g, '')
-      const text = encodeURIComponent(`RESERVA TU NOCHE - ${a.name}`)
-      window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
+      const url = buildWhatsAppLink(SITE_CONFIG.whatsapp, `RESERVA TU NOCHE - ${a.name}`)
+      window.open(url, '_blank')
     } else {
-      // Fallback: trigger form
+      // Fallback: trigger form via React state
       onClose()
+      setSelectedArtist(a.name)
       setTimeout(() => {
-        const sel = document.querySelector("select[name='artist']")
-        if (sel) {
-          sel.value = a.name
-          sel.dispatchEvent(new Event('change', { bubbles: true }))
-        }
-        const modeBtn = document.querySelector(".mode-btn[data-mode='artista']")
-        if (modeBtn) modeBtn.click()
-        const booking = document.getElementById('booking')
-        if (booking) booking.scrollIntoView({ behavior: 'smooth' })
-      }, 350)
+        scrollToBooking()
+      }, 100)
     }
   }
 
