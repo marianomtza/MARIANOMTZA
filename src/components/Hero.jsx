@@ -21,15 +21,12 @@ export function Hero() {
   const proximityRef = useRef([])
   const { pointerRef } = useMotion()
 
-  const TITLE = 'MARIANOMTZA'
+  const TITLE = 'SYSTEM'
   const ROLES = [
-    'Productor de Eventos',
-    'Muevo Gente',
-    'Manager',
-    'Conecto Puntos',
-    'A&R',
-    'Documento Todo',
-    'Director Creativo',
+    'Curated Roster',
+    'Booking Platform',
+    'Network of Talent',
+    'Control & Direction',
   ]
 
   useEffect(() => {
