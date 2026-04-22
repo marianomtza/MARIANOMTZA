@@ -1,41 +1,56 @@
-import React, { createContext, useContext, useState, useRef, useCallback } from 'react'
+import React, { createContext, useContext, useMemo, useState, useCallback } from 'react'
 
-const BookingContext = createContext(null)
+const BookingStateContext = createContext(null)
+const BookingActionsContext = createContext(null)
 
-/**
- * BookingProvider manages the state flow between Roster and Booking components
- */
 export function BookingProvider({ children }) {
   const [selectedArtist, setSelectedArtist] = useState('')
-  const bookingSectionRef = useRef(null)
+  const [scrollRequest, setScrollRequest] = useState(0)
 
-  const scrollToBooking = useCallback(() => {
-    if (bookingSectionRef.current) {
-      bookingSectionRef.current.scrollIntoView({ behavior: 'smooth' })
-    }
+  const requestBookingScroll = useCallback(() => {
+    setScrollRequest((value) => value + 1)
   }, [])
 
-  const value = {
-    selectedArtist,
-    setSelectedArtist,
-    bookingSectionRef,
-    scrollToBooking,
-  }
+  const clearSelectedArtist = useCallback(() => {
+    setSelectedArtist('')
+  }, [])
+
+  const stateValue = useMemo(
+    () => ({
+      selectedArtist,
+      scrollRequest,
+    }),
+    [selectedArtist, scrollRequest]
+  )
+
+  const actionsValue = useMemo(
+    () => ({
+      setSelectedArtist,
+      clearSelectedArtist,
+      requestBookingScroll,
+    }),
+    [clearSelectedArtist, requestBookingScroll]
+  )
 
   return (
-    <BookingContext.Provider value={value}>
-      {children}
-    </BookingContext.Provider>
+    <BookingStateContext.Provider value={stateValue}>
+      <BookingActionsContext.Provider value={actionsValue}>{children}</BookingActionsContext.Provider>
+    </BookingStateContext.Provider>
   )
 }
 
-/**
- * Hook to access booking state
- */
-export function useBooking() {
-  const context = useContext(BookingContext)
+export function useBookingState() {
+  const context = useContext(BookingStateContext)
   if (!context) {
-    throw new Error('useBooking must be used within a BookingProvider')
+    throw new Error('useBookingState must be used within a BookingProvider')
+  }
+  return context
+}
+
+export function useBookingActions() {
+  const context = useContext(BookingActionsContext)
+  if (!context) {
+    throw new Error('useBookingActions must be used within a BookingProvider')
   }
   return context
 }
