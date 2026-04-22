@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useAudio } from '../contexts/AudioContext'
+import { useMotionFrame } from '../contexts/MotionContext'
 
 const RAVE_COLORS = ['#7c3aed', '#d946ef', '#22d3ee', '#f59e0b', '#ef4444', '#10b981', '#6366f1', '#ec4899']
 const RAVE_DURATION_MS = 8000
@@ -14,7 +15,6 @@ export function EasterEggs() {
   const toastUntilRef = useRef(0)
   const raveStartRef = useRef(0)
   const originalAccentRef = useRef('')
-  const rafRef = useRef(null)
   const typedBufferRef = useRef('')
   const konamiRef = useRef([])
 
@@ -76,43 +76,37 @@ export function EasterEggs() {
       }
     }
 
-    const tick = (now) => {
-      if (toastUntilRef.current && now >= toastUntilRef.current) {
-        setToastText('')
-        toastUntilRef.current = 0
-      }
-
-      if (raveStartRef.current) {
-        const elapsed = now - raveStartRef.current
-        if (elapsed >= RAVE_DURATION_MS) {
-          document.documentElement.style.setProperty('--accent', originalAccentRef.current || '#7c3aed')
-          setRaveActive(false)
-          setRaveColor('')
-          raveStartRef.current = 0
-        } else {
-          const colorIndex = Math.floor(elapsed / 220) % RAVE_COLORS.length
-          const nextColor = RAVE_COLORS[colorIndex]
-          document.documentElement.style.setProperty('--accent', nextColor)
-          setRaveColor(nextColor)
-        }
-      }
-
-      rafRef.current = requestAnimationFrame(tick)
-    }
-
     window.addEventListener('keydown', onKey)
-    rafRef.current = requestAnimationFrame(tick)
 
     return () => {
       window.removeEventListener('keydown', onKey)
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current)
-      }
       if (originalAccentRef.current) {
         document.documentElement.style.setProperty('--accent', originalAccentRef.current)
       }
     }
   }, [])
+
+  useMotionFrame(({ now }) => {
+    if (toastUntilRef.current && now >= toastUntilRef.current) {
+      setToastText('')
+      toastUntilRef.current = 0
+    }
+
+    if (raveStartRef.current) {
+      const elapsed = now - raveStartRef.current
+      if (elapsed >= RAVE_DURATION_MS) {
+        document.documentElement.style.setProperty('--accent', originalAccentRef.current || '#7c3aed')
+        setRaveActive(false)
+        setRaveColor('')
+        raveStartRef.current = 0
+      } else {
+        const colorIndex = Math.floor(elapsed / 220) % RAVE_COLORS.length
+        const nextColor = RAVE_COLORS[colorIndex]
+        document.documentElement.style.setProperty('--accent', nextColor)
+        setRaveColor(nextColor)
+      }
+    }
+  })
 
   return (
     <>
