@@ -4,6 +4,7 @@ import { Navbar } from './components/Navbar'
 import { Hero } from './components/Hero'
 import { Roster } from './components/Roster'
 import { Eventos } from './components/Eventos'
+import { Dibujos } from './components/Dibujos'
 import { Booking } from './components/Booking'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import Lenis from '@studio-freight/lenis'
@@ -32,6 +33,7 @@ function App() {
           <Navbar />
           <Hero />
           <Eventos />
+          <Dibujos />
           <Roster />
           <Booking />
 
@@ -49,8 +51,7 @@ function App() {
               </a>
 
               <div className="mt-16 text-[10px] tracking-widest text-white/40 font-mono">
-                © MARIANO MTZA. TODOS LOS DERECHOS RESERVADOS.<br />
-                CONSTRUIDO CON FRAMER MOTION + TONE.JS + LENIS
+                © MARIANO MTZA. TODOS LOS DERECHOS RESERVADOS.
               </div>
             </div>
           </footer>

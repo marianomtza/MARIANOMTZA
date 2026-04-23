@@ -100,9 +100,6 @@ export const Eventos: React.FC = () => {
           ))}
         </div>
 
-        <div className="text-center mt-12 text-xs tracking-widest text-white/40 font-mono">
-          MÁS EVENTOS EN NUESTRO ARCHIVO • 2023 — 2026
-        </div>
       </div>
     </section>
   )

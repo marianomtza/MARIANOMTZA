@@ -27,13 +27,6 @@ const ArtistCard: React.FC<{
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-black/95 z-10" />
       
-      {/* Big Initial */}
-      <div className="absolute inset-0 z-0 flex items-center justify-center opacity-30 group-hover:opacity-50 transition-all duration-700">
-        <div className="text-[130px] md:text-[160px] font-black tracking-[-8px] text-white/20 select-none">
-          {artist.name.slice(0, 2)}
-        </div>
-      </div>
-
       <div className="relative z-20">
         <div className="flex items-start justify-between mb-5">
           <div>
@@ -173,12 +166,6 @@ export const Roster: React.FC = () => {
       <div className="max-w-[1440px] mx-auto px-6 md:px-12">
         <div className="max-w-[620px] mb-16">
           <div className="font-mono text-xs tracking-[0.24em] text-[#9b5fd6] mb-4">ROSTER 2026</div>
-          <h2 className="text-balance text-[56px] leading-none tracking-[-1.6px] font-semibold mb-6">
-            Curados.<br />Intencionales.<br />Inolvidables.
-          </h2>
-          <p className="text-[#8a7fa0] text-[15px] max-w-[36ch]">
-            Una selección cuidadosa de productores y DJs que están definiendo el sonido de las noches en Ciudad de México.
-          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 auto-rows-[minmax(300px,auto)] gap-px bg-white/10 p-px rounded-3xl overflow-hidden">
@@ -192,9 +179,6 @@ export const Roster: React.FC = () => {
           ))}
         </div>
 
-        <div className="text-center mt-12 text-xs tracking-widest text-white/40 font-mono">
-          PASA EL CURSOR • CLIC PARA RESERVAR
-        </div>
       </div>
 
       <ArtistModal artist={selected} onClose={() => setSelected(null)} />

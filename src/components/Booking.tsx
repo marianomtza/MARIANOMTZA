@@ -110,18 +110,9 @@ export const Booking: React.FC = () => {
           {/* Left info */}
           <div className="md:col-span-5 mb-16 md:mb-0">
             <div className="sticky top-24">
-              <div className="font-mono text-xs tracking-[0.24em] text-[#9b5fd6] mb-4">PRÓXIMO CAPÍTULO</div>
               <h2 className="text-[68px] leading-none tracking-[-2.2px] font-semibold text-white mb-8">
-                Reserva tu noche<br />Hablemos de tu próxima noche
+                Hablemos de tu próxima noche
               </h2>
-              
-              <div className="text-[#8a7fa0] text-[15px] max-w-[34ch] leading-relaxed">
-                Ya sea que busques un artista para tu noche o una dirección creativa completa — estamos listos para construirlo juntos.
-              </div>
-
-              <div className="mt-14 pt-8 border-t border-white/10 text-xs font-mono tracking-widest text-white/50">
-                RESPUESTA EN 48 HORAS • CONFIDENCIAL
-              </div>
             </div>
           </div>
 
