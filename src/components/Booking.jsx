@@ -1,475 +1,314 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { useAudio } from '../contexts/AudioContext'
-import { useBookingActions, useBookingState } from '../contexts/BookingContext'
-import { SITE_CONFIG } from '../constants'
+import React, { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useBookingState, useBookingActions } from '../contexts/BookingContext'
 import { ARTIST_NAMES } from '../data/roster'
-import { hasSupabaseConfig, supabase } from '../lib/supabase'
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const MAX_NOTES_LENGTH = 2000
-const SERVICE_OPTIONS = ['Booking', 'Producción', 'Dirección creativa', 'Curaduría', 'A&R', 'Management', 'Otro']
-const SOCIAL_LINKS = [
-  { key: 'instagram', label: 'Instagram' },
-  { key: 'spotifyUrl', label: 'Spotify' },
-  { key: 'soundcloudUrl', label: 'Soundcloud' },
-  { key: 'raUrl', label: 'RA' },
-]
-const EVENT_TYPE_OPTIONS = ['Festival', 'Club', 'Rave / Warehouse', 'Brand activation', 'Privado', 'Corporativo', 'Otro']
-const FORM_STATE = {
-  IDLE: 'idle',
-  SENDING: 'sending',
-  OK: 'ok',
-  ERROR: 'error',
-}
+export const Booking = () => {
+  const { selectedArtist, clearSelectedArtist, scrollRequest } = useBookingState()
+  const { setSelectedArtist } = useBookingActions()
 
-function getClientTimeZone() {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
-}
+  const [mode, setMode] = useState<'artista' | 'servicio'>('artista')
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    artist: '',
+    date: '',
+    city: '',
+    venue: '',
+    capacity: '',
+    eventType: '',
+    eventName: '',
+    budget: '',
+    notes: '',
+  })
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [error, setError] = useState('')
 
-function sanitizeText(value) {
-  if (typeof value !== 'string') return ''
-  return value.trim().replace(/\s+/g, ' ')
-}
-
-function validateBookingPayload(payload) {
-  if (!payload.name || payload.name.length < 2) {
-    return 'Ingresa un nombre válido (mínimo 2 caracteres).'
-  }
-  if (!EMAIL_REGEX.test(payload.email)) {
-    return 'Ingresa un email válido.'
-  }
-  if (!payload.notes || payload.notes.length < 10) {
-    return 'Agrega más contexto en notas (mínimo 10 caracteres).'
-  }
-  if (payload.notes.length > MAX_NOTES_LENGTH) {
-    return `Notas demasiado largas (máximo ${MAX_NOTES_LENGTH} caracteres).`
-  }
-  if (payload.mode === 'artista' && !payload.artist) {
-    return 'Selecciona un artista para continuar.'
-  }
-  if (payload.mode === 'servicio' && !payload.service) {
-    return 'Selecciona un tipo de servicio.'
-  }
-  return ''
-}
-
-export function Booking() {
-  const audio = useAudio()
-  const sectionRef = useRef(null)
-  const venueRef = useRef(null)
-  const lastScrollRequestRef = useRef(0)
-  const placesListenerRef = useRef(null)
-  const autocompleteRef = useRef(null)
-
-  const { selectedArtist, scrollRequest } = useBookingState()
-  const { setSelectedArtist, clearSelectedArtist } = useBookingActions()
-  const [manualMode, setManualMode] = useState('servicio')
-  const [state, setState] = useState(FORM_STATE.IDLE)
-  const [err, setErr] = useState('')
-  const mode = useMemo(() => (selectedArtist ? 'artista' : manualMode), [manualMode, selectedArtist])
-
+  // Autofill from roster selection
   useEffect(() => {
-    if (!venueRef.current) return
-    if (!(window.google && window.google.maps && window.google.maps.places)) return
-
-    try {
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(venueRef.current, {
-        fields: ['name', 'formatted_address', 'geometry'],
-        types: ['establishment', 'geocode'],
-      })
-      placesListenerRef.current = autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current.getPlace()
-        if (venueRef.current) {
-          venueRef.current.value = place.formatted_address || place.name || venueRef.current.value || ''
-        }
-      })
-    } catch (_error) {
-      autocompleteRef.current = null
-    }
-
-    return () => {
-      if (placesListenerRef.current?.remove) {
-        placesListenerRef.current.remove()
+    if (selectedArtist) {
+      setFormData(prev => ({ ...prev, artist: selectedArtist }))
+      setMode('artista')
+      // Scroll to booking when requested
+      if (scrollRequest > 0) {
+        const el = document.getElementById('booking')
+        el?.scrollIntoView({ behavior: 'smooth' })
       }
-      placesListenerRef.current = null
-      autocompleteRef.current = null
     }
-  }, [])
+  }, [selectedArtist, scrollRequest])
 
-  useEffect(() => {
-    if (!sectionRef.current) return
-    if (scrollRequest <= lastScrollRequestRef.current) return
-    lastScrollRequestRef.current = scrollRequest
-    sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [scrollRequest])
-
-  const resetForm = useCallback((form) => {
-    form.reset()
-    clearSelectedArtist()
-    if (venueRef.current) {
-      venueRef.current.value = ''
-    }
-  }, [clearSelectedArtist])
-
-  const setModeExplicitly = useCallback((nextMode) => {
-    setManualMode(nextMode)
-    if (nextMode === 'servicio') {
+  const handleModeChange = (newMode: 'artista' | 'servicio') => {
+    setMode(newMode)
+    if (newMode === 'servicio') {
       clearSelectedArtist()
+      setFormData(prev => ({ ...prev, artist: '' }))
     }
-  }, [clearSelectedArtist])
+  }
 
-  const submit = useCallback(async (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const validate = () => {
+    if (!formData.name || !formData.email || !formData.date || !formData.city) {
+      setError('Please fill all required fields')
+      return false
+    }
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      setError('Invalid email address')
+      return false
+    }
+    return true
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (state === FORM_STATE.SENDING) return
+    setError('')
+    
+    if (!validate()) return
 
-    const form = e.currentTarget
-    const data = new FormData(form)
-
-    if (data.get('_gotcha')) {
-      setState(FORM_STATE.OK)
-      resetForm(form)
-      return
-    }
-
-    const payload = {
-      mode,
-      name: sanitizeText(data.get('name')),
-      email: sanitizeText(data.get('email')),
-      notes: sanitizeText(data.get('notes')),
-      artist: sanitizeText(data.get('artist')),
-      service: sanitizeText(data.get('service')),
-    }
-
-    const validationError = validateBookingPayload(payload)
-    if (validationError) {
-      setErr(validationError)
-      setState(FORM_STATE.ERROR)
-      return
-    }
-
-    data.set('name', payload.name)
-    data.set('email', payload.email)
-    data.set('notes', payload.notes)
-    if (payload.artist) data.set('artist', payload.artist)
-    if (payload.service) data.set('service', payload.service)
-    data.append('_mode', mode)
-    data.append('_timezone', getClientTimeZone())
-
-    setState(FORM_STATE.SENDING)
-    setErr('')
-    audio?.click?.()
-
-    if (!hasSupabaseConfig || !supabase) {
-      setErr('Booking temporalmente no disponible. Escríbenos por email o WhatsApp.')
-      setState(FORM_STATE.ERROR)
-      return
-    }
+    setStatus('loading')
 
     try {
-      const bookingRow = {
-        mode,
-        name: payload.name,
-        email: payload.email,
-        artist: payload.artist || null,
-        service: payload.service || null,
-        date_label: sanitizeText(data.get('date')),
-        venue: sanitizeText(data.get('venue')) || null,
-        capacity: Number(data.get('capacity')) || null,
-        event_type: sanitizeText(data.get('eventType')) || null,
-        event_name: sanitizeText(data.get('eventName')) || null,
-        budget: sanitizeText(data.get('budget')) || null,
-        notes: payload.notes,
-        timezone: getClientTimeZone(),
-        source: 'website',
-        status: 'new',
+      const res = await fetch('/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          mode,
+          timestamp: new Date().toISOString(),
+        }),
+      })
+
+      if (res.ok) {
+        setStatus('success')
+        setTimeout(() => {
+          setFormData({
+            name: '', email: '', artist: '', date: '', city: '', venue: '', 
+            capacity: '', eventType: '', eventName: '', budget: '', notes: ''
+          })
+          clearSelectedArtist()
+          setStatus('idle')
+        }, 2200)
+      } else {
+        throw new Error('Submission failed')
       }
-
-      const { error } = await supabase.from('bookings').insert(bookingRow)
-      if (error) throw error
-
-      setState(FORM_STATE.OK)
-      resetForm(form)
-    } catch (_error) {
-      setErr('No se pudo enviar tu solicitud. Intenta de nuevo en un momento.')
-      setState(FORM_STATE.ERROR)
+    } catch (err) {
+      setStatus('error')
+      setError('Something went wrong. Please try again or email hola@marianomtza.com')
+      setTimeout(() => setStatus('idle'), 3000)
     }
-  }, [audio, mode, resetForm, state])
+  }
 
   return (
-    <section className="section" id="booking" ref={sectionRef}>
-      <div className="wrap">
-        <div className="booking reveal">
-          <div className="booking-left">
-            <div className="booking-eyebrow">
-              <span className="booking-eyebrow-line" />
-              07 — Booking
-            </div>
-            <h2>
-              Reserva tu <span className="ital">noche</span>
-            </h2>
-            <p className="desc">
-              Hablemos de tu próxima noche. Respondo personalmente en &lt; 48h.
-            </p>
+    <section id="booking" className="section py-24 border-t border-white/10 bg-black/40">
+      <div className="max-w-[1100px] mx-auto px-6 md:px-12">
+        <div className="grid md:grid-cols-12 gap-x-16">
+          {/* Left: Info */}
+          <div className="md:col-span-5 mb-16 md:mb-0">
+            <div className="sticky top-24">
+              <div className="font-mono text-xs tracking-[0.24em] text-[#9b5fd6] mb-4">NEXT CHAPTER</div>
+              <h2 className="text-[72px] leading-none tracking-[-2.4px] font-semibold text-white mb-8">Let's create<br />something<br />unforgettable.</h2>
+              
+              <div className="text-[#8a7fa0] text-[15px] max-w-[34ch]">
+                Whether you're looking for an artist for your night or a full creative direction service — we're ready.
+              </div>
 
-            <div className="booking-info">
-              <div className="binfo-block">
-                <span className="label">Booking directo</span>
-                <span className="v">
-                  <a href={`mailto:${SITE_CONFIG.email}`}>
-                    {SITE_CONFIG.email} →
-                  </a>
-                </span>
-              </div>
-              {SITE_CONFIG.whatsapp && (
-                <div className="binfo-block">
-                  <span className="label">WhatsApp</span>
-                  <span className="v">
-                    <a
-                      href={`https://wa.me/${SITE_CONFIG.whatsapp.replace(/\D/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {SITE_CONFIG.whatsapp} →
-                    </a>
-                  </span>
-                </div>
-              )}
-              <div className="binfo-block">
-                <span className="label">Base</span>
-                <span style={{ fontSize: 15, fontWeight: 400, color: 'var(--fg-dim)' }}>
-                  {SITE_CONFIG.city}
-                </span>
-              </div>
-              <div className="binfo-socials">
-                {SOCIAL_LINKS.map((social) =>
-                  SITE_CONFIG[social.key] ? (
-                    <a key={social.key} href={SITE_CONFIG[social.key]} target="_blank" rel="noopener noreferrer">
-                      {social.label}
-                    </a>
-                  ) : null
-                )}
-              </div>
-              <div className="booking-quick-actions">
-                <a className="quick-action-btn" href={`mailto:${SITE_CONFIG.email}`}>
-                  Email →
-                </a>
-                {SITE_CONFIG.whatsapp && (
-                  <a
-                    className="quick-action-btn"
-                    href={`https://wa.me/${SITE_CONFIG.whatsapp.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    WhatsApp →
-                  </a>
-                )}
-                {!hasSupabaseConfig && (
-                  <span className="note">Setup pendiente: VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY.</span>
-                )}
+              <div className="mt-12 pt-8 border-t border-white/10 text-xs font-mono tracking-widest text-white/50">
+                RESPONSE WITHIN 48HRS • CONFIDENTIAL
               </div>
             </div>
           </div>
 
-          <div className="booking-form-wrap">
-            <div className="mode-toggle" role="tablist" aria-label="Tipo de booking">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={mode === 'servicio'}
-                className={`mode-btn ${mode === 'servicio' ? 'active' : ''}`}
-                onClick={() => {
-                  setModeExplicitly('servicio')
-                  audio?.click?.()
-                }}
-              >
-                Servicio
-              </button>
-              <button
-                type="button"
-                role="tab"
-                data-mode="artista"
-                aria-selected={mode === 'artista'}
-                className={`mode-btn ${mode === 'artista' ? 'active' : ''}`}
-                onClick={() => {
-                  setModeExplicitly('artista')
-                  audio?.click?.()
-                }}
-              >
-                Artista
-              </button>
-              <span className={`mode-indicator ${mode}`} />
+          {/* Form */}
+          <div className="md:col-span-7">
+            {/* Mode Toggle */}
+            <div className="flex mb-10 border-b border-white/10">
+              {(['artista', 'servicio'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => handleModeChange(m)}
+                  className={`
+                    flex-1 pb-4 text-sm tracking-[1.5px] font-medium transition-all relative
+                    ${mode === m ? 'text-white' : 'text-white/40 hover:text-white/70'}
+                  `}
+                >
+                  {m === 'artista' ? 'BOOK AN ARTIST' : 'CREATIVE SERVICES'}
+                  {mode === m && (
+                    <motion.div 
+                      layoutId="mode-underline"
+                      className="absolute bottom-0 left-0 h-px w-full bg-[#9b5fd6]" 
+                    />
+                  )}
+                </button>
+              ))}
             </div>
 
-            <form className="form" onSubmit={submit}>
-              {/* honeypot */}
-              <input
-                type="text"
-                name="_gotcha"
-                style={{ display: 'none' }}
-                tabIndex="-1"
-                autoComplete="off"
-              />
-
-              {/* shared fields */}
-              <div className="form-row">
-                <div className="field">
-                  <label>
-                    Tu nombre <span className="req">*</span>
-                  </label>
-                  <input name="name" required minLength={2} maxLength={120} placeholder="Tu nombre o crew" />
-                </div>
-                <div className="field">
-                  <label>
-                    Email <span className="req">*</span>
-                  </label>
-                  <input name="email" required type="email" placeholder="tu@email.com" />
-                </div>
-              </div>
-
-              {mode === 'artista' && (
-                <div className="form-row">
-                  <div className="field">
-                    <label>Artista a bookear</label>
-                    <select
-                      name="artist"
-                      value={selectedArtist}
-                      required={mode === 'artista'}
-                      onChange={(e) => setSelectedArtist(e.target.value)}
-                    >
-                      <option value="" disabled>
-                        Selecciona un artista
-                      </option>
-                      {ARTIST_NAMES.map((artistName) => (
-                        <option key={artistName}>{artistName}</option>
-                      ))}
-                      <option>Otro / No sé aún</option>
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label>Fecha aproximada</label>
-                    <input name="date" type="date" />
-                  </div>
-                </div>
-              )}
-
-              {mode === 'servicio' && (
-                <div className="form-row">
-                  <div className="field">
-                    <label>Tipo de servicio</label>
-                    <select name="service" required={mode === 'servicio'} defaultValue="">
-                      <option value="" disabled>
-                        Booking · Producción · Dirección...
-                      </option>
-                      {SERVICE_OPTIONS.map((service) => (
-                        <option key={service}>{service}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label>Fecha aprox.</label>
-                    <input name="date" placeholder="MM / AAAA" />
-                  </div>
-                </div>
-              )}
-
-              {mode === 'artista' && (
-                <>
-                  <div className="field">
-                    <label>Selección rápida de artista</label>
-                    <div className="artist-quick-picks">
-                      {ARTIST_NAMES.map((artistName) => (
-                        <button
-                          key={artistName}
-                          type="button"
-                          className={`artist-pill ${selectedArtist === artistName ? 'active' : ''}`}
-                          onClick={() => {
-                            setSelectedArtist(artistName)
-                            audio?.click?.()
-                          }}
-                        >
-                          {artistName}
-                        </button>
-                      ))}
-                    </div>
-                    {Boolean(selectedArtist) && (
-                      <span className="note">Tip: ya preseleccionaste un artista desde los botones.</span>
-                    )}
-                  </div>
-                  <div className="form-row">
-                    <div className="field">
-                      <label>Ciudad y lugar</label>
-                      <input
-                        name="venue"
-                        ref={venueRef}
-                        placeholder="Club, venue o ciudad"
-                        autoComplete="off"
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Capacidad total</label>
-                      <input name="capacity" type="number" min="0" placeholder="Ej: 2000" />
-                    </div>
-                  </div>
-                  <div className="form-row">
-                    <div className="field">
-                      <label>Tipo de evento</label>
-                      <select name="eventType" defaultValue="">
-                        <option value="" disabled>
-                          Festival · Club · Privado...
-                        </option>
-                        {EVENT_TYPE_OPTIONS.map((eventType) => (
-                          <option key={eventType}>{eventType}</option>
+            <form onSubmit={handleSubmit} className="space-y-9">
+              <AnimatePresence mode="wait">
+                {mode === 'artista' && (
+                  <motion.div
+                    key="artista"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-9"
+                  >
+                    <div>
+                      <label className="block text-xs tracking-[0.24em] text-white/60 mb-3">SELECTED ARTIST</label>
+                      <select 
+                        name="artist" 
+                        value={formData.artist} 
+                        onChange={handleChange}
+                        className="w-full bg-transparent border-b border-white/20 pb-3 text-lg focus:border-[#9b5fd6] outline-none transition"
+                      >
+                        <option value="">Choose from roster...</option>
+                        {ARTIST_NAMES.map(name => (
+                          <option key={name} value={name}>{name}</option>
                         ))}
                       </select>
                     </div>
-                    <div className="field">
-                      <label>Nombre del evento</label>
-                      <input name="eventName" placeholder="Ej: Knockout: Lago Algo" />
-                    </div>
-                  </div>
-                  <div className="field">
-                    <label>Presupuesto</label>
-                    <input name="budget" placeholder="USD · MXN · rango" />
-                  </div>
-                </>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              <div className="field">
-                <label>
-                  Notas {mode === 'servicio' && <span className="req">*</span>}
-                </label>
-                <textarea
-                  name="notes"
-                  required
-                  minLength={10}
-                  maxLength={MAX_NOTES_LENGTH}
-                  placeholder={
-                    mode === 'artista'
-                      ? 'Contexto, line-up, rider, lo que sea útil'
-                      : 'Visión, fechas, presupuesto, artistas en mente...'
-                  }
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-xs tracking-[0.24em] text-white/60 mb-3">YOUR NAME *</label>
+                  <input 
+                    type="text" 
+                    name="name" 
+                    value={formData.name} 
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-transparent border-b border-white/20 pb-3 text-lg placeholder:text-white/30 focus:border-[#9b5fd6] outline-none" 
+                    placeholder="Alex Rivera" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs tracking-[0.24em] text-white/60 mb-3">EMAIL *</label>
+                  <input 
+                    type="email" 
+                    name="email" 
+                    value={formData.email} 
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-transparent border-b border-white/20 pb-3 text-lg placeholder:text-white/30 focus:border-[#9b5fd6] outline-none" 
+                    placeholder="you@company.com" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-xs tracking-[0.24em] text-white/60 mb-3">DATE (MM / YYYY) *</label>
+                  <input 
+                    type="text" 
+                    name="date" 
+                    value={formData.date} 
+                    onChange={handleChange}
+                    required
+                    placeholder="06 / 2026"
+                    className="w-full bg-transparent border-b border-white/20 pb-3 text-lg placeholder:text-white/30 focus:border-[#9b5fd6] outline-none" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs tracking-[0.24em] text-white/60 mb-3">CITY + VENUE</label>
+                  <input 
+                    type="text" 
+                    name="city" 
+                    value={formData.city} 
+                    onChange={handleChange}
+                    placeholder="CDMX • Foro Indie Rocks"
+                    className="w-full bg-transparent border-b border-white/20 pb-3 text-lg placeholder:text-white/30 focus:border-[#9b5fd6] outline-none" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                  <label className="block text-xs tracking-[0.24em] text-white/60 mb-3">CAPACITY</label>
+                  <input 
+                    type="text" 
+                    name="capacity" 
+                    value={formData.capacity} 
+                    onChange={handleChange}
+                    placeholder="800 - 1200" 
+                    className="w-full bg-transparent border-b border-white/20 pb-3 text-lg placeholder:text-white/30 focus:border-[#9b5fd6] outline-none" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs tracking-[0.24em] text-white/60 mb-3">EVENT TYPE</label>
+                  <select 
+                    name="eventType" 
+                    value={formData.eventType} 
+                    onChange={handleChange}
+                    className="w-full bg-transparent border-b border-white/20 pb-3 text-lg focus:border-[#9b5fd6] outline-none text-white/80"
+                  >
+                    <option value="">Select...</option>
+                    <option value="Club Night">Club Night</option>
+                    <option value="Festival">Festival</option>
+                    <option value="Private">Private Event</option>
+                    <option value="Corporate">Corporate</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs tracking-[0.24em] text-white/60 mb-3">BUDGET RANGE</label>
+                  <select 
+                    name="budget" 
+                    value={formData.budget} 
+                    onChange={handleChange}
+                    className="w-full bg-transparent border-b border-white/20 pb-3 text-lg focus:border-[#9b5fd6] outline-none text-white/80"
+                  >
+                    <option value="">Select...</option>
+                    <option value="$3,000 - $6,000 USD">$3k – $6k USD</option>
+                    <option value="$6,000 - $12,000 USD">$6k – $12k USD</option>
+                    <option value="$12,000+ USD">$12k+ USD</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs tracking-[0.24em] text-white/60 mb-3">EVENT NAME / NOTES</label>
+                <textarea 
+                  name="notes" 
+                  value={formData.notes} 
+                  onChange={handleChange}
+                  rows={4}
+                  placeholder="Tell us more about the vision..."
+                  className="w-full bg-transparent border-b border-white/20 pb-3 text-lg placeholder:text-white/30 focus:border-[#9b5fd6] outline-none resize-y" 
                 />
               </div>
 
-              <div className="form-foot">
-                <span className="note">Respuesta en &lt; 48h</span>
-                <button
+              <div className="pt-4 flex items-center justify-between">
+                <div className="text-[10px] tracking-widest text-white/40 font-mono">ALL FIELDS MARKED * ARE REQUIRED</div>
+                
+                <motion.button
                   type="submit"
-                  className={`submit-btn ${state === FORM_STATE.OK ? 'ok' : ''}`}
-                  onMouseEnter={() => audio?.whoosh?.()}
-                  disabled={state === FORM_STATE.SENDING}
+                  disabled={status === 'loading'}
+                  className="group flex items-center gap-4 px-10 py-4 bg-white text-black text-xs tracking-[2px] font-medium rounded-full disabled:opacity-70 hover:bg-[#9b5fd6] hover:text-white transition-all active:scale-[0.985]"
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.985 }}
                 >
-                  {state === FORM_STATE.SENDING && 'Enviando…'}
-                  {state === FORM_STATE.OK && '✓ Enviado'}
-                  {state === FORM_STATE.ERROR && 'Reintentar'}
-                  {state === FORM_STATE.IDLE && (
-                    <>
-                      Enviar <span>→</span>
-                    </>
-                  )}
-                </button>
+                  {status === 'loading' ? 'SENDING...' : status === 'success' ? 'REQUEST RECEIVED ✓' : 'SEND REQUEST'}
+                  <span className="group-hover:translate-x-1 transition">↗</span>
+                </motion.button>
               </div>
-              {state === FORM_STATE.ERROR && <div className="form-err">{err}</div>}
+
+              <AnimatePresence>
+                {error && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-red-400 text-sm mt-2"
+                  >
+                    {error}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </form>
           </div>
         </div>
@@ -477,3 +316,5 @@ export function Booking() {
     </section>
   )
 }
+
+export default Booking

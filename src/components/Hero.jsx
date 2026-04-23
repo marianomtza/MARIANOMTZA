@@ -1,230 +1,230 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { useAudio } from '../contexts/AudioContext'
-import { useTheme } from '../contexts/ThemeContext'
-import { useEventListener, useInterval } from '../hooks/useAnimations'
-import { useMotion, useMotionFrame } from '../contexts/MotionContext'
-import { PIANO_SCALE } from '../constants'
+import React, { useRef, useEffect, useState, useCallback } from 'react'
+import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion'
+import * as Tone from 'tone'
 
-/**
- * Hero Component - Main title with piano magnifier effect
- * Features: Mac Dock-style magnification, piano audio, glow effects
- */
-export function Hero() {
-  const audio = useAudio()
-  const theme = useTheme()
-  const [revealed, setRevealed] = useState(false)
-  const [roleIdx, setRoleIdx] = useState(0)
-  const titleRef = useRef(null)
-  const charRefs = useRef([])
-  const metricsRef = useRef([])
-  const lastCharRef = useRef(-1)
-  const proximityRef = useRef([])
-  const { pointerRef } = useMotion()
+const TITLE = 'MARIANOMTZA'
+const ROLES = [
+  { role: 'Productor', tag: 'Música Electrónica' },
+  { role: 'Booking', tag: 'Eventos & Festivales' },
+  { role: 'A&R', tag: 'Descubrimiento de Talento' },
+  { role: 'Director Creativo', tag: 'Experiencias Inmersivas' },
+]
 
-  const TITLE = 'SYSTEM'
-  const ROLES = [
-    'Curated Roster',
-    'Booking Platform',
-    'Network of Talent',
-    'Control & Direction',
-  ]
+const NOTE_FREQUENCIES = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 698.46]
 
-  useEffect(() => {
-    setRevealed(true)
-  }, [])
+let audioContext: Tone.Synth | null = null
+let isInitialized = false
+let lastPlayTime = 0
+const DEBOUNCE_MS = 80
 
-  useInterval(() => setRoleIdx((i) => (i + 1) % ROLES.length), 2600)
+const initAudio = async () => {
+  if (isInitialized) return
+  try {
+    await Tone.start()
+    audioContext = new Tone.Synth({
+      oscillator: { type: 'sine' },
+      envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.4 }
+    }).toDestination()
+    isInitialized = true
+  } catch (e) {
+    console.warn('Audio init failed', e)
+  }
+}
 
-  const updateCharMetrics = useCallback(() => {
-    metricsRef.current = charRefs.current.map((charEl) => {
-      if (!charEl) return null
-      const rect = charEl.getBoundingClientRect()
-      return {
-        left: rect.left,
-        right: rect.right,
-        top: rect.top,
-        bottom: rect.bottom,
-      }
-    })
-  }, [])
+const playNote = (index: number, velocity = 0.7) => {
+  const now = Date.now()
+  if (now - lastPlayTime < DEBOUNCE_MS) return
+  lastPlayTime = now
+  
+  if (!audioContext) return
+  
+  const freq = NOTE_FREQUENCIES[index % NOTE_FREQUENCIES.length]
+  audioContext.triggerAttackRelease(freq, '8n', undefined, velocity)
+}
 
-  useEffect(() => {
-    updateCharMetrics()
-  }, [updateCharMetrics])
+interface LetterProps {
+  char: string
+  index: number
+  mouseX: any
+  containerRef: React.RefObject<HTMLDivElement>
+  onMagnify: (idx: number) => void
+}
 
-  useEventListener('resize', updateCharMetrics, window)
-  useEventListener('scroll', updateCharMetrics, window)
+const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onMagnify }) => {
+  const letterRef = useRef<HTMLSpanElement>(null)
+  const [isHovered, setIsHovered] = useState(false)
 
-  const getMagnifiedCharIndex = useCallback((clientX, clientY) => {
-    const metrics = metricsRef.current
-    for (let i = 0; i < metrics.length; i++) {
-      const rect = metrics[i]
-      if (!rect) continue
-      if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
-        return i
-      }
-    }
-    return -1
-  }, [])
-
-  const applyMagnification = useCallback((idx) => {
-    if (!charRefs.current.length) return
-    const chars = charRefs.current
-    chars.forEach((el, i) => {
-      if (!el) return
-      const dist = Math.abs(i - idx)
-      if (dist === 0) {
-        el.style.transform = 'translateY(-18px) scale(1.85)'
-        el.style.color = theme.currentTheme.accent
-        el.style.textShadow = `0 0 20px ${theme.currentTheme.accent}, 0 0 40px rgba(168, 85, 247, 0.4)`
-        el.style.zIndex = '10'
-      } else if (dist === 1) {
-        el.style.transform = 'translateY(-10px) scale(1.45)'
-        el.style.textShadow = `0 0 12px rgba(168, 85, 247, 0.3)`
-        el.style.color = ''
-        el.style.zIndex = '5'
-      } else if (dist === 2) {
-        el.style.transform = 'translateY(-4px) scale(1.18)'
-        el.style.textShadow = `0 0 6px rgba(168, 85, 247, 0.15)`
-        el.style.color = ''
-        el.style.zIndex = '2'
-      } else if (dist === 3) {
-        el.style.transform = 'translateY(-1px) scale(1.06)'
-        el.style.textShadow = ''
-        el.style.color = ''
-        el.style.zIndex = ''
-      } else {
-        el.style.transform = 'translateY(0) scale(1)'
-        el.style.textShadow = ''
-        el.style.color = ''
-        el.style.zIndex = ''
-      }
-    })
-  }, [theme.currentTheme.accent])
-
-  const resetMagnification = useCallback(() => {
-    if (!charRefs.current.length) return
-    const chars = charRefs.current
-    chars.forEach((el) => {
-      if (!el) return
-      el.style.transform = ''
-      el.style.color = ''
-      el.style.zIndex = ''
-      el.style.textShadow = ''
-    })
-  }, [])
-
-  const playPianoNote = useCallback((index) => {
-    audio.ensureContext()
-    const freq = PIANO_SCALE[index % PIANO_SCALE.length]
-    if (audio.note) audio.note(freq, 0.16)
-  }, [audio])
-
-  useMotionFrame(() => {
-    if (!charRefs.current.length) return
-    const pointer = pointerRef.current
-    const hitIndex = getMagnifiedCharIndex(pointer.x, pointer.y)
-    if (hitIndex !== lastCharRef.current) {
-      lastCharRef.current = hitIndex
-      if (hitIndex >= 0) {
-        playPianoNote(hitIndex)
-      }
-    }
-
-    const metrics = metricsRef.current
-    const maxRadius = 280
-    charRefs.current.forEach((el, index) => {
-      if (!el || !metrics[index]) return
-      const rect = metrics[index]
-      const cx = (rect.left + rect.right) / 2
-      const cy = (rect.top + rect.bottom) / 2
-      const dx = pointer.x - cx
-      const dy = pointer.y - cy
-      const distance = Math.sqrt(dx * dx + dy * dy)
-      const target = Math.max(0, 1 - distance / maxRadius)
-      const prev = proximityRef.current[index] || 0
-      const next = prev + (target - prev) * 0.16
-      proximityRef.current[index] = next
-
-      const lift = -20 * next
-      const scale = 1 + 0.9 * next
-      el.style.transform = `translateY(${lift}px) scale(${scale})`
-      el.style.color = next > 0.08 ? theme.currentTheme.accent : ''
-      el.style.textShadow = next > 0.08 ? `0 0 ${20 * next}px ${theme.currentTheme.accent}` : ''
-      el.style.zIndex = next > 0.1 ? '10' : ''
-    })
+  const distance = useTransform(mouseX, (x: number) => {
+    if (!letterRef.current || !containerRef.current) return 0
+    const rect = letterRef.current.getBoundingClientRect()
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const letterCenter = rect.left + rect.width / 2 - containerRect.left
+    return Math.abs(x - letterCenter)
   })
 
-  const handleLetterMove = useCallback((e) => {
-    const i = getMagnifiedCharIndex(e.clientX, e.clientY)
-    if (i !== lastCharRef.current) {
-      lastCharRef.current = i
-      if (i >= 0) {
-        applyMagnification(i)
-        playPianoNote(i)
-      } else {
-        resetMagnification()
-      }
-    }
-  }, [applyMagnification, getMagnifiedCharIndex, playPianoNote, resetMagnification])
+  const scale = useTransform(distance, [0, 120], [1.6, 1])
+  const y = useTransform(distance, [0, 120], [-12, 0])
+  const color = useTransform(distance, [0, 80], ['#9b5fd6', '#f4f1f7'])
 
-  const handleLetterLeave = useCallback(() => {
-    lastCharRef.current = -1
-    resetMagnification()
-  }, [resetMagnification])
+  const springScale = useSpring(scale, { stiffness: 300, damping: 25 })
+  const springY = useSpring(y, { stiffness: 300, damping: 25 })
+
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true)
+    onMagnify(index)
+    playNote(index)
+  }, [index, onMagnify])
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovered(false)
+  }, [])
 
   return (
-    <section className="hero" id="top">
-      <div>
-        <div className="hero-eyebrow">→ Ciudad de México</div>
-        <h1
-          className={`hero-title ${revealed ? 'revealed' : ''}`}
-          aria-label={TITLE}
-          ref={titleRef}
-          style={{ overflow: 'visible' }}
-          onMouseEnter={updateCharMetrics}
+    <motion.span
+      ref={letterRef}
+      className="char inline-block cursor-none select-none"
+      style={{
+        scale: springScale,
+        y: springY,
+        color: isHovered ? '#9b5fd6' : color,
+        textShadow: isHovered ? '0 0 20px rgba(155, 95, 214, 0.6)' : 'none',
+        transition: 'color 0.1s ease',
+      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      whileHover={{ scale: 1.6, y: -12 }}
+    >
+      {char}
+    </motion.span>
+  )
+}
+
+export const Hero: React.FC = () => {
+  const [currentRole, setCurrentRole] = useState(0)
+  const [magnifiedIndex, setMagnifiedIndex] = useState(-1)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mouseX = useMotionValue(0)
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  // Rotating roles
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentRole((prev) => (prev + 1) % ROLES.length)
+    }, 2800)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Mouse tracking for dock effect
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect()
+        mouseX.set(e.clientX - rect.left)
+      }
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [mouseX])
+
+  const handleMagnify = useCallback((idx: number) => {
+    setMagnifiedIndex(idx)
+    initAudio()
+  }, [])
+
+  const handleCTAClick = (type: 'booking' | 'events') => {
+    initAudio()
+    playNote(0, 0.8)
+    if (type === 'booking') {
+      const bookingSection = document.getElementById('booking')
+      bookingSection?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else {
+      const eventsSection = document.getElementById('events')
+      eventsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
+  return (
+    <section className="hero relative min-h-[92vh] flex flex-col justify-between pt-20 pb-12 overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(#1a0a2e_0.8px,transparent_1px)] bg-[length:4px_4px] opacity-40" />
+      
+      <div className="relative z-10 max-w-[1440px] mx-auto px-6 md:px-12">
+        {/* Eyebrow */}
+        <div className="hero-eyebrow mb-8 flex items-center gap-3 text-xs tracking-[0.3em] text-[#8a7fa0] uppercase">
+          <span className="inline-block w-px h-3 bg-[#9b5fd6]" /> CIUDAD DE MÉXICO
+        </div>
+
+        {/* Interactive Title with Dock Effect */}
+        <div 
+          ref={containerRef}
+          className="hero-title relative flex flex-wrap gap-x-[2px] text-[min(17vw,220px)] font-black tracking-[-0.035em] leading-[0.92] text-white mb-8"
+          onMouseLeave={() => setMagnifiedIndex(-1)}
         >
-          <span className="word" style={{ overflow: 'visible' }}>
-            {TITLE.split('').map((ch, i) => (
-              <span
-                key={i}
-                ref={(el) => (charRefs.current[i] = el)}
-                className="char piano-char"
-                style={{
-                  transitionDelay: `${i * 50 + 400}ms`,
-                  transition: 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.18s, text-shadow 0.18s',
-                  display: 'inline-block',
-                  position: 'relative',
-                  transformOrigin: 'bottom center',
-                  willChange: 'transform, color, text-shadow',
-                  cursor: 'pointer',
-                }}
-                onMouseMove={handleLetterMove}
-                onMouseLeave={handleLetterLeave}
-                data-note={i}
-              >
-                {ch}
-              </span>
-            ))}
-          </span>
-        </h1>
+          {TITLE.split('').map((char, i) => (
+            <Letter
+              key={i}
+              char={char}
+              index={i}
+              mouseX={mouseX}
+              containerRef={containerRef}
+              onMagnify={handleMagnify}
+            />
+          ))}
+        </div>
+
+        {/* Rotating Role */}
+        <div className="flex items-center gap-4 mb-10">
+          <div className="hero-role text-sm tracking-[0.2em] text-white flex items-center gap-3">
+            → <span className="font-mono text-[#9b5fd6]">{ROLES[currentRole].tag}</span>
+          </div>
+          <motion.div 
+            key={currentRole}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-2xl md:text-4xl font-semibold tracking-tight text-white"
+          >
+            {ROLES[currentRole].role}
+          </motion.div>
+        </div>
+
+        {/* Description */}
+        <p className="max-w-[42ch] text-[#8a7fa0] text-[15px] leading-relaxed mb-12">
+          Productor y curador de experiencias sonoras. <strong className="text-white font-medium">+4000 asistentes</strong> en las noches más intensas de la ciudad.
+        </p>
+
+        {/* CTAs */}
+        <div className="flex flex-wrap gap-4">
+          <motion.button
+            onClick={() => handleCTAClick('booking')}
+            className="btn primary group flex items-center gap-3 px-9 py-4 rounded-full bg-[#9b5fd6] text-white text-xs tracking-[0.22em] uppercase font-mono hover:bg-[#b67de8] transition-all active:scale-[0.985]"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.985 }}
+          >
+            RESERVAR FECHA
+            <span className="group-hover:translate-x-0.5 transition">↗</span>
+          </motion.button>
+
+          <motion.button
+            onClick={() => handleCTAClick('events')}
+            className="btn ghost flex items-center gap-3 px-8 py-4 rounded-full border border-white/20 text-xs tracking-[0.22em] uppercase font-mono hover:border-[#9b5fd6] hover:text-[#9b5fd6] transition-all"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.985 }}
+          >
+            VER EVENTOS
+          </motion.button>
+        </div>
       </div>
 
-      <div className="hero-bottom">
-        <div>
-          <div className="hero-role">{ROLES[roleIdx]}</div>
-          <div className="hero-desc">
-            Plataforma de booking y roster curado. Conectando talento en <strong>Ciudad de México</strong>.
-          </div>
-          <div className="hero-ctas">
-            <a href="#booking" className="btn primary">
-              Booking
-              <span className="arr">→</span>
-            </a>
-          </div>
-        </div>
-        <div className="hero-scroll">Scroll para explorar</div>
-      </div>
+      {/* Scroll Indicator */}
+      <motion.div 
+        className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[10px] tracking-[0.3em] text-[#8a7fa0] font-mono"
+        animate={{ y: [0, 6, 0] }}
+        transition={{ duration: 2.2, repeat: Infinity }}
+      >
+        SCROLL TO EXPLORE
+        <div className="w-px h-8 bg-gradient-to-b from-transparent via-[#9b5fd6] to-transparent" />
+      </motion.div>
     </section>
   )
 }
+
+export default Hero
