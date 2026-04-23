@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import { useCanvasDrawing, TOOLS, COLORS } from '../hooks/useCanvasDrawing'
 import { Drawing } from '../lib/types'
+import { fetchWithRetry } from '../lib/fetchWithRetry'
 
 export const Dibujos: React.FC = () => {
   const [mode, setMode] = useState<'dibujar' | 'galeria'>('galeria')
@@ -36,7 +37,7 @@ export const Dibujos: React.FC = () => {
     const loadGallery = async () => {
       try {
         setLoading(true)
-        const res = await fetch('/api/drawings')
+        const res = await fetchWithRetry('/api/drawings', {}, 2, 6000)
         if (!res.ok) throw new Error('Failed to fetch')
         const data = await res.json()
         setGallery(data)
@@ -84,7 +85,7 @@ export const Dibujos: React.FC = () => {
     }
 
     try {
-      const res = await fetch('/api/drawings', {
+      const res = await fetchWithRetry('/api/drawings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,7 +96,10 @@ export const Dibujos: React.FC = () => {
         }),
       })
 
-      if (!res.ok) throw new Error('Failed to save')
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}))
+        throw new Error(payload.error || 'Failed to save')
+      }
       const newDrawing = await res.json()
 
       // Add to gallery
@@ -132,7 +136,8 @@ export const Dibujos: React.FC = () => {
       }, 720)
     } catch (err) {
       console.error('Publish error:', err)
-      setError('No pudimos guardar tu dibujo. Intenta de nuevo.')
+      const message = err instanceof Error ? err.message : 'No pudimos guardar tu dibujo. Intenta de nuevo.'
+      setError(navigator.onLine ? message : 'Sin conexión. Revisa tu internet e intenta de nuevo.')
       setStatus('idle')
     }
   }

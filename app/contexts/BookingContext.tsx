@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react'
 
 interface BookingContextType {
   selectedArtist: string
@@ -26,13 +26,13 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     setScrollRequest(r => r + 1)
   }, [])
 
-  const value: BookingContextType = {
+  const value: BookingContextType = useMemo(() => ({
     selectedArtist,
     scrollRequest,
     setSelectedArtist,
     clearSelectedArtist,
     requestBookingScroll,
-  }
+  }), [selectedArtist, scrollRequest, setSelectedArtist, clearSelectedArtist, requestBookingScroll])
 
   return <BookingContext.Provider value={value}>{children}</BookingContext.Provider>
 }

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import { useBookingState } from '../contexts/BookingContext'
 import { ARTIST_NAMES } from '../lib/roster'
+import { fetchWithRetry } from '../lib/fetchWithRetry'
 
 export const Booking: React.FC = () => {
   const { selectedArtist, clearSelectedArtist, scrollRequest } = useBookingState()
@@ -72,7 +73,7 @@ export const Booking: React.FC = () => {
     setStatus('loading')
 
     try {
-      const response = await fetch('/api/booking', {
+      const response = await fetchWithRetry('/api/booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -91,7 +92,8 @@ export const Booking: React.FC = () => {
       })
 
       if (!response.ok) {
-        throw new Error('No se pudo enviar la solicitud')
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.error || 'No se pudo enviar la solicitud')
       }
 
       setStatus('success')
@@ -111,7 +113,8 @@ export const Booking: React.FC = () => {
     } catch (submitError) {
       console.error(submitError)
       setStatus('error')
-      setError('No pudimos enviar tu solicitud. Intenta de nuevo.')
+      const message = submitError instanceof Error ? submitError.message : 'No pudimos enviar tu solicitud. Intenta de nuevo.'
+      setError(navigator.onLine ? message : 'Sin conexión. Revisa tu internet e intenta de nuevo.')
     }
   }
 

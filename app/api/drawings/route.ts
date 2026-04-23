@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Drawing } from '../../lib/types'
 import { createSupabaseServerClient } from '../../lib/supabase'
+import { applyRateLimit } from '../../lib/rateLimit'
+import { parsePagination, validateDrawingPayload } from '../../lib/validation'
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = createSupabaseServerClient()
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const { limit, offset } = parsePagination(searchParams)
 
     const { data, error } = await supabase
       .from('drawings')
       .select('id,image,name,message,tool,created_at,updated_at')
       .order('created_at', { ascending: false })
-      .range(offset, Math.max(offset + limit - 1, 0))
+      .range(offset, offset + limit - 1)
 
     if (error) throw error
 
@@ -30,24 +31,24 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient()
-    const body = await request.json()
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const rateLimit = applyRateLimit(`drawings:${ip}`, { limit: 12, windowMs: 60_000 })
 
-    // Validate
-    if (!body.image || typeof body.image !== 'string') {
-      return NextResponse.json({ error: 'Missing or invalid image' }, { status: 400 })
+    if (!rateLimit.ok) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
     }
 
-    const payload = {
-      image: body.image,
-      name: body.name || 'Anónimo',
-      message: body.message || '',
-      tool: body.tool || 'pencil',
+    const supabase = createSupabaseServerClient()
+    const body = await request.json()
+    const parsed = validateDrawingPayload(body)
+
+    if (parsed.ok === false) {
+      return NextResponse.json({ error: parsed.error }, { status: 422 })
     }
 
     const { data, error } = await supabase
       .from('drawings')
-      .insert(payload)
+      .insert(parsed.data)
       .select('id,image,name,message,tool,created_at,updated_at')
       .single()
 
