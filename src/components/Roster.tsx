@@ -107,13 +107,12 @@ const ArtistModal: React.FC<{
             <div className="md:col-span-2 p-12 flex flex-col relative">
               <button 
                 onClick={onClose}
-                className="absolute top-9 right-9 text-white/40 hover:text-white text-xl font-light tracking-widest transition"
+                className="absolute top-9 right-9 text-white/40 hover:text-white text-2xl font-light tracking-widest transition"
               >
-                CERRAR
+                ✕
               </button>
 
               <div className="mt-auto">
-                <div className="uppercase tracking-[3px] text-xs text-[#9b5fd6] mb-3">TALENTO CURADO</div>
                 <h2 className="text-[52px] font-semibold tracking-tighter text-white leading-none mb-5">{artist.name}</h2>
                 <p className="text-xl text-[#8a7fa0] mb-10 tracking-wide">{artist.type}</p>
 

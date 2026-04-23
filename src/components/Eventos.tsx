@@ -66,13 +66,7 @@ export const Eventos: React.FC = () => {
     <section id="eventos" className="section py-24 border-t border-white/10 bg-black">
       <div className="max-w-[1440px] mx-auto px-6 md:px-12">
         <div className="max-w-[620px] mb-16">
-          <div className="font-mono text-xs tracking-[0.24em] text-[#9b5fd6] mb-4">NOCHES QUE QUEDAN</div>
-          <h2 className="text-balance text-[56px] leading-none tracking-[-1.6px] font-semibold mb-6">
-            Eventos.<br />Memorias.<br />Legado.
-          </h2>
-          <p className="text-[#8a7fa0] text-[15px] max-w-[36ch]">
-            Algunas de las noches que hemos construido juntos en Ciudad de México y más allá.
-          </p>
+          <h2 className="text-[42px] font-semibold tracking-tight mb-4">Eventos</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-white/10 p-px rounded-3xl overflow-hidden">

@@ -4,7 +4,6 @@ import { Navbar } from './components/Navbar'
 import { Hero } from './components/Hero'
 import { Roster } from './components/Roster'
 import { Eventos } from './components/Eventos'
-import { Inspiracion } from './components/Inspiracion'
 import { Booking } from './components/Booking'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import Lenis from '@studio-freight/lenis'
@@ -34,7 +33,6 @@ function App() {
           <Hero />
           <Eventos />
           <Roster />
-          <Inspiracion />
           <Booking />
 
           {/* Footer */}

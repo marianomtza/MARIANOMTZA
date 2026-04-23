@@ -174,16 +174,6 @@ export const Hero: React.FC = () => {
           </motion.button>
         </div>
       </div>
-
-      {/* Scroll Indicator */}
-      <motion.div 
-        className="absolute bottom-14 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[10px] tracking-[0.28em] text-[#8a7fa0] font-mono"
-        animate={{ y: [0, 7, 0] }}
-        transition={{ duration: 2.1, repeat: Infinity }}
-      >
-        DESPLAZA PARA EXPLORAR
-        <div className="w-px h-7 bg-gradient-to-b from-transparent via-[#9b5fd6] to-transparent" />
-      </motion.div>
     </section>
   )
 }
