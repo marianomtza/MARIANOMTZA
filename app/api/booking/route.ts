@@ -3,16 +3,38 @@ import { createSupabaseServerClient } from '../../lib/supabase'
 import { applyRateLimit } from '../../lib/rateLimit'
 import { validateBookingPayload } from '../../lib/validation'
 
+function getClientKey(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-real-ip')
+    || 'unknown'
+  const ua = request.headers.get('user-agent') || 'unknown-ua'
+  return `${ip}:${ua.slice(0, 120)}`
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    const rateLimit = applyRateLimit(`booking:${ip}`, { limit: 8, windowMs: 60_000 })
+    const key = getClientKey(request)
+    const rateLimit = applyRateLimit(`booking:${key}`, { limit: 8, windowMs: 60_000 })
 
     if (!rateLimit.ok) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(rateLimit.retryAfterMs / 1000) || 60),
+          },
+        }
+      )
     }
 
-    const body = await request.json()
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
     const parsed = validateBookingPayload(body)
 
     if (parsed.ok === false) {

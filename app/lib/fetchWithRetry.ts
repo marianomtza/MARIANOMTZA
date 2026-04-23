@@ -1,4 +1,6 @@
-'use client'
+function abortError() {
+  return new DOMException('Request aborted', 'AbortError')
+}
 
 export async function fetchWithRetry(
   input: RequestInfo | URL,
@@ -9,16 +11,22 @@ export async function fetchWithRetry(
   let lastError: unknown
 
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    const timeoutController = new AbortController()
+    const callerSignal = init.signal
+
+    const onCallerAbort = () => timeoutController.abort(callerSignal?.reason)
+    if (callerSignal) {
+      if (callerSignal.aborted) throw abortError()
+      callerSignal.addEventListener('abort', onCallerAbort, { once: true })
+    }
+
+    const timer = setTimeout(() => timeoutController.abort(), timeoutMs)
 
     try {
       const response = await fetch(input, {
         ...init,
-        signal: controller.signal,
+        signal: timeoutController.signal,
       })
-
-      clearTimeout(timer)
 
       if (response.ok) return response
 
@@ -28,13 +36,19 @@ export async function fetchWithRetry(
 
       lastError = new Error(`Request failed with status ${response.status}`)
     } catch (error) {
+      if (timeoutController.signal.aborted && callerSignal?.aborted) {
+        throw abortError()
+      }
+
       lastError = error
     } finally {
       clearTimeout(timer)
+      if (callerSignal) callerSignal.removeEventListener('abort', onCallerAbort)
     }
 
     if (attempt < retries) {
-      const backoffMs = 350 * Math.pow(2, attempt)
+      const jitter = Math.floor(Math.random() * 120)
+      const backoffMs = 350 * Math.pow(2, attempt) + jitter
       await new Promise((resolve) => setTimeout(resolve, backoffMs))
     }
   }

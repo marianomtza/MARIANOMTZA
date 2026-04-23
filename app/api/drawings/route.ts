@@ -4,6 +4,14 @@ import { createSupabaseServerClient } from '../../lib/supabase'
 import { applyRateLimit } from '../../lib/rateLimit'
 import { parsePagination, validateDrawingPayload } from '../../lib/validation'
 
+function getClientKey(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-real-ip')
+    || 'unknown'
+  const ua = request.headers.get('user-agent') || 'unknown-ua'
+  return `${ip}:${ua.slice(0, 120)}`
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createSupabaseServerClient()
@@ -31,15 +39,30 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    const rateLimit = applyRateLimit(`drawings:${ip}`, { limit: 12, windowMs: 60_000 })
+    const key = getClientKey(request)
+    const rateLimit = applyRateLimit(`drawings:${key}`, { limit: 12, windowMs: 60_000 })
 
     if (!rateLimit.ok) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(rateLimit.retryAfterMs / 1000) || 60),
+          },
+        }
+      )
     }
 
     const supabase = createSupabaseServerClient()
-    const body = await request.json()
+
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
     const parsed = validateDrawingPayload(body)
 
     if (parsed.ok === false) {
