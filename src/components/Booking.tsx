@@ -6,7 +6,6 @@ import { ARTIST_NAMES } from '../data/roster'
 
 export const Booking: React.FC = () => {
   const { selectedArtist, clearSelectedArtist, scrollRequest } = useBookingState()
-  const { setSelectedArtist } = useBookingActions()
 
   const [mode, setMode] = useState<'artista' | 'servicio'>('artista')
   const [formData, setFormData] = useState({

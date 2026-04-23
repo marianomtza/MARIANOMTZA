@@ -104,10 +104,8 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onMa
 
 export const Hero: React.FC = () => {
   const [roleIndex, setRoleIndex] = useState(0)
-  const [magnified, setMagnified] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
   const mouseX = useMotionValue(0)
-  const [loaded, setLoaded] = useState(false)
 
   // Role rotation
   useEffect(() => {
@@ -130,7 +128,6 @@ export const Hero: React.FC = () => {
   }, [mouseX])
 
   const handleMagnify = useCallback((idx: number) => {
-    setMagnified(idx)
     initAudio()
   }, [])
 
@@ -154,7 +151,6 @@ export const Hero: React.FC = () => {
         <div 
           ref={containerRef}
           className="relative flex flex-wrap gap-x-[1px] text-[min(16.5vw,210px)] font-black tracking-[-0.032em] leading-[0.88] text-white mb-9"
-          onMouseLeave={() => setMagnified(-1)}
         >
           {TITLE.split('').map((char, i) => (
             <Letter
