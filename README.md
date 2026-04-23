@@ -4,21 +4,20 @@ Portfolio oficial de Mariano Martínez, productor de eventos y curador de experi
 
 ## ✨ Características
 
-- **Hero interactivo** con dock musical (letras que se magnifican + notas de piano con Tone.js)
+- **Hero interactivo** con dock musical (letras que se magnifican)
 - **Roster de artistas** con grid asimétrico y modal elegante
 - **Formulario de reserva** completamente en español, con autofill desde el roster y celebración con confetti
 - **Navegación móvil** con menú hamburguesa animado
 - **Scroll suave** con Lenis
-- **Diseño coherente** negro + morado, sin ruido visual, sin emojis
-- **100% en español** (excepto "Booking" si aplica)
+- **Diseño coherente** negro + morado, sin ruido visual
 - Optimizado para performance y escalabilidad
 
-## 🚀 Deploy en Vercel (recomendado)
+## 🚀 Deploy en Vercel
 
 1. Sube el proyecto a GitHub
 2. Importa en Vercel
-3. `npm install && npm run build` (automático)
-4. Listo. El sitio es estático y funciona inmediatamente.
+3. Build command: `npm run build`
+4. Output: gestionado por Next.js
 
 ## 🛠️ Desarrollo local
 
@@ -27,34 +26,37 @@ npm install
 npm run dev
 ```
 
-## 📦 Estructura
+## 🔐 Variables de entorno (producción)
+
+Configura Supabase para persistencia de dibujos y solicitudes:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+Luego ejecuta el esquema base en tu proyecto de Supabase: `supabase/schema.sql`.
+
+## 📦 Estructura (runtime actual)
 
 ```
-src/
+app/
 ├── components/
-│   ├── Navbar.tsx
-│   ├── Hero.tsx
-│   ├── Roster.tsx
-│   └── Booking.tsx
 ├── contexts/
-│   └── BookingContext.tsx
-├── data/
-│   └── roster.ts
-├── App.tsx
-├── main.tsx
-└── index.css
+├── hooks/
+├── lib/
+├── api/
+├── layout.tsx
+└── page.tsx
 ```
 
 ## 🔧 Personalización
 
 - Cambia colores en `tailwind.config.js` (accent = morado principal)
-- Edita artistas en `src/data/roster.ts`
-- Para backend real de reservas: integra @supabase/supabase-js (el SQL está listo en /supabase si lo necesitas)
+- Edita artistas en `app/lib/roster.ts`
+- Configura variables para servicios externos en `.env` según corresponda
 
-## 📝 Notas
+## 📝 Stack actual
 
-Este proyecto fue **reconstruido desde cero** para cumplir con los más altos estándares de calidad, coherencia y UX. Sin parches, sin código inconsistente, sin mezclas de idiomas.
-
-Listo para producción. 
-
-**Construido con:** React + TypeScript + Vite + Tailwind + Framer Motion + Tone.js + Lenis
+**Next.js + TypeScript + Tailwind + Framer Motion + Tone.js + Lenis**

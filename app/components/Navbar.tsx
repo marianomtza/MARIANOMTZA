@@ -13,7 +13,7 @@ export const Navbar: React.FC = () => {
   const navLinks = [
     { label: 'Eventos', id: 'eventos' },
     { label: 'Inspiración', id: 'inspiracion' },
-    { label: 'Roster', id: 'artistas' },
+    { label: 'Artistas', id: 'artistas' },
     { label: 'Contacto', id: 'contacto' },
   ]
 

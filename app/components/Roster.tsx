@@ -59,7 +59,7 @@ const ArtistCard: React.FC<{
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            BOOK
+            RESERVAR
             <span>↗</span>
           </motion.button>
         </div>
@@ -161,7 +161,7 @@ const ArtistModal: React.FC<{
                 onClick={handleBook}
                 className="mt-auto w-full py-4 bg-white text-black text-xs tracking-[2px] font-medium rounded-full hover:bg-[#9b5fd6] hover:text-white transition flex items-center justify-center gap-3 group"
               >
-                BOOK
+                RESERVAR
                 <span className="group-hover:rotate-45 transition">↗</span>
               </button>
             </div>

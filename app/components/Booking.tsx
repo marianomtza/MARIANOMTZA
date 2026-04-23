@@ -71,36 +71,48 @@ export const Booking: React.FC = () => {
 
     setStatus('loading')
 
-    // DEMO MODE: En producción real se enviaría vía Resend o Supabase
-    setTimeout(() => {
-      setStatus('success')
-      
-      // Confetti celebration
-      confetti({
-        particleCount: 160,
-        spread: 75,
-        origin: { y: 0.58 }
+    try {
+      const response = await fetch('/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          artist: formData.artist,
+          date: formData.date,
+          city: formData.city,
+          venue: formData.venue,
+          capacity: formData.capacity,
+          event_type: formData.eventType,
+          event_name: formData.eventName,
+          budget: formData.budget,
+          notes: formData.notes,
+        }),
       })
-      
+
+      if (!response.ok) {
+        throw new Error('No se pudo enviar la solicitud')
+      }
+
+      setStatus('success')
+      confetti({ particleCount: 160, spread: 75, origin: { y: 0.58 } })
       setTimeout(() => {
-        confetti({
-          particleCount: 100,
-          angle: 55,
-          spread: 65,
-          origin: { x: 0.12 }
-        })
+        confetti({ particleCount: 100, angle: 55, spread: 65, origin: { x: 0.12 } })
       }, 280)
 
-      // Reset form
       setTimeout(() => {
         setFormData({
-          name: '', email: '', artist: '', date: '', city: '', venue: '', 
-          capacity: '', eventType: '', eventName: '', budget: '', notes: ''
+          name: '', email: '', artist: '', date: '', city: '', venue: '',
+          capacity: '', eventType: '', eventName: '', budget: '', notes: '',
         })
         clearSelectedArtist()
         setStatus('idle')
       }, 2100)
-    }, 850)
+    } catch (submitError) {
+      console.error(submitError)
+      setStatus('error')
+      setError('No pudimos enviar tu solicitud. Intenta de nuevo.')
+    }
   }
 
   return (
@@ -287,7 +299,7 @@ export const Booking: React.FC = () => {
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.985 }}
                 >
-                  {status === 'loading' ? 'ENVIANDO...' : status === 'success' ? 'SOLICITUD RECIBIDA (DEMO) ✓' : 'ENVIAR SOLICITUD'}
+                  {status === 'loading' ? 'ENVIANDO...' : status === 'success' ? 'SOLICITUD RECIBIDA ✓' : 'ENVIAR SOLICITUD'}
                   <span className="group-hover:translate-x-1 transition">↗</span>
                 </motion.button>
               </div>
