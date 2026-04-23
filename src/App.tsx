@@ -37,14 +37,42 @@ function App() {
   return (
     <BookingProvider>
       <div className="bg-black text-white overflow-hidden">
-        {/* Simple Nav */}
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
-          <div className="max-w-[1440px] mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
-            <div className="font-mono text-sm tracking-[3px] text-[#9b5fd6]">MARIANO MTZA</div>
-            <div className="flex items-center gap-8 text-xs tracking-[1.5px] font-mono">
-              <a href="#roster" className="hover:text-[#9b5fd6] transition">ROSTER</a>
-              <a href="#booking" className="hover:text-[#9b5fd6] transition">BOOKING</a>
-              <a href="https://instagram.com/marianomtza" target="_blank" className="hover:text-[#9b5fd6] transition">INSTAGRAM</a>
+        {/* NAV - Spanish + Theme + Sound */}
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-b border-white/10">
+          <div className="max-w-[1440px] mx-auto px-6 md:px-12 h-20 flex items-center justify-between text-sm">
+            <div className="font-mono tracking-[3px] text-[#9b5fd6]">Mariano Martínez</div>
+
+            <div className="hidden md:flex items-center gap-8 text-xs tracking-[2px] font-mono">
+              <a href="#eventos" className="hover:text-[#9b5fd6] transition">Eventos</a>
+              <a href="#roster" className="hover:text-[#9b5fd6] transition">Roster</a>
+              <a href="#booking" className="hover:text-[#9b5fd6] transition">Reserva</a>
+              <a href="#contacto" className="hover:text-[#9b5fd6] transition">Contacto</a>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <select 
+                onChange={(e) => {
+                  document.documentElement.setAttribute('data-theme', e.target.value)
+                  localStorage.setItem('theme', e.target.value)
+                }}
+                className="bg-black border border-white/20 text-xs px-2 py-1 rounded font-mono"
+                defaultValue="dark"
+              >
+                <option value="dark">Dark</option>
+                <option value="pink">Pink</option>
+                <option value="blue">Blue</option>
+                <option value="neon">Neon</option>
+              </select>
+
+              <button 
+                onClick={() => {
+                  const isOn = document.body.classList.toggle('sound-on')
+                  console.log('Sound:', isOn ? 'ON' : 'OFF')
+                }}
+                className="text-xs px-3 py-1 border border-white/20 rounded hover:bg-white hover:text-black transition"
+              >
+                🔊 Sound
+              </button>
             </div>
           </div>
         </nav>
