@@ -46,6 +46,8 @@ export const Dibujos: React.FC = () => {
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle')
   const [error, setError] = useState('')
+  const [strokeCount, setStrokeCount] = useState(0)
+  const [isDrawing, setIsDrawing] = useState(false)
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const strokesRef = useRef<Stroke[]>([])
@@ -137,6 +139,16 @@ export const Dibujos: React.FC = () => {
       ctx.fillRect(x, y, 1.2, 1.2)
     }
 
+    // Subtle paper lines texture (moved here so it's always visible)
+    ctx.strokeStyle = 'rgba(17, 17, 17, 0.035)'
+    ctx.lineWidth = 0.4
+    for (let x = 8; x < cssW; x += 11) {
+      ctx.beginPath()
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x + (Math.random() - 0.5) * 0.8, cssH)
+      ctx.stroke()
+    }
+
     // Draw all strokes with organic imperfection
     strokesRef.current.forEach((stroke) => {
       if (stroke.points.length < 2) return
@@ -211,7 +223,8 @@ export const Dibujos: React.FC = () => {
     const point = getPoint(e)
     const toolConfig = TOOLS.find(t => t.id === currentTool)!
     
-    isDrawingRef.current = true
+    setIsDrawing(true)
+    if (strokeCount === 0) setStrokeCount(1)
     currentStrokeRef.current = {
       points: [point],
       color: currentColor,
@@ -232,7 +245,7 @@ export const Dibujos: React.FC = () => {
   }
 
   const drawMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawingRef.current || !currentStrokeRef.current) return
+    if (!isDrawing || !currentStrokeRef.current) return
 
     const point = getPoint(e)
     const stroke = currentStrokeRef.current
@@ -270,30 +283,34 @@ export const Dibujos: React.FC = () => {
   }
 
   const endDrawing = () => {
-    if (!isDrawingRef.current || !currentStrokeRef.current) return
-    isDrawingRef.current = false
+    if (!isDrawing || !currentStrokeRef.current) return
+    setIsDrawing(false)
     
     // Only keep strokes with meaningful length
     if (currentStrokeRef.current.points.length > 3) {
       strokesRef.current.push(currentStrokeRef.current)
+      setStrokeCount(c => c + 1)
     }
     currentStrokeRef.current = null
   }
 
   const undo = () => {
     strokesRef.current.pop()
+    setStrokeCount(c => Math.max(0, c - 1))
     redraw()
   }
 
   const clearCanvas = () => {
     strokesRef.current = []
+    setStrokeCount(0)
+    setIsDrawing(false)
     redraw()
     setError('')
   }
 
   const handleSubmit = async () => {
     const canvas = canvasRef.current
-    if (!canvas || strokesRef.current.length === 0) {
+    if (!canvas || strokeCount === 0) {
       setError('Dibuja algo primero. Un trazo cuenta más que mil palabras.')
       return
     }
@@ -336,6 +353,8 @@ export const Dibujos: React.FC = () => {
     // Reset everything
     setTimeout(() => {
       strokesRef.current = []
+      setStrokeCount(0)
+      setIsDrawing(false)
       redraw()
       setName('')
       setMessage('')
@@ -387,19 +406,14 @@ export const Dibujos: React.FC = () => {
               </h2>
 
               <div className="max-w-[36ch] text-[#8a7fa0] text-[15px] leading-relaxed mb-10">
-                No reseñas. No estrellas. Solo un trazo. Una línea que dice cómo te sentiste esa noche. 
-                Tu garabato se vuelve parte del archivo vivo de la escena CDMX.
+                NO ACEPTO RESENAS NI OPINIONES, SOLO DIBUJITOS
               </div>
 
               <div className="flex items-center gap-4 text-xs font-mono tracking-[1.5px] text-white/40">
                 <div className="w-px h-2.5 bg-[#9b5fd6]" /> 
-                CADA TRAZO ES PÚBLICO • PERMANENTE
+                CADA TRAZO ES PÚBLICO
               </div>
 
-              <div className="mt-16 pt-8 border-t border-white/10 text-[10px] tracking-widest text-white/40">
-                INSPIRADO EN LOS CUADERNOS DE ESCENA DE LOS 90S<br />
-                HECHO CON CANVAS + FRAMER MOTION
-              </div>
             </div>
           </div>
 
@@ -502,7 +516,7 @@ export const Dibujos: React.FC = () => {
                       ref={canvasRef}
                       className="absolute inset-0 touch-none"
                       style={{ 
-                        cursor: isDrawingRef.current ? 'none' : 'crosshair',
+                        cursor: isDrawing ? 'none' : 'crosshair',
                         imageRendering: 'crisp-edges'
                       }}
                       onPointerDown={startDrawing}
@@ -513,7 +527,7 @@ export const Dibujos: React.FC = () => {
                     />
                     
                     {/* Subtle instruction overlay when empty */}
-                    {strokesRef.current.length === 0 && (
+                    {strokeCount === 0 && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="text-center">
                           <div className="text-[#9b5fd6]/60 text-xs tracking-[3px] mb-3 font-mono">TOCA Y ARRASTRA</div>
@@ -548,11 +562,11 @@ export const Dibujos: React.FC = () => {
                   </div>
 
                   <div className="pt-2 flex items-center justify-between">
-                    <div className="text-[10px] tracking-widest text-white/40 font-mono">TU TRAZO QUEDA EN EL ARCHIVO PARA SIEMPRE</div>
+                    <div></div>
                     
                     <motion.button
                       onClick={handleSubmit}
-                      disabled={status === 'loading' || strokesRef.current.length === 0}
+                      disabled={status === 'loading' || strokeCount === 0}
                       className="group flex items-center gap-4 px-10 py-4 bg-white text-black text-xs tracking-[2px] font-medium rounded-full disabled:opacity-60 hover:bg-[#9b5fd6] hover:text-white transition-all active:scale-[0.985]"
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.985 }}

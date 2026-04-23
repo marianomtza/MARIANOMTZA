@@ -7,14 +7,17 @@ import { Eventos } from './components/Eventos'
 import { Dibujos } from './components/Dibujos'
 import { Booking } from './components/Booking'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { Inspiracion } from './components/Inspiracion'
 import Lenis from '@studio-freight/lenis'
 
 function App() {
   // Lenis smooth scroll
   React.useEffect(() => {
     const lenis = new Lenis({
-      lerp: 0.1,
+      lerp: 0.18,
       smoothWheel: true,
+      wheelMultiplier: 1.4,
+      touchMultiplier: 1.8,
     })
 
     function raf(time: number) {
@@ -36,6 +39,7 @@ function App() {
           <Dibujos />
           <Roster />
           <Booking />
+          <Inspiracion />
 
           {/* Footer */}
           <footer id="contacto" className="border-t border-white/10 py-20 bg-black">

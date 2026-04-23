@@ -8,48 +8,63 @@ const ArtistCard: React.FC<{
   index: number
   onSelect: (artist: Artist) => void 
 }> = ({ artist, index, onSelect }) => {
-  const isLarge = index % 5 === 0
-  const isMedium = index % 3 === 0 && !isLarge
+  const { setSelectedArtist, requestBookingScroll } = useBookingActions()
+
+  const handleQuickBook = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedArtist(artist.name)
+    requestBookingScroll()
+    const el = document.getElementById('reserva')
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
     <motion.div
       layoutId={`artist-${artist.id}`}
       onClick={() => onSelect(artist)}
-      className={`
-        artist-card group relative overflow-hidden rounded-3xl bg-zinc-950 border border-white/10 cursor-pointer
-        flex flex-col justify-end p-8 h-full
-        ${isLarge ? 'md:col-span-2 md:row-span-2 min-h-[540px]' : ''}
-        ${isMedium ? 'md:col-span-2 min-h-[400px]' : 'min-h-[300px]'}
-      `}
-      whileHover={{ scale: 1.005 }}
-      transition={{ type: 'spring', stiffness: 240, damping: 26 }}
+      className="artist-card group relative overflow-hidden rounded-3xl bg-zinc-950 border border-white/10 cursor-pointer flex flex-col justify-end p-8 min-h-[380px] hover:border-[#9b5fd6]/60 transition-all duration-500"
+      whileHover={{ scale: 1.015, y: -4 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 24 }}
     >
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/70 to-black/95 z-10" />
+      {/* Modern gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black z-10" />
+      
+      {/* Subtle animated accent on hover */}
+      <div className="absolute inset-0 bg-[#9b5fd6] opacity-0 group-hover:opacity-[0.06] transition-opacity duration-700 z-10" />
       
       <div className="relative z-20">
-        <div className="flex items-start justify-between mb-5">
+        <div className="flex items-start justify-between mb-6">
           <div>
-            <div className="font-mono text-[10px] tracking-[3px] text-[#9b5fd6] mb-1.5">ARTISTA</div>
-            <h3 className="text-4xl font-semibold tracking-tight text-white leading-none">{artist.name}</h3>
+            <div className="font-mono text-[10px] tracking-[3px] text-[#9b5fd6] mb-2">ARTISTA • 2026</div>
+            <h3 className="text-4xl font-semibold tracking-tighter text-white leading-none pr-4">{artist.name}</h3>
           </div>
           {artist.subtitle && (
-            <div className="px-4 py-1 text-[9px] font-mono tracking-[1.5px] border border-[#9b5fd6]/60 text-[#9b5fd6] rounded-full self-start mt-1">
+            <div className="px-3 py-1 text-[9px] font-mono tracking-[1.5px] border border-[#9b5fd6]/70 text-[#9b5fd6] rounded-full self-start mt-1 whitespace-nowrap">
               {artist.subtitle}
             </div>
           )}
         </div>
 
-        <p className="text-sm text-[#8a7fa0] mb-8 tracking-wide">{artist.type}</p>
+        <p className="text-sm text-[#8a7fa0] mb-8 tracking-wide line-clamp-2">{artist.type}</p>
 
-        <div className="flex items-center gap-3 text-xs uppercase tracking-[2px] text-white/50 group-hover:text-[#9b5fd6] transition-colors">
-          VER PERFIL 
-          <span className="group-hover:translate-x-1 transition">↗</span>
+        {/* Interactive elements */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-[2px] text-white/50 group-hover:text-[#9b5fd6] transition-colors">
+            VER PERFIL <span className="group-hover:translate-x-0.5 transition">↗</span>
+          </div>
+
+          {/* Quick Book Button - Modern & Interactive */}
+          <motion.button
+            onClick={handleQuickBook}
+            className="opacity-0 group-hover:opacity-100 px-5 py-2 bg-white text-black text-[10px] tracking-[1.5px] font-medium rounded-full hover:bg-[#9b5fd6] hover:text-white transition-all flex items-center gap-2 active:scale-[0.98]"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            BOOK
+            <span>↗</span>
+          </motion.button>
         </div>
       </div>
-
-      {/* Hover accent */}
-      <div className="absolute inset-0 bg-[#9b5fd6] opacity-0 group-hover:opacity-[0.04] transition-opacity duration-500 z-10" />
     </motion.div>
   )
 }
@@ -168,7 +183,7 @@ export const Roster: React.FC = () => {
           <div className="font-mono text-xs tracking-[0.24em] text-[#9b5fd6] mb-4">ROSTER 2026</div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 auto-rows-[minmax(300px,auto)] gap-px bg-white/10 p-px rounded-3xl overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {ROSTER_ARTISTS.map((artist, index) => (
             <ArtistCard 
               key={artist.id} 

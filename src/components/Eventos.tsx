@@ -50,14 +50,6 @@ const EVENTS: Event[] = [
     venue: "CDMX",
     link: "https://www.youtube.com/watch?v=8GasfuDe4Dg",
     type: "Pride Event"
-  },
-  {
-    id: 6,
-    title: "Noches de Club Selectas",
-    date: "2025",
-    venue: "Varios, CDMX",
-    link: "#",
-    type: "Residency"
   }
 ]
 
