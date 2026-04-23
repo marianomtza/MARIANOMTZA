@@ -10,6 +10,44 @@
   --accent-deep: #3d1d6e;
   --bg: #0a0610;
   --fg-dim: #8a7fa0;
+  --fg: #f4f1f7;
+}
+
+/* Theme Variants */
+[data-theme="dark"] {
+  --accent: #9b5fd6;
+  --accent-soft: #6b3fa8;
+  --accent-deep: #3d1d6e;
+  --bg: #0a0610;
+  --fg: #f4f1f7;
+  --fg-dim: #8a7fa0;
+}
+
+[data-theme="pink"] {
+  --accent: #ff4d94;
+  --accent-soft: #c0266b;
+  --accent-deep: #7a0f3d;
+  --bg: #1a0a12;
+  --fg: #ffe4f0;
+  --fg-dim: #b38a9e;
+}
+
+[data-theme="blue"] {
+  --accent: #00d4ff;
+  --accent-soft: #0099cc;
+  --accent-deep: #004d66;
+  --bg: #0a1520;
+  --fg: #e0f7ff;
+  --fg-dim: #7ab8cc;
+}
+
+[data-theme="neon"] {
+  --accent: #39ff14;
+  --accent-soft: #00cc00;
+  --accent-deep: #006600;
+  --bg: #0a0a0a;
+  --fg: #e6ffe6;
+  --fg-dim: #66cc66;
 }
 
 * {

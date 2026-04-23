@@ -20,7 +20,11 @@
     "react-dom": "^18.3.1",
     "tone": "^14.8.49",
     "use-places-autocomplete": "^4.0.1",
-    "canvas-confetti": "^1.9.3"
+    "canvas-confetti": "^1.9.3",
+    "@react-three/fiber": "^8.17.10",
+    "@react-three/drei": "^9.120.0",
+    "three": "^0.171.0",
+    "@studio-freight/lenis": "^1.0.42"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",

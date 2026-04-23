@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion'
 import * as Tone from 'tone'
+import { SonicOrbit } from './SonicOrbit'
 
 const TITLE = 'MARIANOMTZA'
 const ROLES = [
@@ -156,22 +157,12 @@ export const Hero: React.FC = () => {
           <span className="inline-block w-px h-3 bg-[#9b5fd6]" /> CIUDAD DE MÉXICO
         </div>
 
-        {/* Interactive Title with Dock Effect */}
-        <div 
-          ref={containerRef}
-          className="hero-title relative flex flex-wrap gap-x-[2px] text-[min(17vw,220px)] font-black tracking-[-0.035em] leading-[0.92] text-white mb-8"
-          onMouseLeave={() => setMagnifiedIndex(-1)}
-        >
-          {TITLE.split('').map((char, i) => (
-            <Letter
-              key={i}
-              char={char}
-              index={i}
-              mouseX={mouseX}
-              containerRef={containerRef}
-              onMagnify={handleMagnify}
-            />
-          ))}
+        {/* SONIC ORBIT — 3D Interactive Title (Star of the Show) */}
+        <div className="relative h-[380px] md:h-[520px] mb-8 flex items-center justify-center">
+          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+            <div className="text-[min(12vw,110px)] font-black tracking-[-0.04em] text-white/10 select-none">MARIANOMTZA</div>
+          </div>
+          <SonicOrbit onNotePlay={playNote} />
         </div>
 
         {/* Rotating Role */}

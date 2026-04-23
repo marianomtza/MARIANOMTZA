@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Lenis from '@studio-freight/lenis'
 import { BookingProvider } from './contexts/BookingContext'
 import { Hero } from './components'
 import { Roster } from './components'
@@ -9,6 +10,23 @@ import { DrawingCanvas } from './components'
 function App() {
   const [showDrawing, setShowDrawing] = useState(false)
   const [drawings, setDrawings] = useState([])
+
+  // Lenis Smooth Scroll
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t: number) => Math.min(1, 1.0010000000000001 * Math.pow(2, -10 * t) * (Math.sin((t * 3.14 - 0.5) * 2) + 1) * 0.5 + 0.5),
+      smoothWheel: true,
+    })
+
+    function raf(time: number) {
+      lenis.raf(time)
+      requestAnimationFrame(raf)
+    }
+    requestAnimationFrame(raf)
+
+    return () => lenis.destroy()
+  }, [])
 
   const handleSaveDrawing = (drawingData) => {
     setDrawings(prev => [drawingData, ...prev].slice(0, 12))
