@@ -22,3 +22,5 @@ export const ROSTER_ARTISTS: Artist[] = [
   { id: 9, name: 'ELAKKKA', genre: 'Producer', label: 'LAFAMA', ig: 'https://instagram.com/elakkka' },
   { id: 10, name: 'MOODJAAS', genre: 'DJ / Producer', label: 'LAFAMA', ig: 'https://instagram.com/moodjaas' },
 ]
+
+export const ARTIST_NAMES = ROSTER_ARTISTS.map(artist => artist.name)
