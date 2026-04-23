@@ -5,9 +5,8 @@ import { useBookingActions } from '../contexts/BookingContext'
 
 const ArtistCard: React.FC<{ 
   artist: Artist
-  index: number
   onSelect: (artist: Artist) => void 
-}> = ({ artist, index, onSelect }) => {
+}> = ({ artist, onSelect }) => {
   const { setSelectedArtist, requestBookingScroll } = useBookingActions()
 
   const handleQuickBook = (e: React.MouseEvent) => {
@@ -184,11 +183,10 @@ export const Roster: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {ROSTER_ARTISTS.map((artist, index) => (
+          {ROSTER_ARTISTS.map((artist) => (
             <ArtistCard 
               key={artist.id} 
               artist={artist} 
-              index={index} 
               onSelect={setSelected} 
             />
           ))}

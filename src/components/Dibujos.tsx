@@ -51,7 +51,6 @@ export const Dibujos: React.FC = () => {
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const strokesRef = useRef<Stroke[]>([])
-  const isDrawingRef = useRef(false)
   const currentStrokeRef = useRef<Stroke | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
