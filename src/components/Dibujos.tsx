@@ -138,7 +138,7 @@ export const Dibujos: React.FC = () => {
     }
 
     // Draw all strokes with organic imperfection
-    strokesRef.current.forEach((stroke, strokeIndex) => {
+    strokesRef.current.forEach((stroke) => {
       if (stroke.points.length < 2) return
 
       ctx.strokeStyle = stroke.color
