@@ -148,7 +148,7 @@ export const Hero: React.FC = () => {
 
         {/* Proposal */}
         <p className="max-w-[38ch] text-[#8a7fa0] text-[15px] leading-relaxed mb-14">
-          Produzco noches de más de 4000 asistentes. Booking, logística y dirección creativa para la escena nocturna y cultura joven de México.
+          Produzco noches de más de 4000 asistentes. Contratación, logística y dirección creativa para la escena nocturna y cultura joven de México.
         </p>
 
         {/* CTAs */}
@@ -159,7 +159,7 @@ export const Hero: React.FC = () => {
             whileHover={{ scale: 1.015 }}
             whileTap={{ scale: 0.985 }}
           >
-            Booking
+            Reservar
             <span className="group-hover:translate-x-0.5 transition">↗</span>
           </motion.button>
 

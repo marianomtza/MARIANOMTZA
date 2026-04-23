@@ -3,24 +3,24 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 const QUOTES = [
   {
-    text: "La noche no es solo música. Es el espacio donde la gente se encuentra a sí misma.",
-    author: "Mariano Martínez",
-    role: "Productor & Curador"
+    text: "Cada evento se diseña para que la música, el espacio y la gente conecten de forma natural.",
+    author: "Visión de proyecto",
+    role: "Producción"
   },
   {
-    text: "Cada set es una conversación. Cada noche, un capítulo nuevo de la misma historia.",
-    author: "—",
-    role: "Escena CDMX"
+    text: "La curaduría sonora se construye con contexto, intención y respeto por la audiencia.",
+    author: "Visión de proyecto",
+    role: "Curaduría"
   },
   {
-    text: "El mejor evento es aquel que la gente recuerda como si lo hubiera soñado.",
-    author: "Mariano Martínez",
-    role: "Director Creativo"
+    text: "Una experiencia bien producida cuida cada detalle: técnica, narrativa y hospitalidad.",
+    author: "Visión de proyecto",
+    role: "Dirección creativa"
   },
   {
-    text: "No producimos fiestas. Construimos memorias que la gente lleva consigo para siempre.",
-    author: "—",
-    role: "LA FAMA"
+    text: "El objetivo final es simple: crear noches memorables, seguras y coherentes de principio a fin.",
+    author: "Visión de proyecto",
+    role: "Operación"
   }
 ]
 
