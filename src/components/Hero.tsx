@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react'
-import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion'
-import * as Tone from 'tone'
+import { motion, useMotionValue, useTransform, useSpring, MotionValue } from 'framer-motion'
+import { usePianoDock } from '../hooks/usePianoDock'
 
 const TITLE = 'MARIANOMTZA'
 
@@ -14,44 +14,12 @@ const ROLES = [
   'Director Creativo',
 ]
 
-const NOTE_FREQUENCIES = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 698.46]
-
-let synth: Tone.Synth | null = null
-let isAudioInitialized = false
-let lastPlay = 0
-const DEBOUNCE = 70
-
-const initAudio = async () => {
-  if (isAudioInitialized) return
-  try {
-    await Tone.start()
-    synth = new Tone.Synth({
-      oscillator: { type: 'sine' },
-      envelope: { attack: 0.008, decay: 0.18, sustain: 0.12, release: 0.35 }
-    }).toDestination()
-    isAudioInitialized = true
-  } catch (e) {
-    console.warn('Audio no disponible')
-  }
-}
-
-const playNote = (index: number, velocity = 0.65) => {
-  const now = Date.now()
-  if (now - lastPlay < DEBOUNCE) return
-  lastPlay = now
-  
-  if (!synth) return
-  
-  const freq = NOTE_FREQUENCIES[index % NOTE_FREQUENCIES.length]
-  synth.triggerAttackRelease(freq, '8n', undefined, velocity)
-}
-
 interface LetterProps {
   char: string
   index: number
-  mouseX: any
+  mouseX: MotionValue<number>
   containerRef: React.RefObject<HTMLDivElement>
-  onMagnify: (idx: number) => void
+  onPlay: (idx: number) => void
 }
 
 const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onMagnify }) => {
@@ -75,9 +43,8 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onMa
 
   const handleEnter = useCallback(() => {
     setHovered(true)
-    onMagnify(index)
-    playNote(index)
-  }, [index, onMagnify])
+    onPlay(index)
+  }, [index, onPlay])
 
   const handleLeave = useCallback(() => {
     setHovered(false)
@@ -86,7 +53,7 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onMa
   return (
     <motion.span
       ref={letterRef}
-      className="char inline-block cursor-none select-none"
+      className="char inline-block select-none"
       style={{
         scale: springScale,
         y: springY,
@@ -106,6 +73,7 @@ export const Hero: React.FC = () => {
   const [roleIndex, setRoleIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const mouseX = useMotionValue(0)
+  const { playNote } = usePianoDock()
 
   // Role rotation
   useEffect(() => {
@@ -127,12 +95,11 @@ export const Hero: React.FC = () => {
     return () => window.removeEventListener('mousemove', handleMove)
   }, [mouseX])
 
-  const handleMagnify = useCallback((_idx: number) => {
-    initAudio()
-  }, [])
+  const handlePlay = useCallback((idx: number) => {
+    playNote(idx)
+  }, [playNote])
 
   const handleCTA = (target: 'reserva' | 'eventos') => {
-    initAudio()
     playNote(0, 0.75)
     const el = document.getElementById(target)
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -159,7 +126,7 @@ export const Hero: React.FC = () => {
               index={i}
               mouseX={mouseX}
               containerRef={containerRef}
-              onMagnify={handleMagnify}
+              onPlay={handlePlay}
             />
           ))}
         </div>

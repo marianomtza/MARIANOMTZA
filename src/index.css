@@ -58,7 +58,6 @@ h1, h2, h3, h4 {
 .char {
   display: inline-block;
   transition: color 0.1s ease;
-  cursor: none;
   user-select: none;
 }
 

@@ -71,7 +71,7 @@ export const Booking: React.FC = () => {
 
     setStatus('loading')
 
-    // Simulate API call (replace with real Supabase/Resend in production)
+    // DEMO MODE: En producción real se enviaría vía Resend o Supabase
     setTimeout(() => {
       setStatus('success')
       
@@ -296,7 +296,7 @@ export const Booking: React.FC = () => {
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.985 }}
                 >
-                  {status === 'loading' ? 'ENVIANDO...' : status === 'success' ? 'SOLICITUD RECIBIDA ✓' : 'ENVIAR SOLICITUD'}
+                  {status === 'loading' ? 'ENVIANDO...' : status === 'success' ? 'SOLICITUD RECIBIDA (DEMO) ✓' : 'ENVIAR SOLICITUD'}
                   <span className="group-hover:translate-x-1 transition">↗</span>
                 </motion.button>
               </div>
