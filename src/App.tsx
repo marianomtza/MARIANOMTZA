@@ -44,7 +44,7 @@ function App() {
 
             <div className="hidden md:flex items-center gap-8 text-xs tracking-[2px] font-mono">
               <a href="#eventos" className="hover:text-[#9b5fd6] transition">Eventos</a>
-              <a href="#roster" className="hover:text-[#9b5fd6] transition">Roster</a>
+              <a href="#roster" className="hover:text-[#9b5fd6] transition">Artistas</a>
               <a href="#booking" className="hover:text-[#9b5fd6] transition">Reserva</a>
               <a href="#contacto" className="hover:text-[#9b5fd6] transition">Contacto</a>
             </div>
