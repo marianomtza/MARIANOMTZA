@@ -22,7 +22,7 @@ interface LetterProps {
   onPlay: (idx: number) => void
 }
 
-const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onMagnify }) => {
+const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onPlay }) => {
   const letterRef = useRef<HTMLSpanElement>(null)
   const [hovered, setHovered] = useState(false)
 
