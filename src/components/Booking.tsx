@@ -123,15 +123,15 @@ export const Booking = () => {
           {/* Left: Info */}
           <div className="md:col-span-5 mb-16 md:mb-0">
             <div className="sticky top-24">
-              <div className="font-mono text-xs tracking-[0.24em] text-[#9b5fd6] mb-4">NEXT CHAPTER</div>
-              <h2 className="text-[72px] leading-none tracking-[-2.4px] font-semibold text-white mb-8">Let's create<br />something<br />unforgettable.</h2>
+              <div className="font-mono text-xs tracking-[0.24em] text-[#9b5fd6] mb-4">PRÓXIMO CAPÍTULO</div>
+              <h2 className="text-[72px] leading-none tracking-[-2.4px] font-semibold text-white mb-8">Vamos a crear<br />algo<br />inolvidable.</h2>
               
               <div className="text-[#8a7fa0] text-[15px] max-w-[34ch]">
-                Whether you're looking for an artist for your night or a full creative direction service — we're ready.
+                Ya sea que busques un artista para tu noche o una dirección creativa completa — estamos listos.
               </div>
 
               <div className="mt-12 pt-8 border-t border-white/10 text-xs font-mono tracking-widest text-white/50">
-                RESPONSE WITHIN 48HRS • CONFIDENTIAL
+                RESPUESTA EN 48 HORAS • CONFIDENCIAL
               </div>
             </div>
           </div>
@@ -149,7 +149,7 @@ export const Booking = () => {
                     ${mode === m ? 'text-white' : 'text-white/40 hover:text-white/70'}
                   `}
                 >
-                  {m === 'artista' ? 'BOOK AN ARTIST' : 'CREATIVE SERVICES'}
+                  {m === 'artista' ? 'RESERVAR ARTISTA' : 'SERVICIOS CREATIVOS'}
                   {mode === m && (
                     <motion.div 
                       layoutId="mode-underline"

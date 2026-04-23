@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion'
 import * as Tone from 'tone'
-import { SonicOrbit } from './SonicOrbit'
+// 3D SonicOrbit removed per user request - using clean 2D dock musical interaction instead
 
 const TITLE = 'MARIANOMTZA'
 const ROLES = [
@@ -149,7 +149,7 @@ export const Hero: React.FC = () => {
 
   return (
     <section className="hero relative min-h-[92vh] flex flex-col justify-between pt-20 pb-12 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(#1a0a2e_0.8px,transparent_1px)] bg-[length:4px_4px] opacity-40" />
+      {/* Fondo limpio - negro puro + textura sutil de papel */}
       
       <div className="relative z-10 max-w-[1440px] mx-auto px-6 md:px-12">
         {/* Eyebrow */}
@@ -157,12 +157,22 @@ export const Hero: React.FC = () => {
           <span className="inline-block w-px h-3 bg-[#9b5fd6]" /> CIUDAD DE MÉXICO
         </div>
 
-        {/* SONIC ORBIT — 3D Interactive Title (Star of the Show) */}
-        <div className="relative h-[380px] md:h-[520px] mb-8 flex items-center justify-center">
-          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-            <div className="text-[min(12vw,110px)] font-black tracking-[-0.04em] text-white/10 select-none">MARIANOMTZA</div>
-          </div>
-          <SonicOrbit onNotePlay={playNote} />
+        {/* DOCK MUSICAL 2D - Interacción tipo piano (limpio y controlado) */}
+        <div 
+          ref={containerRef}
+          className="hero-title relative flex flex-wrap gap-x-[2px] text-[min(17vw,220px)] font-black tracking-[-0.035em] leading-[0.92] text-white mb-8"
+          onMouseLeave={() => setMagnifiedIndex(-1)}
+        >
+          {TITLE.split('').map((char, i) => (
+            <Letter
+              key={i}
+              char={char}
+              index={i}
+              mouseX={mouseX}
+              containerRef={containerRef}
+              onMagnify={handleMagnify}
+            />
+          ))}
         </div>
 
         {/* Rotating Role */}
