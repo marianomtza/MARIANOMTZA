@@ -1,9 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion'
 import * as Tone from 'tone'
-// 3D SonicOrbit removed per user request - using clean 2D dock musical interaction instead
 
 const TITLE = 'MARIANOMTZA'
+
 const ROLES = [
   'Productor de Eventos',
   'Muevo Gente',
@@ -16,34 +16,34 @@ const ROLES = [
 
 const NOTE_FREQUENCIES = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 698.46]
 
-let audioContext: Tone.Synth | null = null
-let isInitialized = false
-let lastPlayTime = 0
-const DEBOUNCE_MS = 80
+let synth: Tone.Synth | null = null
+let isAudioInitialized = false
+let lastPlay = 0
+const DEBOUNCE = 70
 
 const initAudio = async () => {
-  if (isInitialized) return
+  if (isAudioInitialized) return
   try {
     await Tone.start()
-    audioContext = new Tone.Synth({
+    synth = new Tone.Synth({
       oscillator: { type: 'sine' },
-      envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.4 }
+      envelope: { attack: 0.008, decay: 0.18, sustain: 0.12, release: 0.35 }
     }).toDestination()
-    isInitialized = true
+    isAudioInitialized = true
   } catch (e) {
-    console.warn('Audio init failed', e)
+    console.warn('Audio no disponible')
   }
 }
 
-const playNote = (index: number, velocity = 0.7) => {
+const playNote = (index: number, velocity = 0.65) => {
   const now = Date.now()
-  if (now - lastPlayTime < DEBOUNCE_MS) return
-  lastPlayTime = now
+  if (now - lastPlay < DEBOUNCE) return
+  lastPlay = now
   
-  if (!audioContext) return
+  if (!synth) return
   
   const freq = NOTE_FREQUENCIES[index % NOTE_FREQUENCIES.length]
-  audioContext.triggerAttackRelease(freq, '8n', undefined, velocity)
+  synth.triggerAttackRelease(freq, '8n', undefined, velocity)
 }
 
 interface LetterProps {
@@ -56,31 +56,31 @@ interface LetterProps {
 
 const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onMagnify }) => {
   const letterRef = useRef<HTMLSpanElement>(null)
-  const [isHovered, setIsHovered] = useState(false)
+  const [hovered, setHovered] = useState(false)
 
   const distance = useTransform(mouseX, (x: number) => {
     if (!letterRef.current || !containerRef.current) return 0
     const rect = letterRef.current.getBoundingClientRect()
     const containerRect = containerRef.current.getBoundingClientRect()
-    const letterCenter = rect.left + rect.width / 2 - containerRect.left
-    return Math.abs(x - letterCenter)
+    const center = rect.left + rect.width / 2 - containerRect.left
+    return Math.abs(x - center)
   })
 
-  const scale = useTransform(distance, [0, 120], [1.6, 1])
-  const y = useTransform(distance, [0, 120], [-12, 0])
-  const color = useTransform(distance, [0, 80], ['#9b5fd6', '#f4f1f7'])
+  const scale = useTransform(distance, [0, 110], [1.55, 1])
+  const yOffset = useTransform(distance, [0, 110], [-10, 0])
+  const colorVal = useTransform(distance, [0, 70], ['#9b5fd6', '#f4f1f7'])
 
-  const springScale = useSpring(scale, { stiffness: 300, damping: 25 })
-  const springY = useSpring(y, { stiffness: 300, damping: 25 })
+  const springScale = useSpring(scale, { stiffness: 320, damping: 22 })
+  const springY = useSpring(yOffset, { stiffness: 320, damping: 22 })
 
-  const handleMouseEnter = useCallback(() => {
-    setIsHovered(true)
+  const handleEnter = useCallback(() => {
+    setHovered(true)
     onMagnify(index)
     playNote(index)
   }, [index, onMagnify])
 
-  const handleMouseLeave = useCallback(() => {
-    setIsHovered(false)
+  const handleLeave = useCallback(() => {
+    setHovered(false)
   }, [])
 
   return (
@@ -90,13 +90,12 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onMa
       style={{
         scale: springScale,
         y: springY,
-        color: isHovered ? '#9b5fd6' : color,
-        textShadow: isHovered ? '0 0 20px rgba(155, 95, 214, 0.6)' : 'none',
-        transition: 'color 0.1s ease',
+        color: hovered ? '#9b5fd6' : colorVal,
+        textShadow: hovered ? '0 0 18px rgba(155, 95, 214, 0.5)' : 'none',
       }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      whileHover={{ scale: 1.6, y: -12 }}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      whileHover={{ scale: 1.55, y: -10 }}
     >
       {char}
     </motion.span>
@@ -104,64 +103,58 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onMa
 }
 
 export const Hero: React.FC = () => {
-  const [currentRole, setCurrentRole] = useState(0)
-  const [magnifiedIndex, setMagnifiedIndex] = useState(-1)
+  const [roleIndex, setRoleIndex] = useState(0)
+  const [magnified, setMagnified] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
   const mouseX = useMotionValue(0)
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [loaded, setLoaded] = useState(false)
 
-  // Rotating roles
+  // Role rotation
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentRole((prev) => (prev + 1) % ROLES.length)
-    }, 2800)
+      setRoleIndex((prev) => (prev + 1) % ROLES.length)
+    }, 2600)
     return () => clearInterval(interval)
   }, [])
 
-  // Mouse tracking for dock effect
+  // Mouse tracking
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMove = (e: MouseEvent) => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect()
         mouseX.set(e.clientX - rect.left)
       }
     }
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mousemove', handleMove)
+    return () => window.removeEventListener('mousemove', handleMove)
   }, [mouseX])
 
   const handleMagnify = useCallback((idx: number) => {
-    setMagnifiedIndex(idx)
+    setMagnified(idx)
     initAudio()
   }, [])
 
-  const handleCTAClick = (type: 'booking' | 'events') => {
+  const handleCTA = (target: 'reserva' | 'eventos') => {
     initAudio()
-    playNote(0, 0.8)
-    if (type === 'booking') {
-      const bookingSection = document.getElementById('booking')
-      bookingSection?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    } else {
-      const eventsSection = document.getElementById('events')
-      eventsSection?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
+    playNote(0, 0.75)
+    const el = document.getElementById(target)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
-    <section className="hero relative min-h-[92vh] flex flex-col justify-between pt-20 pb-12 overflow-hidden">
-      {/* Fondo limpio - negro puro + textura sutil de papel */}
-      
-      <div className="relative z-10 max-w-[1440px] mx-auto px-6 md:px-12">
+    <section className="relative min-h-[94vh] flex flex-col justify-between pt-20 pb-16 overflow-hidden bg-black">
+      <div className="relative z-10 max-w-[1440px] mx-auto px-6 md:px-12 pt-12">
         {/* Eyebrow */}
-        <div className="hero-eyebrow mb-8 flex items-center gap-3 text-xs tracking-[0.3em] text-[#8a7fa0] uppercase">
-          <span className="inline-block w-px h-3 bg-[#9b5fd6]" /> CIUDAD DE MÉXICO
+        <div className="flex items-center gap-4 text-xs tracking-[0.28em] text-[#8a7fa0] mb-10 font-mono">
+          <div className="w-px h-3 bg-[#9b5fd6]" />
+          CIUDAD DE MÉXICO
         </div>
 
-        {/* DOCK MUSICAL 2D - Interacción tipo piano (limpio y controlado) */}
+        {/* Interactive Title - Musical Dock */}
         <div 
           ref={containerRef}
-          className="hero-title relative flex flex-wrap gap-x-[2px] text-[min(17vw,220px)] font-black tracking-[-0.035em] leading-[0.92] text-white mb-8"
-          onMouseLeave={() => setMagnifiedIndex(-1)}
+          className="relative flex flex-wrap gap-x-[1px] text-[min(16.5vw,210px)] font-black tracking-[-0.032em] leading-[0.88] text-white mb-9"
+          onMouseLeave={() => setMagnified(-1)}
         >
           {TITLE.split('').map((char, i) => (
             <Letter
@@ -176,59 +169,58 @@ export const Hero: React.FC = () => {
         </div>
 
         {/* Rotating Role */}
-        <div className="flex items-center gap-4 mb-10">
-          <div className="hero-role text-sm tracking-[0.2em] text-white flex items-center gap-3">
-            → <span className="font-mono text-[#9b5fd6]">CDMX</span>
+        <div className="flex items-center gap-5 mb-11">
+          <div className="text-sm tracking-[0.18em] text-white flex items-center gap-3 font-mono">
+            → <span className="text-[#9b5fd6]">CDMX</span>
           </div>
           <motion.div 
-            key={currentRole}
-            initial={{ opacity: 0, y: 10 }}
+            key={roleIndex}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-2xl md:text-4xl font-semibold tracking-tight text-white"
+            className="text-[27px] md:text-[42px] font-semibold tracking-[-0.015em] text-white"
           >
-            {ROLES[currentRole]}
+            {ROLES[roleIndex]}
           </motion.div>
         </div>
 
-        {/* Description */}
-        <p className="max-w-[42ch] text-[#8a7fa0] text-[15px] leading-relaxed mb-12">
-          Produzco noches de más de 4000 asistentes. Booking, logística, dirección y producción creativa para cultura joven y vida nocturna.
+        {/* Proposal */}
+        <p className="max-w-[38ch] text-[#8a7fa0] text-[15px] leading-relaxed mb-14">
+          Produzco noches de más de 4000 asistentes. Booking, logística y dirección creativa para la escena nocturna y cultura joven de México.
         </p>
 
         {/* CTAs */}
         <div className="flex flex-wrap gap-4">
           <motion.button
-            onClick={() => handleCTAClick('booking')}
-            className="btn primary group flex items-center gap-3 px-9 py-4 rounded-full bg-[#9b5fd6] text-white text-xs tracking-[0.22em] uppercase font-mono hover:bg-[#b67de8] transition-all active:scale-[0.985]"
-            whileHover={{ scale: 1.02 }}
+            onClick={() => handleCTA('reserva')}
+            className="btn btn-primary group"
+            whileHover={{ scale: 1.015 }}
             whileTap={{ scale: 0.985 }}
           >
-            RESERVAR NOCHE
+            Booking
             <span className="group-hover:translate-x-0.5 transition">↗</span>
           </motion.button>
 
           <motion.button
-            onClick={() => handleCTAClick('events')}
-            className="btn ghost flex items-center gap-3 px-8 py-4 rounded-full border border-white/20 text-xs tracking-[0.22em] uppercase font-mono hover:border-[#9b5fd6] hover:text-[#9b5fd6] transition-all"
-            whileHover={{ scale: 1.02 }}
+            onClick={() => handleCTA('eventos')}
+            className="btn btn-ghost group"
+            whileHover={{ scale: 1.015 }}
             whileTap={{ scale: 0.985 }}
           >
-            VER EVENTOS PASADOS
+            Eventos
+            <span className="group-hover:translate-x-0.5 transition">↗</span>
           </motion.button>
         </div>
       </div>
 
       {/* Scroll Indicator */}
       <motion.div 
-        className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[10px] tracking-[0.3em] text-[#8a7fa0] font-mono"
-        animate={{ y: [0, 6, 0] }}
-        transition={{ duration: 2.2, repeat: Infinity }}
+        className="absolute bottom-14 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[10px] tracking-[0.28em] text-[#8a7fa0] font-mono"
+        animate={{ y: [0, 7, 0] }}
+        transition={{ duration: 2.1, repeat: Infinity }}
       >
-        SCROLL TO EXPLORE
-        <div className="w-px h-8 bg-gradient-to-b from-transparent via-[#9b5fd6] to-transparent" />
+        DESPLAZA PARA EXPLORAR
+        <div className="w-px h-7 bg-gradient-to-b from-transparent via-[#9b5fd6] to-transparent" />
       </motion.div>
     </section>
   )
 }
-
-export default Hero
