@@ -1,81 +1,111 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
-  --accent: #9b5fd6;
-  --accent-soft: #6b3fa8;
-  --accent-deep: #3d1d6e;
-  --bg: #000000;
-  --fg: #f4f1f7;
-  --fg-dim: #8a7fa0;
-  --line: rgba(255,255,255,0.08);
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
 }
 
-* {
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+#root {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  border-inline: 1px solid var(--border);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #000;
-  color: #fff;
   margin: 0;
-  padding: 0;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
 }
 
-h1, h2, h3, h4 {
-  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  font-weight: 600;
-  letter-spacing: -0.025em;
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
 }
 
-/* Custom components */
-.section {
-  scroll-margin-top: 80px;
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
 }
 
-.btn {
-  @apply inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full text-xs tracking-[0.22em] font-medium transition-all active:scale-[0.985];
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
 }
 
-.btn-primary {
-  @apply bg-[#9b5fd6] text-white hover:bg-[#b67de8];
-}
-
-.btn-ghost {
-  @apply border border-white/20 text-white hover:border-[#9b5fd6] hover:text-[#9b5fd6];
-}
-
-/* Musical dock letters */
-.char {
-  display: inline-block;
-  transition: color 0.1s ease;
-  user-select: none;
-}
-
-/* Form styles */
-.form-input {
-  @apply w-full bg-transparent border-b border-white/20 pb-3 text-lg placeholder:text-white/30 focus:border-[#9b5fd6] outline-none transition-colors;
-}
-
-.form-label {
-  @apply block text-xs tracking-[0.24em] text-white/60 mb-3;
-}
-
-/* Roster cards */
-.artist-card {
-  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.artist-card:hover {
-  border-color: rgba(155, 95, 214, 0.6);
-  transform: translateY(-4px);
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
 }
