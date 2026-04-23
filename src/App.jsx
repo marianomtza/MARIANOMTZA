@@ -8,9 +8,9 @@ import { DrawingCanvas } from './components'
 
 function App() {
   const [showDrawing, setShowDrawing] = useState(false)
-  const [drawings, setDrawings] = useState<any[]>([])
+  const [drawings, setDrawings] = useState([])
 
-  const handleSaveDrawing = (drawingData: any) => {
+  const handleSaveDrawing = (drawingData) => {
     setDrawings(prev => [drawingData, ...prev].slice(0, 12))
     // In real app: POST to /api/drawings
     console.log('Drawing saved:', drawingData)
