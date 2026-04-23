@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import confetti from 'canvas-confetti'
-import { useBookingState, useBookingActions } from '../contexts/BookingContext'
+import { useBookingState } from '../contexts/BookingContext'
 import { ARTIST_NAMES } from '../data/roster'
 
 export const Booking: React.FC = () => {

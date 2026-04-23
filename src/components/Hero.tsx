@@ -127,7 +127,7 @@ export const Hero: React.FC = () => {
     return () => window.removeEventListener('mousemove', handleMove)
   }, [mouseX])
 
-  const handleMagnify = useCallback((idx: number) => {
+  const handleMagnify = useCallback((_idx: number) => {
     initAudio()
   }, [])
 
