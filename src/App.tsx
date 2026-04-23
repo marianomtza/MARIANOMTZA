@@ -55,9 +55,8 @@ function App() {
                 CONSTRUIDO CON FRAMER MOTION + TONE.JS + LENIS
               </div>
             </div>
-          </div>
-        </footer>
-      </div>
+          </footer>
+        </div>
       </ErrorBoundary>
     </BookingProvider>
   )
