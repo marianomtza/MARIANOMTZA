@@ -19,10 +19,14 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tone": "^14.8.49",
-    "use-places-autocomplete": "^4.0.1"
+    "use-places-autocomplete": "^4.0.1",
+    "canvas-confetti": "^1.9.3"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
     "terser": "^5.46.1",
     "vite": "^5.0.8"
   }

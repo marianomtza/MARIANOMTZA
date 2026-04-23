@@ -4,10 +4,13 @@ import * as Tone from 'tone'
 
 const TITLE = 'MARIANOMTZA'
 const ROLES = [
-  { role: 'Productor', tag: 'Música Electrónica' },
-  { role: 'Booking', tag: 'Eventos & Festivales' },
-  { role: 'A&R', tag: 'Descubrimiento de Talento' },
-  { role: 'Director Creativo', tag: 'Experiencias Inmersivas' },
+  'Productor de Eventos',
+  'Muevo Gente',
+  'Manager',
+  'Conecto Puntos',
+  'A&R',
+  'Documento todo',
+  'Director Creativo',
 ]
 
 const NOTE_FREQUENCIES = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 698.46]
@@ -174,7 +177,7 @@ export const Hero: React.FC = () => {
         {/* Rotating Role */}
         <div className="flex items-center gap-4 mb-10">
           <div className="hero-role text-sm tracking-[0.2em] text-white flex items-center gap-3">
-            → <span className="font-mono text-[#9b5fd6]">{ROLES[currentRole].tag}</span>
+            → <span className="font-mono text-[#9b5fd6]">CDMX</span>
           </div>
           <motion.div 
             key={currentRole}
@@ -182,13 +185,13 @@ export const Hero: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-2xl md:text-4xl font-semibold tracking-tight text-white"
           >
-            {ROLES[currentRole].role}
+            {ROLES[currentRole]}
           </motion.div>
         </div>
 
         {/* Description */}
         <p className="max-w-[42ch] text-[#8a7fa0] text-[15px] leading-relaxed mb-12">
-          Productor y curador de experiencias sonoras. <strong className="text-white font-medium">+4000 asistentes</strong> en las noches más intensas de la ciudad.
+          Produzco noches de más de 4000 asistentes. Booking, logística, dirección y producción creativa para cultura joven y vida nocturna.
         </p>
 
         {/* CTAs */}
@@ -199,7 +202,7 @@ export const Hero: React.FC = () => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.985 }}
           >
-            RESERVAR FECHA
+            RESERVAR NOCHE
             <span className="group-hover:translate-x-0.5 transition">↗</span>
           </motion.button>
 
@@ -209,7 +212,7 @@ export const Hero: React.FC = () => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.985 }}
           >
-            VER EVENTOS
+            VER EVENTOS PASADOS
           </motion.button>
         </div>
       </div>

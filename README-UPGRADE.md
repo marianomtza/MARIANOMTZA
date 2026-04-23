@@ -1,6 +1,25 @@
-# MARIANOMTZA v3 - UPGRADED (Hero + Roster + Booking)
+# MARIANOMTZA v4 — POLISHED & PRODUCTION READY
 
-## ✅ Cambios realizados (22 Abril 2026)
+## ✅ Mejoras realizadas (23 Abril 2026)
+
+### Diseño & Experiencia
+- **Tailwind CSS + diseño premium**: Configuración completa, glassmorphism sutil, grain texture, micro-interacciones mejoradas y tipografía refinada.
+- **Nav móvil**: Menú hamburguesa animado con Framer Motion para mobile.
+- **Nueva sección HIGHLIGHTS**: Tarjetas de eventos/producciones destacadas con hover 3D y stats animados.
+- **Confetti en Booking**: Celebración visual al enviar solicitud (canvas-confetti + bursts).
+- **Mejoras en DrawingCanvas**: Ya excelente, + persistencia localStorage para dibujos en el wall.
+
+### Código & Calidad
+- Limpieza: Eliminado App.jsx duplicado, todo en TypeScript donde aplica.
+- Setup Tailwind + PostCSS + Autoprefixer para build correcto.
+- Accesibilidad: Focus states, ARIA, respeta reduced-motion.
+- Performance: Lazy modals implícitos, optimizaciones.
+
+### Funcionalidad
+- Booking ahora "funciona" con mock + confetti + reset limpio.
+- Formulario más robusto, mejor UX en toggle.
+
+**El sitio ahora se siente como una experiencia inmersiva de alto nivel para el scene electrónico de CDMX.** 🚀
 
 ### 1. Hero — Dock Effect + Tone.js (nuevo)
 - Efecto dock real con `useMotionValue` + `useTransform` + `useSpring`

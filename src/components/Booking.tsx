@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import confetti from 'canvas-confetti'
 import { useBookingState, useBookingActions } from '../contexts/BookingContext'
 import { ARTIST_NAMES } from '../data/roster'
 
@@ -83,6 +84,20 @@ export const Booking = () => {
 
       if (res.ok) {
         setStatus('success')
+        // Celebrate with confetti
+        confetti({
+          particleCount: 180,
+          spread: 80,
+          origin: { y: 0.6 }
+        })
+        setTimeout(() => {
+          confetti({
+            particleCount: 120,
+            angle: 60,
+            spread: 70,
+            origin: { x: 0.1 }
+          })
+        }, 300)
         setTimeout(() => {
           setFormData({
             name: '', email: '', artist: '', date: '', city: '', venue: '', 
