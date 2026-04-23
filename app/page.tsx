@@ -21,13 +21,17 @@ export default function Page() {
       touchMultiplier: 1.8,
     })
 
-    function raf(time: number) {
+    let frameId = 0
+    const raf = (time: number) => {
       lenis.raf(time)
-      requestAnimationFrame(raf)
+      frameId = requestAnimationFrame(raf)
     }
-    requestAnimationFrame(raf)
+    frameId = requestAnimationFrame(raf)
 
-    return () => lenis.destroy()
+    return () => {
+      cancelAnimationFrame(frameId)
+      lenis.destroy()
+    }
   }, [])
 
   return (
