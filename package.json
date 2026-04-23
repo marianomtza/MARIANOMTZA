@@ -1,0 +1,33 @@
+{
+  "name": "marianomtza-web",
+  "version": "3.0.0",
+  "description": "Mariano Martínez — Productor de eventos y experiencias sonoras en Ciudad de México",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@studio-freight/lenis": "^1.0.42",
+    "canvas-confetti": "^1.9.3",
+    "framer-motion": "^11.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tone": "^14.8.49"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.1",
+    "@types/canvas-confetti": "^1.6.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "terser": "^5.46.1",
+    "typescript": "^5.4.5",
+    "vite": "^5.0.8"
+  }
+}
