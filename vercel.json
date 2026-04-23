@@ -1,3 +1,10 @@
 {
-  "regions": ["iad1"]
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "rewrites": [
+    {
+      "source": "/((?!api|_next|favicon\\.ico|robots\\.txt|sitemap\\.xml).*)",
+      "destination": "/"
+    }
+  ]
 }
