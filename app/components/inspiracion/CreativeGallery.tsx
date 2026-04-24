@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
+import { Dibujos } from '../Dibujos'
 
 const cards = [
   'Texturas y neón',
@@ -15,9 +16,15 @@ const cards = [
 export function CreativeGallery() {
   return (
     <section className="relative min-h-screen px-6 md:px-12 py-24 bg-[radial-gradient(circle_at_top,rgba(155,95,214,0.3),transparent_45%)]">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="font-display text-5xl md:text-7xl mb-6">Inspiración</h1>
-        <p className="text-[var(--fg-muted)] max-w-2xl mb-16">Laboratorio visual para referencias, ritmos y dirección creativa. Espacio exploratorio separado del landing principal.</p>
+      <div className="max-w-6xl mx-auto space-y-12">
+        <div>
+          <h1 className="font-display text-5xl md:text-7xl mb-6">Inspiración</h1>
+          <p className="text-[var(--fg-muted)] max-w-2xl mb-16">
+            Laboratorio visual para referencias, ritmos y dirección creativa. Espacio exploratorio
+            separado del landing principal.
+          </p>
+        </div>
+
         <div className="grid md:grid-cols-3 gap-6">
           {cards.map((card, i) => (
             <motion.article
@@ -29,11 +36,15 @@ export function CreativeGallery() {
               whileHover={{ y: -5 }}
               className="rounded-2xl border border-[var(--line)] bg-[var(--bg-elevated)]/70 p-6 min-h-52"
             >
-              <div className="text-xs uppercase tracking-[0.22em] text-[var(--fg-muted)] mb-5">Ref {String(i + 1).padStart(2, '0')}</div>
+              <div className="text-xs uppercase tracking-[0.22em] text-[var(--fg-muted)] mb-5">
+                Ref {String(i + 1).padStart(2, '0')}
+              </div>
               <h2 className="text-2xl font-semibold">{card}</h2>
             </motion.article>
           ))}
         </div>
+
+        <Dibujos />
       </div>
     </section>
   )
