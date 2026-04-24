@@ -6,7 +6,7 @@ import Link from 'next/link'
 const CONTACT = {
   email: 'hola@marianomtza.com',
   phone: '+52 443 426 4931',
-  phoneClean: '+524434264931',
+  phoneClean: '524434264931',
 }
 
 export const Footer: React.FC = () => {
@@ -24,12 +24,12 @@ export const Footer: React.FC = () => {
             ¿Listo para <br />
             la próxima noche?
           </div>
-          <div className="flex flex-wrap gap-3">
-            <a href={`mailto:${CONTACT.email}`} className="btn btn-primary">
+          <div className="flex flex-col sm:flex-row gap-3 items-start">
+            <a href={`mailto:${CONTACT.email}`} className="btn btn-primary min-h-[44px]">
               <span>{CONTACT.email}</span>
               <span aria-hidden>↗</span>
             </a>
-            <a href={`tel:${CONTACT.phoneClean}`} className="btn btn-ghost">
+            <a href={`https://wa.me/${CONTACT.phoneClean}`} className="btn btn-ghost min-h-[44px]">
               <span>{CONTACT.phone}</span>
               <span aria-hidden>→</span>
             </a>
@@ -50,8 +50,8 @@ export const Footer: React.FC = () => {
             <Link href="#reserva" className="link-underline text-[var(--fg)]">
               Booking
             </Link>
-            <Link href="/lab" className="link-underline text-[var(--fg)]">
-              Lab
+            <Link href="/inspiracion" className="link-underline text-[var(--fg)]">
+              Inspiración
             </Link>
           </div>
         </nav>

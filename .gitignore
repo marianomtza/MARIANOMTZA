@@ -43,3 +43,6 @@ dist/
 
 # Data files
 data/drawings.json
+
+# TypeScript incremental
+tsconfig.tsbuildinfo
