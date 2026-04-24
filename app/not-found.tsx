@@ -3,262 +3,129 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
-/**
- * 404 — "Señal perdida"
- * Chrome offline dino vibe but editorial: monochrome, serif, on-brand.
- * Mechanic: jump with Space / click to dodge barrels.
- */
+const GROUND = 140
+const GRAVITY = 0.64
+const JUMP = -11
 
-const GROUND_Y = 112
-const JUMP_VELOCITY = -9.5
-const GRAVITY = 0.55
-const OBSTACLE_SPEED_BASE = 4.2
-const OBSTACLE_MIN_GAP = 260
-const OBSTACLE_MAX_GAP = 460
-
-type Obstacle = { id: number; x: number; w: number; h: number }
+type Obstacle = { id: number; x: number; y: number; w: number; h: number; speed: number }
 
 export default function NotFound() {
-  const [state, setState] = useState<'idle' | 'playing' | 'over'>('idle')
+  const [phase, setPhase] = useState<'idle' | 'play' | 'over'>('idle')
   const [score, setScore] = useState(0)
   const [high, setHigh] = useState(0)
 
-  const playerY = useRef(GROUND_Y)
+  const y = useRef(GROUND)
   const vy = useRef(0)
   const obstacles = useRef<Obstacle[]>([])
-  const nextId = useRef(1)
-  const frameRef = useRef<number>(0)
-  const speedRef = useRef(OBSTACLE_SPEED_BASE)
-  const stateRef = useRef(state)
-  stateRef.current = state
+  const idRef = useRef(0)
+  const frame = useRef(0)
+  const player = useRef<HTMLDivElement>(null)
+  const list = useRef<HTMLDivElement>(null)
 
-  const containerRef = useRef<HTMLDivElement>(null)
-  const playerRef = useRef<HTMLDivElement>(null)
-  const obstaclesContainerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const stored = Number(localStorage.getItem('mmtza-404-high') ?? 0)
-    if (!Number.isNaN(stored)) setHigh(stored)
-  }, [])
+  useEffect(() => setHigh(Number(localStorage.getItem('mmtza-404-high') || 0)), [])
 
   const reset = useCallback(() => {
-    playerY.current = GROUND_Y
+    y.current = GROUND
     vy.current = 0
     obstacles.current = []
-    speedRef.current = OBSTACLE_SPEED_BASE
-    nextId.current = 1
     setScore(0)
   }, [])
 
-  const jump = useCallback(() => {
-    if (stateRef.current === 'idle') {
-      setState('playing')
-      return
-    }
-    if (stateRef.current === 'over') {
+  const trigger = useCallback(() => {
+    if (phase === 'idle') return setPhase('play')
+    if (phase === 'over') {
       reset()
-      setState('playing')
-      return
+      return setPhase('play')
     }
-    if (playerY.current >= GROUND_Y - 1) {
-      vy.current = JUMP_VELOCITY
-    }
-  }, [reset])
+    if (y.current >= GROUND - 1) vy.current = JUMP
+  }, [phase, reset])
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const key = (e: KeyboardEvent) => {
       if (e.code === 'Space' || e.code === 'ArrowUp') {
         e.preventDefault()
-        jump()
+        trigger()
       }
+      if (phase === 'over' && e.key.toLowerCase() === 'r') trigger()
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [jump])
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [phase, trigger])
 
   useEffect(() => {
-    if (state !== 'playing') return
+    if (phase !== 'play') return
     let last = performance.now()
-    let sinceSpawn = 0
-    let nextGap = OBSTACLE_MIN_GAP + Math.random() * (OBSTACLE_MAX_GAP - OBSTACLE_MIN_GAP)
-    let tickScore = 0
-
+    let spawn = 0
+    let baseSpeed = 4
     const loop = (now: number) => {
-      const dt = Math.min((now - last) / 16.666, 2)
+      const dt = Math.min((now - last) / 16.6, 2)
       last = now
-
-      // Physics
       vy.current += GRAVITY * dt
-      playerY.current = Math.min(playerY.current + vy.current * dt, GROUND_Y)
-      if (playerY.current >= GROUND_Y) {
-        playerY.current = GROUND_Y
-        vy.current = 0
-      }
-      if (playerRef.current) {
-        playerRef.current.style.transform = `translate3d(0, ${playerY.current}px, 0)`
-      }
+      y.current = Math.min(GROUND, y.current + vy.current * dt)
+      if (y.current >= GROUND) vy.current = 0
+      if (player.current) player.current.style.transform = `translate3d(0,${y.current}px,0)`
 
-      // Spawn
-      sinceSpawn += speedRef.current * dt
-      if (sinceSpawn >= nextGap) {
-        sinceSpawn = 0
-        nextGap = OBSTACLE_MIN_GAP + Math.random() * (OBSTACLE_MAX_GAP - OBSTACLE_MIN_GAP)
-        const h = 24 + Math.random() * 28
-        obstacles.current.push({
-          id: nextId.current++,
-          x: 840,
-          w: 14 + Math.random() * 10,
-          h,
-        })
+      spawn += dt
+      if (spawn > Math.max(35, 78 - score * 0.2)) {
+        spawn = 0
+        const h = 24 + Math.random() * 42
+        const flying = Math.random() < 0.3 && score > 25
+        obstacles.current.push({ id: ++idRef.current, x: 860, y: flying ? GROUND - 54 - Math.random() * 35 : GROUND + 40 - h, w: 16 + Math.random() * 16, h, speed: baseSpeed + Math.random() * 1.8 })
       }
 
-      // Move obstacles
-      obstacles.current.forEach((o) => {
-        o.x -= speedRef.current * dt
-      })
-      obstacles.current = obstacles.current.filter((o) => o.x > -60)
+      baseSpeed = Math.min(9.5, 4 + score / 18)
+      obstacles.current.forEach((o) => (o.x -= (o.speed + baseSpeed) * dt))
+      obstacles.current = obstacles.current.filter((o) => o.x > -80)
 
-      // Collision (player is at x=90, width 42, height ~42 at bottom)
-      const playerLeft = 88
-      const playerRight = 88 + 42
-      const playerTop = GROUND_Y - 40 + (playerY.current - GROUND_Y)
-      const playerBottom = playerTop + 44
-
+      const p = { l: 90, r: 130, t: y.current + 6, b: y.current + 44 }
       let hit = false
       for (const o of obstacles.current) {
-        const oLeft = o.x
-        const oRight = o.x + o.w
-        const oTop = GROUND_Y - o.h + 40
-        const oBottom = oTop + o.h
-        const overlap =
-          playerRight > oLeft + 6 &&
-          playerLeft < oRight - 6 &&
-          playerBottom > oTop + 4 &&
-          playerTop < oBottom - 4
-        if (overlap) {
-          hit = true
-          break
-        }
+        const overlap = p.r > o.x + 2 && p.l < o.x + o.w - 2 && p.b > o.y + 3 && p.t < o.y + o.h - 3
+        if (overlap) hit = true
       }
 
-      // Render obstacles via direct DOM (avoid re-render)
-      if (obstaclesContainerRef.current) {
-        obstaclesContainerRef.current.innerHTML = obstacles.current
-          .map(
-            (o) =>
-              `<div style="position:absolute;bottom:0;left:${o.x}px;width:${o.w}px;height:${o.h}px;background:var(--fg);border-radius:2px;"></div>`
-          )
-          .join('')
+      if (list.current) {
+        list.current.innerHTML = obstacles.current.map((o) => `<div style="position:absolute;left:${o.x}px;top:${o.y}px;width:${o.w}px;height:${o.h}px;border-radius:3px;background:var(--fg)"></div>`).join('')
       }
 
-      // Score
-      tickScore += dt
-      if (tickScore >= 6) {
-        tickScore = 0
-        setScore((s) => s + 1)
-        speedRef.current = Math.min(OBSTACLE_SPEED_BASE + (score + 1) / 20, 9)
-      }
+      if (Math.random() < 0.12) setScore((s) => s + 1)
 
       if (hit) {
-        setState('over')
-        setScore((s) => {
-          setHigh((h) => {
-            const next = Math.max(h, s)
-            localStorage.setItem('mmtza-404-high', String(next))
-            return next
-          })
-          return s
+        setPhase('over')
+        setHigh((h) => {
+          const next = Math.max(h, score)
+          localStorage.setItem('mmtza-404-high', String(next))
+          return next
         })
         return
       }
-
-      frameRef.current = requestAnimationFrame(loop)
+      frame.current = requestAnimationFrame(loop)
     }
 
-    frameRef.current = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(frameRef.current)
-  }, [state, score])
+    frame.current = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(frame.current)
+  }, [phase, score])
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[var(--bg)] text-[var(--fg)] p-6">
-      <div className="max-w-[720px] w-full">
-        <div className="font-mono text-[11px] tracking-[0.28em] text-[var(--accent)] mb-4 uppercase">
-          Error 404
+      <div className="max-w-[760px] w-full">
+        <div className="font-mono text-[11px] tracking-[0.28em] text-[var(--accent)] mb-4 uppercase">Error 404</div>
+        <h1 className="font-display text-[clamp(3rem,9vw,6rem)] leading-[0.92] mb-5">Señal perdida.</h1>
+        <p className="font-editorial text-lg text-[var(--fg-muted)] max-w-[42ch] mb-6">Ahora sí hay obstáculos reales: algunos vuelan, la velocidad sube y puedes reiniciar con R.</p>
+        <div onClick={trigger} className="relative h-[260px] rounded-2xl border border-[var(--line)] bg-[var(--bg-elevated)] overflow-hidden cursor-pointer" role="button" tabIndex={0}>
+          <div className="absolute left-0 right-0 h-px bg-[var(--line-strong)]" style={{ top: GROUND + 42 }} />
+          <div className="absolute top-3 right-4 font-mono text-xs">{String(score).padStart(4, '0')} · HI {String(high).padStart(4, '0')}</div>
+          {(phase === 'idle' || phase === 'over') && <div className="absolute inset-0 flex items-center justify-center font-mono text-xs tracking-[0.22em] uppercase">{phase === 'idle' ? 'Space para iniciar' : 'Game Over · Space/R para reiniciar'}</div>}
+          <div ref={player} className="absolute left-[90px] h-[44px] w-[40px]" style={{ top: GROUND }}>
+            <div className="absolute inset-0 border-2 border-[var(--fg)] rounded-full" />
+            <div className="absolute left-1/2 top-2 h-8 w-[2px] bg-[var(--fg)] -translate-x-1/2" />
+            <div className="absolute left-1/2 top-4 h-[2px] w-6 bg-[var(--fg)] -translate-x-1/2" />
+          </div>
+          <div ref={list} className="absolute inset-0" />
         </div>
-        <h1 className="font-display text-[clamp(3rem,9vw,6rem)] leading-[0.92] tracking-[-0.02em] text-[var(--fg)] mb-5">
-          Señal perdida.
-        </h1>
-        <p className="font-editorial text-lg text-[var(--fg-muted)] max-w-[42ch] mb-10">
-          Ruta inexistente. Mientras encuentras el camino, salta los obstáculos con la barra
-          espaciadora.
-        </p>
-
-        <div
-          ref={containerRef}
-          onClick={jump}
-          className="relative h-[220px] w-full rounded-2xl border border-[var(--line)] bg-[var(--bg-elevated)] overflow-hidden cursor-pointer select-none"
-          role="button"
-          tabIndex={0}
-        >
-          {/* Ground line */}
-          <div
-            className="absolute left-0 right-0 h-px bg-[var(--line-strong)]"
-            style={{ bottom: 40 }}
-          />
-
-          {/* Score */}
-          <div className="absolute top-4 right-5 font-mono text-[11px] tracking-[0.22em] text-[var(--fg-muted)] uppercase tabular-nums">
-            <span className="text-[var(--fg)]">{String(score).padStart(4, '0')}</span>
-            <span className="mx-2 opacity-30">·</span>
-            <span>Hi {String(high).padStart(4, '0')}</span>
-          </div>
-
-          {/* Status */}
-          {state === 'idle' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-center">
-                <div className="font-display text-3xl text-[var(--fg)] mb-1">Presiona</div>
-                <div className="font-mono text-[11px] tracking-[0.28em] text-[var(--fg-muted)] uppercase">
-                  Espacio para empezar
-                </div>
-              </div>
-            </div>
-          )}
-          {state === 'over' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-center">
-                <div className="font-display text-3xl text-[var(--fg)] mb-1">Game over</div>
-                <div className="font-mono text-[11px] tracking-[0.28em] text-[var(--fg-muted)] uppercase">
-                  Espacio para repetir
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Player */}
-          <div
-            ref={playerRef}
-            className="absolute left-[88px] w-[42px] h-[42px] bg-[var(--accent)] rounded-[3px] will-change-transform"
-            style={{ top: 0, transform: `translate3d(0, ${GROUND_Y}px, 0)` }}
-          >
-            <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[var(--bg)]" />
-          </div>
-
-          {/* Obstacles */}
-          <div ref={obstaclesContainerRef} className="absolute inset-0 pointer-events-none" />
-        </div>
-
-        <div className="mt-8 flex items-center justify-between flex-wrap gap-4">
-          <Link
-            href="/"
-            className="btn btn-ghost"
-          >
-            <span>Volver al inicio</span>
-            <span aria-hidden>→</span>
-          </Link>
-          <div className="font-mono text-[10px] tracking-[0.22em] text-[var(--fg-muted)] uppercase">
-            Tip · Click o espacio
-          </div>
+        <div className="mt-8 flex items-center gap-4">
+          <Link href="/" className="btn btn-primary">Volver al home</Link>
+          <button className="btn btn-ghost" onClick={trigger}>Reintentar</button>
         </div>
       </div>
     </main>

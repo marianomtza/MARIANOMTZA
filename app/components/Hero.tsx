@@ -6,6 +6,7 @@ import { usePianoDock } from '../hooks/usePianoDock'
 import { HeroBackground } from './hero/HeroBackground'
 
 const TITLE = 'MARIANOMTZA'
+const TITLE_LOWER = TITLE.toLowerCase()
 
 const ROLES = [
   'Productor de Eventos',
@@ -81,7 +82,8 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, isActive, containe
     <motion.span
       ref={letterRef}
       data-letter={index}
-      className="inline-block select-none will-change-transform"
+      tabIndex={0}
+      className="inline-block select-none will-change-transform focus:outline-none focus:text-[var(--accent)]"
       style={{ scale, y, color, display: 'inline-block' }}
     >
       {char === ' ' ? '\u00A0' : char}
@@ -165,6 +167,11 @@ export const Hero: React.FC = () => {
     void primeOnInteraction()
   }, [primeOnInteraction])
 
+  const handleFocusNote = useCallback((idx: number) => {
+    void primeOnInteraction()
+    void playNote(idx, 0.5)
+  }, [playNote, primeOnInteraction])
+
   const handleCTA = (target: 'reserva' | 'eventos' | 'artistas') => {
     const el = document.getElementById(target)
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -187,8 +194,16 @@ export const Hero: React.FC = () => {
           onPointerMove={handleMove}
           onPointerLeave={handleLeave}
           onPointerEnter={handleEnter}
-          className="fluid-title font-display font-normal no-break-title text-[var(--fg)] mb-8 touch-none"
+
+          onKeyDown={(e) => {
+            const idx = TITLE_LOWER.indexOf((e.key || '').toLowerCase())
+            if (idx >= 0) handleFocusNote(idx)
+          }}
+          className="fluid-title font-display font-normal no-break-title text-[var(--fg)] mb-8 touch-none cursor-cell"
           style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}
+          role="text"
+          aria-label={TITLE_LOWER}
+          onPointerDown={handleEnter}
         >
           {TITLE.split('').map((char, i) => (
             <Letter

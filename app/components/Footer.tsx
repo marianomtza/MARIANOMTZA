@@ -50,8 +50,8 @@ export const Footer: React.FC = () => {
             <Link href="#reserva" className="link-underline text-[var(--fg)]">
               Booking
             </Link>
-            <Link href="/lab" className="link-underline text-[var(--fg)]">
-              Lab
+            <Link href="#dibujos" className="link-underline text-[var(--fg)]">
+              Dibujos
             </Link>
           </div>
         </nav>

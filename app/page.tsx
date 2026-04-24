@@ -12,6 +12,7 @@ import { Roster } from './components/Roster'
 import { Eventos } from './components/Eventos'
 import { Booking } from './components/Booking'
 import { Footer } from './components/Footer'
+import { Dibujos } from './components/Dibujos'
 import { ThemeSwitcher } from './components/system/ThemeSwitcher'
 import { SoundToggle } from './components/system/SoundToggle'
 import { MusicDock } from './components/MusicDock'
@@ -25,6 +26,7 @@ function LandingExperience() {
       <RotatingBar />
       <Roster />
       <Eventos />
+      <Dibujos />
       <Booking />
       <Footer />
 
