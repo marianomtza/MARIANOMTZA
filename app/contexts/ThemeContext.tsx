@@ -3,7 +3,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { THEMES, ThemeName, themeTokens } from '../lib/design-tokens'
 
-const STORAGE_KEY = 'mmtza-theme'
+const STORAGE_KEY = 'mmtza-theme-v2'
+const DEFAULT_THEME: ThemeName = 'base'
 
 interface ThemeContextValue {
   theme: ThemeName
@@ -13,23 +14,32 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
+function applyTheme(theme: ThemeName) {
+  const root = document.documentElement
+  root.dataset.theme = theme
+  const tokens = themeTokens[theme]
+  for (const key in tokens) {
+    root.style.setProperty(key, tokens[key])
+  }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeName>('dark')
+  const [theme, setThemeState] = useState<ThemeName>(DEFAULT_THEME)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY) as ThemeName | null
-    if (stored && THEMES.includes(stored)) {
-      setThemeState(stored)
-    }
+    const initial = stored && (THEMES as string[]).includes(stored) ? stored : DEFAULT_THEME
+    setThemeState(initial)
+    applyTheme(initial)
+    setMounted(true)
   }, [])
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    Object.entries(themeTokens[theme]).forEach(([token, value]) => {
-      document.documentElement.style.setProperty(token, value)
-    })
+    if (!mounted) return
+    applyTheme(theme)
     window.localStorage.setItem(STORAGE_KEY, theme)
-  }, [theme])
+  }, [theme, mounted])
 
   const setTheme = (nextTheme: ThemeName) => setThemeState(nextTheme)
 
