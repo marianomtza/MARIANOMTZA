@@ -17,6 +17,16 @@ const ROLES = [
   'Director Creativo',
 ]
 
+// ─── Key → first occurrence index in TITLE ────────────────────────────────────
+// MARIANOMTZA → M=0, A=1, R=2, I=3, (A=4 skip), N=5, O=6, (M=7 skip), T=8, Z=9, (A=10 skip)
+const KEY_TO_INDEX: Record<string, number> = {}
+TITLE.split('').forEach((char, i) => {
+  const key = char.toLowerCase()
+  if (!(key in KEY_TO_INDEX)) KEY_TO_INDEX[key] = i
+})
+
+// ─── Letter component ─────────────────────────────────────────────────────────
+
 interface LetterProps {
   char: string
   index: number
@@ -73,7 +83,6 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, isActive, containe
   })
 
   const color = useTransform(colorT, [0, 1], ['var(--fg)', 'var(--accent)'])
-
   const scale = useSpring(rawScale, { stiffness: 320, damping: 24, mass: 0.55 })
   const y = useSpring(rawY, { stiffness: 320, damping: 24, mass: 0.55 })
 
@@ -89,16 +98,20 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, isActive, containe
   )
 }
 
+// ─── Hero ─────────────────────────────────────────────────────────────────────
+
 export const Hero: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const mouseX = useMotionValue(-9999)
   const isActive = useMotionValue(0)
   const activeLetterRef = useRef<number>(-1)
+  const isHoveringTitleRef = useRef(false)
   const [roleIndex, setRoleIndex] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
 
   const { playNote, primeOnInteraction } = usePianoDock()
 
+  // Mobile detection
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
     check()
@@ -106,6 +119,7 @@ export const Hero: React.FC = () => {
     return () => window.removeEventListener('resize', check)
   }, [])
 
+  // Role rotation
   useEffect(() => {
     const id = window.setInterval(() => {
       setRoleIndex((i) => (i + 1) % ROLES.length)
@@ -113,17 +127,17 @@ export const Hero: React.FC = () => {
     return () => window.clearInterval(id)
   }, [])
 
+  // Reset on blur / tab hide
   const reset = useCallback(() => {
     isActive.set(0)
     mouseX.set(-9999)
     activeLetterRef.current = -1
+    isHoveringTitleRef.current = false
   }, [isActive, mouseX])
 
   useEffect(() => {
     const onBlur = () => reset()
-    const onVisibility = () => {
-      if (document.hidden) reset()
-    }
+    const onVisibility = () => { if (document.hidden) reset() }
     window.addEventListener('blur', onBlur)
     document.addEventListener('visibilitychange', onVisibility)
     return () => {
@@ -132,6 +146,23 @@ export const Hero: React.FC = () => {
     }
   }, [reset])
 
+  // ── Keyboard piano while hovering ──────────────────────────────────────────
+  // Pressing a letter key that appears in MARIANOMTZA plays its note.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!isHoveringTitleRef.current || isMobile) return
+      const key = e.key.toLowerCase()
+      const idx = KEY_TO_INDEX[key]
+      if (idx !== undefined) {
+        e.preventDefault()
+        void playNote(idx)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [playNote, isMobile])
+
+  // ── Pointer handlers ────────────────────────────────────────────────────────
   const handleMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (isMobile) return
@@ -163,15 +194,17 @@ export const Hero: React.FC = () => {
         activeLetterRef.current = -1
       }
     },
-    [mouseX, isActive, playNote]
+    [mouseX, isActive, playNote, isMobile]
   )
 
   const handleLeave = useCallback(() => {
+    isHoveringTitleRef.current = false
     reset()
   }, [reset])
 
   const handleEnter = useCallback(() => {
     if (isMobile) return
+    isHoveringTitleRef.current = true
     void primeOnInteraction()
   }, [primeOnInteraction, isMobile])
 
@@ -182,6 +215,7 @@ export const Hero: React.FC = () => {
 
   return (
     <section className="relative min-h-screen flex flex-col justify-center pt-28 pb-24 overflow-hidden">
+      {/* 3D background — theme-aware, updates live */}
       <HeroBackground />
 
       <div className="relative z-10 max-w-[1440px] mx-auto px-6 md:px-12 w-full">
@@ -191,7 +225,7 @@ export const Hero: React.FC = () => {
           Ciudad de México · Roster curado · 2026
         </div>
 
-        {/* Interactive Title */}
+        {/* Interactive title — dock effect + keyboard notes on hover */}
         <div
           ref={containerRef}
           onPointerMove={handleMove}
@@ -212,7 +246,7 @@ export const Hero: React.FC = () => {
           ))}
         </div>
 
-        {/* Rotating Role */}
+        {/* Rotating role */}
         <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2 mb-10 min-h-[3.25rem]">
           <div className="font-mono text-[11px] tracking-[0.28em] text-[var(--fg-muted)] uppercase">
             → CDMX

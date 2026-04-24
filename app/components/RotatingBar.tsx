@@ -1,29 +1,21 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
-import { motion, useAnimationFrame, useMotionValue, useTransform } from 'framer-motion'
+import { motion, useAnimationFrame, useMotionValue } from 'framer-motion'
 
-type Entry = { label: string; type: 'project' | 'brand' }
+export interface BarEntry {
+  label: string
+  type: 'project' | 'brand'
+  url?: string
+}
 
-const ENTRIES: Entry[] = [
-  { label: 'SEKS', type: 'project' },
-  { label: 'Spotify', type: 'brand' },
-  { label: 'LUDBOY', type: 'project' },
-  { label: 'Hennessy', type: 'brand' },
-  { label: 'KNOCKOUT', type: 'project' },
-  { label: 'Bacardí', type: 'brand' },
-  { label: 'LA FAMA', type: 'project' },
-  { label: 'Zacapa', type: 'brand' },
-  { label: 'Four Loko', type: 'brand' },
-  { label: 'Zyn', type: 'brand' },
-  { label: 'Hypnotiq', type: 'brand' },
-  { label: 'Mezcal Verde', type: 'brand' },
-  { label: 'Viuda de Romero', type: 'brand' },
-]
+interface RotatingBarProps {
+  entries: BarEntry[]
+}
 
 const PIXELS_PER_SECOND = 70
 
-export const RotatingBar: React.FC = () => {
+export const RotatingBar: React.FC<RotatingBarProps> = ({ entries }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const x = useMotionValue(0)
@@ -74,7 +66,6 @@ export const RotatingBar: React.FC = () => {
     const w = widthRef.current
     if (!w) return
     let next = dragOffsetRef.current + info.offset.x
-    // wrap into [-w, 0]
     while (next <= -w) next += w
     while (next > 0) next -= w
     x.set(next)
@@ -83,6 +74,9 @@ export const RotatingBar: React.FC = () => {
   const handleDragEnd = () => {
     draggingRef.current = false
   }
+
+  // Duplicate for seamless loop
+  const doubled = [...entries, ...entries]
 
   return (
     <section className="relative border-y border-[var(--line)] py-8 overflow-hidden bg-[var(--bg)]">
@@ -104,12 +98,8 @@ export const RotatingBar: React.FC = () => {
           style={{ x }}
           className="flex gap-12 whitespace-nowrap"
         >
-          {[...ENTRIES, ...ENTRIES].map((entry, i) => (
-            <span
-              key={`${entry.label}-${i}`}
-              className="inline-flex items-center gap-4 font-display text-[clamp(2rem,5vw,4rem)] text-[var(--fg)]"
-            >
-              {entry.label}
+          {doubled.map((entry, i) => {
+            const dot = (
               <span
                 className="inline-block w-2 h-2 rounded-full"
                 style={{
@@ -118,8 +108,40 @@ export const RotatingBar: React.FC = () => {
                   opacity: 0.7,
                 }}
               />
-            </span>
-          ))}
+            )
+
+            const inner = (
+              <>
+                {entry.label}
+                {dot}
+              </>
+            )
+
+            if (entry.url) {
+              return (
+                <a
+                  key={`${entry.label}-${i}`}
+                  href={entry.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  // Prevent navigation during drag
+                  onClick={(e) => { if (draggingRef.current) e.preventDefault() }}
+                  className="inline-flex items-center gap-4 font-display text-[clamp(2rem,5vw,4rem)] text-[var(--fg)] hover:text-[var(--accent)] transition-colors duration-200"
+                >
+                  {inner}
+                </a>
+              )
+            }
+
+            return (
+              <span
+                key={`${entry.label}-${i}`}
+                className="inline-flex items-center gap-4 font-display text-[clamp(2rem,5vw,4rem)] text-[var(--fg)]"
+              >
+                {inner}
+              </span>
+            )
+          })}
         </motion.div>
       </div>
     </section>

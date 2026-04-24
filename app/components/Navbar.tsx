@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export const Navbar: React.FC = () => {
@@ -53,12 +52,6 @@ export const Navbar: React.FC = () => {
               {link.label}
             </button>
           ))}
-          <Link
-            href="/lab"
-            className="link-underline text-[var(--fg)] hover:text-[var(--accent)] transition-colors"
-          >
-            Lab
-          </Link>
         </div>
 
         <div className="hidden md:block font-mono text-[10px] tracking-[0.28em] uppercase text-[var(--fg-muted)]">
@@ -105,13 +98,6 @@ export const Navbar: React.FC = () => {
                   {link.label}
                 </button>
               ))}
-              <Link
-                href="/lab"
-                className="py-2 text-[var(--fg)]"
-                onClick={() => setIsOpen(false)}
-              >
-                Lab
-              </Link>
             </div>
           </motion.div>
         )}

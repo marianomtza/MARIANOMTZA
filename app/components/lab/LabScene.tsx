@@ -10,6 +10,78 @@ import {
   Text,
 } from '@react-three/drei'
 import * as THREE from 'three'
+import { useTheme } from '../../contexts/ThemeContext'
+import type { ThemeName } from '../../lib/design-tokens'
+
+// ─── Scene theme configs (aligned with design-tokens.ts after dark↔light swap) ───
+
+interface SceneConfig {
+  bg: string
+  fog: string
+  sphereColors: [string, string, string, string]
+  knotColor: string
+  textColor: string
+  ambientIntensity: number
+  pointLight1Color: string
+  pointLight2Color: string
+}
+
+const SCENE_CONFIGS: Record<ThemeName, SceneConfig> = {
+  base: {
+    bg: '#0a0712',
+    fog: '#0a0712',
+    sphereColors: ['#8b5cf6', '#38bdf8', '#ef4444', '#a78bfa'],
+    knotColor: '#ffffff',
+    textColor: '#f5f0ff',
+    ambientIntensity: 0.35,
+    pointLight1Color: '#a78bfa',
+    pointLight2Color: '#38bdf8',
+  },
+  // "dark" label = cream editorial (tokens swapped per user request)
+  dark: {
+    bg: '#f9f7f2',
+    fog: '#f9f7f2',
+    sphereColors: ['#0a0a0a', '#2a2a2a', '#3a3a3a', '#111111'],
+    knotColor: '#2a2a2a',
+    textColor: '#1a1a1a',
+    ambientIntensity: 1.1,
+    pointLight1Color: '#888888',
+    pointLight2Color: '#555555',
+  },
+  // "light" label = monochrome black (tokens swapped per user request)
+  light: {
+    bg: '#070707',
+    fog: '#070707',
+    sphereColors: ['#f5f5f5', '#cccccc', '#aaaaaa', '#eeeeee'],
+    knotColor: '#ffffff',
+    textColor: '#f7f7f7',
+    ambientIntensity: 0.35,
+    pointLight1Color: '#ffffff',
+    pointLight2Color: '#999999',
+  },
+  rojo: {
+    bg: '#0d0606',
+    fog: '#0d0606',
+    sphereColors: ['#ef4444', '#f87171', '#b91c1c', '#fca5a5'],
+    knotColor: '#ff8080',
+    textColor: '#fef2f2',
+    ambientIntensity: 0.4,
+    pointLight1Color: '#ef4444',
+    pointLight2Color: '#b91c1c',
+  },
+  azul: {
+    bg: '#050c18',
+    fog: '#050c18',
+    sphereColors: ['#38bdf8', '#7dd3fc', '#0369a1', '#bae6fd'],
+    knotColor: '#7dd3fc',
+    textColor: '#eef6ff',
+    ambientIntensity: 0.35,
+    pointLight1Color: '#38bdf8',
+    pointLight2Color: '#0369a1',
+  },
+}
+
+// ─── Inner R3F components ──────────────────────────────────────────────────────
 
 function DistortedSphere({
   position,
@@ -46,7 +118,7 @@ function DistortedSphere({
   )
 }
 
-function GlassKnot() {
+function GlassKnot({ color }: { color: string }) {
   const ref = useRef<THREE.Mesh>(null)
   useFrame((state) => {
     if (!ref.current) return
@@ -68,16 +140,17 @@ function GlassKnot() {
         distortion={0.25}
         distortionScale={0.2}
         temporalDistortion={0.18}
-        color="#ffffff"
+        color={color}
       />
     </mesh>
   )
 }
 
-function CursorCamera() {
+function CursorCamera({ enabled }: { enabled: boolean }) {
   const { camera, mouse } = useThree()
   const target = useMemo(() => new THREE.Vector3(0, 0, 0), [])
   useFrame(() => {
+    if (!enabled) return
     camera.position.x += (mouse.x * 1.4 - camera.position.x) * 0.04
     camera.position.y += (mouse.y * 0.8 + 0.2 - camera.position.y) * 0.04
     camera.lookAt(target)
@@ -85,7 +158,7 @@ function CursorCamera() {
   return null
 }
 
-function FloatingText() {
+function FloatingText({ color }: { color: string }) {
   return (
     <Float speed={0.8} rotationIntensity={0.12} floatIntensity={0.35}>
       <Text
@@ -96,7 +169,7 @@ function FloatingText() {
         anchorY="middle"
         outlineWidth={0.004}
         outlineColor="#0a0712"
-        color="#f5f0ff"
+        color={color}
         maxWidth={10}
       >
         MARIANOMTZA
@@ -105,7 +178,99 @@ function FloatingText() {
   )
 }
 
-export function LabScene() {
+// ─── Scene content (receives fully-computed config) ────────────────────────────
+
+interface SceneContentProps {
+  config: SceneConfig
+  showSpheres: boolean
+  showText: boolean
+  cursorEnabled: boolean
+  shadows: boolean
+}
+
+function SceneContent({
+  config,
+  showSpheres,
+  showText,
+  cursorEnabled,
+  shadows,
+}: SceneContentProps) {
+  return (
+    <>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      <color attach="background" args={[config.bg as any]} />
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      <fog attach="fog" args={[config.fog as any, 5, 20]} />
+
+      <ambientLight intensity={config.ambientIntensity} />
+      <directionalLight
+        position={[4, 5, 3]}
+        intensity={1.1}
+        castShadow={shadows}
+      />
+      <pointLight
+        position={[-4, 2, -2]}
+        intensity={0.6}
+        color={config.pointLight1Color}
+      />
+      <pointLight
+        position={[4, -2, 3]}
+        intensity={0.6}
+        color={config.pointLight2Color}
+      />
+
+      <GlassKnot color={config.knotColor} />
+
+      {showSpheres && (
+        <>
+          <DistortedSphere
+            position={[-3.2, 1.6, -1.8]}
+            color={config.sphereColors[0]}
+            speed={1.2}
+            distort={0.5}
+            scale={0.95}
+          />
+          <DistortedSphere
+            position={[3.4, -1.4, -1.5]}
+            color={config.sphereColors[1]}
+            speed={1.8}
+            distort={0.4}
+            scale={0.7}
+          />
+          <DistortedSphere
+            position={[2.6, 2.4, -3]}
+            color={config.sphereColors[2]}
+            speed={0.9}
+            distort={0.3}
+            scale={0.5}
+          />
+          <DistortedSphere
+            position={[-2.8, -2.1, -2.5]}
+            color={config.sphereColors[3]}
+            speed={1.4}
+            distort={0.6}
+            scale={0.6}
+          />
+        </>
+      )}
+
+      {showText && <FloatingText color={config.textColor} />}
+
+      <Environment preset="city" />
+      <CursorCamera enabled={cursorEnabled} />
+    </>
+  )
+}
+
+// ─── Public export ─────────────────────────────────────────────────────────────
+
+export interface LabSceneProps {
+  /** When true: used as full-page hero background — lighter quality, no floating text */
+  asBackground?: boolean
+}
+
+export function LabScene({ asBackground = false }: LabSceneProps) {
+  const { theme } = useTheme()
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -115,65 +280,31 @@ export function LabScene() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
+  const config = SCENE_CONFIGS[theme]
+  const useShadows = !isMobile && !asBackground
+  const showSpheres = !isMobile
+  const showText = !asBackground
+  const cursorEnabled = !isMobile
+
   return (
     <Canvas
-      shadows={!isMobile}
+      shadows={useShadows}
       camera={{ position: [0, 0.3, 6], fov: 42 }}
       gl={{
         antialias: !isMobile,
         preserveDrawingBuffer: false,
-        powerPreference: isMobile ? 'default' : 'high-performance',
+        powerPreference: isMobile || asBackground ? 'default' : 'high-performance',
       }}
-      dpr={isMobile ? 1 : [1, 2]}
+      dpr={isMobile ? 1 : asBackground ? [1, 1.5] : [1, 2]}
+      style={{ width: '100%', height: '100%' }}
     >
-      <color attach="background" args={['#0a0712']} />
-      <fog attach="fog" args={['#0a0712', 5, 20]} />
-
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[4, 5, 3]} intensity={1.1} castShadow={!isMobile} />
-      <pointLight position={[-4, 2, -2]} intensity={0.6} color="#a78bfa" />
-      <pointLight position={[4, -2, 3]} intensity={0.6} color="#38bdf8" />
-
-      <GlassKnot />
-
-      {!isMobile && (
-        <>
-          <DistortedSphere
-            position={[-3.2, 1.6, -1.8]}
-            color="#8b5cf6"
-            speed={1.2}
-            distort={0.5}
-            scale={0.95}
-          />
-          <DistortedSphere
-            position={[3.4, -1.4, -1.5]}
-            color="#38bdf8"
-            speed={1.8}
-            distort={0.4}
-            scale={0.7}
-          />
-          <DistortedSphere
-            position={[2.6, 2.4, -3]}
-            color="#ef4444"
-            speed={0.9}
-            distort={0.3}
-            scale={0.5}
-          />
-          <DistortedSphere
-            position={[-2.8, -2.1, -2.5]}
-            color="#f0abfc"
-            speed={1.4}
-            distort={0.6}
-            scale={0.6}
-          />
-        </>
-      )}
-
-      <FloatingText />
-
-      <Environment preset="city" />
-
-      {!isMobile && <CursorCamera />}
+      <SceneContent
+        config={config}
+        showSpheres={showSpheres}
+        showText={showText}
+        cursorEnabled={cursorEnabled}
+        shadows={useShadows}
+      />
     </Canvas>
   )
 }

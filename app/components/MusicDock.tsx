@@ -12,6 +12,9 @@ interface Track {
   album: string
 }
 
+const APPLE_MUSIC_URL =
+  'https://music.apple.com/mx/playlist/musical-monday/pl.u-9WpbHaq6d86?l=en'
+
 const SEED_ARTISTS = ['Sega Bodega', 'Oklou'] as const
 
 async function fetchTracksForArtist(artist: string): Promise<Track[]> {
@@ -150,6 +153,18 @@ export const MusicDock: React.FC = () => {
             </div>
           </div>
 
+          {/* Apple Music link */}
+          <a
+            href={APPLE_MUSIC_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Abrir Musical Monday en Apple Music"
+            className="h-9 w-9 rounded-full flex items-center justify-center text-[var(--fg-muted)] hover:text-[var(--accent)] transition-colors flex-shrink-0"
+            title="Musical Monday · Apple Music"
+          >
+            ♫
+          </a>
+
           {/* Controls */}
           <div className="flex items-center gap-1">
             <button
@@ -250,9 +265,18 @@ export const MusicDock: React.FC = () => {
                   </button>
                 ))}
               </div>
-              <div className="px-3 py-2 text-[9px] text-[var(--fg-muted)] font-mono tracking-[0.22em] uppercase border-t border-[var(--line)] flex items-center justify-between">
-                <span>Preview · 30s</span>
-                <span>iTunes · Sega Bodega × Oklou</span>
+              <div className="px-3 py-2 border-t border-[var(--line)] flex items-center justify-between gap-2">
+                <span className="text-[9px] text-[var(--fg-muted)] font-mono tracking-[0.22em] uppercase">
+                  Preview · 30s
+                </span>
+                <a
+                  href={APPLE_MUSIC_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[9px] font-mono tracking-[0.18em] uppercase text-[var(--accent)] hover:opacity-70 transition-opacity flex items-center gap-1"
+                >
+                  Musical Monday ↗
+                </a>
               </div>
             </motion.div>
           )}

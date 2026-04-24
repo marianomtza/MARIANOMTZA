@@ -76,10 +76,10 @@ export const Eventos: React.FC = () => {
       <div className="max-w-[1440px] mx-auto px-6 md:px-12">
         <div className="mb-14">
           <div className="font-mono text-[11px] tracking-[0.28em] text-[var(--accent)] mb-4 uppercase">
-            Eventos · Archivo
+            Noches · Archivo
           </div>
           <h2 className="fluid-h2 font-display text-[var(--fg)] max-w-[18ch]">
-            Selección reciente.
+            Noches memorables.
           </h2>
         </div>
 
