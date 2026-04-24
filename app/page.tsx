@@ -10,6 +10,7 @@ import { Hero } from './components/Hero'
 import { RotatingBar } from './components/RotatingBar'
 import { Roster } from './components/Roster'
 import { Eventos } from './components/Eventos'
+import { Dibujos } from './components/Dibujos'
 import { Booking } from './components/Booking'
 import { Footer } from './components/Footer'
 import { ThemeSwitcher } from './components/system/ThemeSwitcher'
@@ -24,6 +25,7 @@ function LandingExperience() {
       <RotatingBar />
       <Roster />
       <Eventos />
+      <Dibujos />
       <Booking />
       <Footer />
 
