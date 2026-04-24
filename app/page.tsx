@@ -15,6 +15,7 @@ import { Footer } from './components/Footer'
 import { ThemeSwitcher } from './components/system/ThemeSwitcher'
 import { SoundToggle } from './components/system/SoundToggle'
 import { MusicDock } from './components/MusicDock'
+import { EasterEgg } from './components/system/EasterEgg'
 
 function LandingExperience() {
   return (
@@ -34,6 +35,7 @@ function LandingExperience() {
       </div>
 
       <MusicDock />
+      <EasterEgg />
     </div>
   )
 }
