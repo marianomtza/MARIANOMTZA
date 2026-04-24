@@ -2,80 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --accent: #9b5fd6;
-  --accent-soft: #6b3fa8;
-  --accent-deep: #3d1d6e;
-  --bg: #000000;
-  --fg: #f4f1f7;
-  --fg-dim: #8a7fa0;
-  --line: rgba(255,255,255,0.08);
+:root,
+:root[data-theme='nocturne'] {
+  --bg: #10100f;
+  --surface: #131312;
+  --surface-strong: #181817;
+  --fg: #f4f1ea;
+  --fg-muted: #b8afa1;
+  --line: rgba(244, 241, 234, 0.12);
+  --accent: #9f8972;
 }
 
-* {
-  box-sizing: border-box;
+:root[data-theme='paper'] {
+  --bg: #efebe4;
+  --surface: #f5f1ea;
+  --surface-strong: #e9e3d9;
+  --fg: #1f1c18;
+  --fg-muted: #655f56;
+  --line: rgba(31, 28, 24, 0.16);
+  --accent: #6b5a47;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #000;
-  color: #fff;
   margin: 0;
-  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Inter', system-ui, sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
 
-h1, h2, h3, h4 {
-  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  font-weight: 600;
-  letter-spacing: -0.025em;
+.section { scroll-margin-top: 94px; }
+
+.hero-shell {
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(159, 137, 114, 0.12), transparent 75%),
+    linear-gradient(180deg, var(--surface), var(--bg));
 }
 
-/* Custom components */
-.section {
-  scroll-margin-top: 80px;
+.noise-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.14;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.55) 0.6px, transparent 0.6px);
+  background-size: 2px 2px;
+  mix-blend-mode: soft-light;
 }
 
 .btn {
-  @apply inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full text-xs tracking-[0.22em] font-medium transition-all active:scale-[0.985];
+  @apply relative inline-flex items-center justify-center overflow-hidden rounded-full px-7 py-3 text-xs tracking-[0.2em] transition duration-200;
 }
 
 .btn-primary {
-  @apply bg-[#9b5fd6] text-white hover:bg-[#b67de8];
+  background: var(--fg);
+  color: var(--bg);
 }
 
 .btn-ghost {
-  @apply border border-white/20 text-white hover:border-[#9b5fd6] hover:text-[#9b5fd6];
+  border: 1px solid var(--line);
+  color: var(--fg);
 }
 
-/* Musical dock letters */
-.char {
-  display: inline-block;
-  transition: color 0.1s ease;
-  user-select: none;
+.btn-shine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(110deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transition: transform 0.34s ease;
 }
 
-/* Form styles */
+:root[data-theme='paper'] .btn-shine::before {
+  background: linear-gradient(110deg, transparent, rgba(31, 28, 24, 0.14), transparent);
+}
+
+.btn-shine:hover::before { transform: translateX(120%); }
+.btn:hover { filter: brightness(1.03); }
+
 .form-input {
-  @apply w-full bg-transparent border-b border-white/20 pb-3 text-lg placeholder:text-white/30 focus:border-[#9b5fd6] outline-none transition-colors;
+  @apply w-full border-b bg-transparent pb-3 text-lg outline-none transition-colors;
+  border-color: var(--line);
+  color: var(--fg);
 }
 
 .form-label {
-  @apply block text-xs tracking-[0.24em] text-white/60 mb-3;
-}
-
-/* Roster cards */
-.artist-card {
-  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.artist-card:hover {
-  border-color: rgba(155, 95, 214, 0.6);
-  transform: translateY(-4px);
+  @apply mb-3 block text-xs tracking-[0.2em];
+  color: var(--fg-muted);
 }

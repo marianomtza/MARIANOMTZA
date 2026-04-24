@@ -123,8 +123,11 @@ export const Booking: React.FC = () => {
           <div className="md:col-span-5 mb-16 md:mb-0">
             <div className="sticky top-24">
               <h2 className="text-[68px] leading-none tracking-[-2.2px] font-semibold text-white mb-8">
-                Hablemos de tu próxima noche
+                Hablemos de tu próximo booking
               </h2>
+              <p className="max-w-[34ch] text-sm text-[color:var(--fg-muted)] mb-6">Booking directo y coordinación editorial para eventos, marcas y venues.</p>
+              <a href="mailto:hola@marianomtza.com" className="block text-base text-[color:var(--fg)] hover:opacity-80">hola@marianomtza.com</a>
+              <a href="tel:+524434264931" className="mt-1 block text-base text-[color:var(--fg)] hover:opacity-80">+52 443 426 4931</a>
             </div>
           </div>
 

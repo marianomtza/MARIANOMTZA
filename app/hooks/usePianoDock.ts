@@ -1,70 +1,71 @@
 'use client'
 
-import { useRef, useEffect, useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 
-type ToneModule = {
-  Synth: new (options?: unknown) => {
-    toDestination: () => unknown
-    triggerAttackRelease: (note: number, duration: string, time?: number, velocity?: number) => void
-    dispose: () => void
-  }
-  start: () => Promise<void>
+type ToneModule = typeof import('tone/build/Tone')
+
+type Voice = {
+  triggerAttackRelease: (note: string, duration: string, time?: number, velocity?: number) => void
+  releaseAll?: () => void
+  dispose: () => void
 }
 
-const NOTE_FREQUENCIES = [261.63, 293.66, 329.63, 349.23, 392.0, 440.0, 493.88, 523.25, 587.33, 659.25, 698.46]
+const NOTE_POOL = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6']
+const DEBOUNCE_MS = 80
 
 export function usePianoDock() {
   const toneRef = useRef<ToneModule | null>(null)
-  const synthRef = useRef<{
-    triggerAttackRelease: (note: number, duration: string, time?: number, velocity?: number) => void
-    dispose: () => void
-  } | null>(null)
+  const voicesRef = useRef<Voice[]>([])
+  const initializedRef = useRef(false)
+  const initPromiseRef = useRef<Promise<void> | null>(null)
   const lastPlayRef = useRef(0)
-  const DEBOUNCE_MS = 70
 
-  useEffect(() => {
-    let mounted = true
-    import('tone/build/Tone').then((toneModule) => {
-      if (!mounted) return
-      const Tone = toneModule as unknown as ToneModule
-      toneRef.current = Tone
-      const synth = new Tone.Synth({
-        oscillator: { type: 'sine' },
-        envelope: { attack: 0.008, decay: 0.18, sustain: 0.12, release: 0.35 },
+  const initialize = useCallback(async () => {
+    if (initializedRef.current) return
+    if (initPromiseRef.current) return initPromiseRef.current
+
+    initPromiseRef.current = import('tone/build/Tone')
+      .then(async (toneModule) => {
+        toneRef.current = toneModule
+        await toneModule.start()
+
+        const voices = new Array(4).fill(null).map((_, idx) => {
+          const synth = new toneModule.PolySynth(toneModule.Synth, {
+            oscillator: { type: idx % 2 === 0 ? 'triangle' : 'sine' },
+            envelope: { attack: 0.005, decay: 0.12, sustain: 0.05, release: 0.16 },
+          }).toDestination()
+
+          synth.volume.value = -10
+          return synth as unknown as Voice
+        })
+
+        voicesRef.current = voices
+        initializedRef.current = true
       })
-      synthRef.current = synth.toDestination() as {
-        triggerAttackRelease: (note: number, duration: string, time?: number, velocity?: number) => void
-        dispose: () => void
-      }
-    }).catch(() => {
-      toneRef.current = null
-      synthRef.current = null
-    })
+      .catch(() => {
+        toneRef.current = null
+      })
 
-    return () => {
-      mounted = false
-      synthRef.current?.dispose()
-      synthRef.current = null
-      toneRef.current = null
-    }
+    return initPromiseRef.current
   }, [])
 
-  const playNote = useCallback(async (index: number, velocity = 0.65) => {
-    const now = Date.now()
-    if (now - lastPlayRef.current < DEBOUNCE_MS) return
-    lastPlayRef.current = now
+  const playNote = useCallback(
+    async (index: number, velocity = 0.62, enabled = true) => {
+      if (!enabled) return
 
-    if (!synthRef.current) return
+      const now = performance.now()
+      if (now - lastPlayRef.current < DEBOUNCE_MS) return
+      lastPlayRef.current = now
 
-    try {
-      if (!toneRef.current) return
-      await toneRef.current.start()
-      const freq = NOTE_FREQUENCIES[index % NOTE_FREQUENCIES.length]
-      synthRef.current.triggerAttackRelease(freq, '8n', undefined, velocity)
-    } catch (_error) {
-      // Ignorar errores de audio (autoplay policy o dispositivo sin salida)
-    }
-  }, [])
+      await initialize()
+      if (!initializedRef.current || voicesRef.current.length === 0) return
+
+      const note = NOTE_POOL[index % NOTE_POOL.length]
+      const voice = voicesRef.current[index % voicesRef.current.length]
+      voice.triggerAttackRelease(note, '16n', undefined, velocity)
+    },
+    [initialize]
+  )
 
   return { playNote }
 }

@@ -1,68 +1,55 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react'
-import { motion, useMotionValue, useTransform, useSpring, MotionValue } from 'framer-motion'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { motion, MotionValue, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { usePianoDock } from '../hooks/usePianoDock'
 
 const TITLE = 'MARIANOMTZA'
+const ROLES = ['Artist Roster Direction', 'Booking & Strategy', 'Creative Production', 'Cultural Partnerships']
 
-const ROLES = [
-  'Productor de Eventos',
-  'Muevo Gente',
-  'Manager',
-  'Conecto Puntos',
-  'A&R',
-  'Documento todo',
-  'Director Creativo',
-]
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
-interface LetterProps {
+const Letter = ({
+  char,
+  index,
+  cursorX,
+  active,
+  onHover,
+}: {
   char: string
   index: number
-  mouseX: MotionValue<number>
-  containerRef: React.RefObject<HTMLDivElement>
-  onPlay: (idx: number) => void
-}
-
-const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onPlay }) => {
-  const letterRef = useRef<HTMLSpanElement>(null)
-  const [hovered, setHovered] = useState(false)
-
-  const distance = useTransform(mouseX, (x: number) => {
-    if (!letterRef.current || !containerRef.current) return 0
-    const rect = letterRef.current.getBoundingClientRect()
-    const containerRect = containerRef.current.getBoundingClientRect()
-    const center = rect.left + rect.width / 2 - containerRect.left
-    return Math.abs(x - center)
+  cursorX: MotionValue<number>
+  active: MotionValue<number>
+  onHover: (index: number) => void
+}) => {
+  const centerX = useMotionValue(-999)
+  const distance = useTransform([cursorX, centerX, active], ([mouse, center, isActive]: number[]) => {
+    if (!isActive) return 240
+    return Math.abs(mouse - center)
   })
 
-  const scale = useTransform(distance, [0, 110], [1.55, 1])
-  const yOffset = useTransform(distance, [0, 110], [-10, 0])
-  const colorVal = useTransform(distance, [0, 70], ['#9b5fd6', '#f4f1f7'])
+  const mappedScale = useTransform(distance, (d) => {
+    const ratio = 1 - clamp(d / 180, 0, 1)
+    return 1 + ratio * 0.34
+  })
 
-  const springScale = useSpring(scale, { stiffness: 320, damping: 22 })
-  const springY = useSpring(yOffset, { stiffness: 320, damping: 22 })
+  const mappedY = useTransform(distance, (d) => {
+    const ratio = 1 - clamp(d / 180, 0, 1)
+    return -ratio * 8
+  })
 
-  const handleEnter = useCallback(() => {
-    setHovered(true)
-    onPlay(index)
-  }, [index, onPlay])
-
-  const handleLeave = useCallback(() => {
-    setHovered(false)
-  }, [])
+  const tint = useTransform(distance, [0, 180], ['var(--fg)', 'var(--fg-muted)'])
+  const scale = useSpring(mappedScale, { stiffness: 310, damping: 32, mass: 0.45 })
+  const y = useSpring(mappedY, { stiffness: 310, damping: 32, mass: 0.45 })
 
   return (
     <motion.span
-      ref={letterRef}
-      className="char inline-block select-none"
-      style={{
-        scale: springScale,
-        y: springY,
-        color: hovered ? '#9b5fd6' : colorVal,
-        textShadow: hovered ? '0 0 18px rgba(155, 95, 214, 0.5)' : 'none',
+      ref={(node) => {
+        if (!node) return
+        const rect = node.getBoundingClientRect()
+        centerX.set(rect.left + rect.width / 2)
       }}
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
-      whileHover={{ scale: 1.55, y: -10 }}
+      style={{ scale, y, color: tint }}
+      className="inline-block select-none will-change-transform"
+      onMouseEnter={() => onHover(index)}
     >
       {char}
     </motion.span>
@@ -71,107 +58,104 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onPl
 
 export const Hero: React.FC = () => {
   const [roleIndex, setRoleIndex] = useState(0)
+  const [soundEnabled, setSoundEnabled] = useState(false)
+  const [isClient, setIsClient] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const mouseX = useMotionValue(0)
+  const cursorX = useMotionValue(-999)
+  const active = useMotionValue(0)
+  const parallaxX = useSpring(useTransform(cursorX, (v) => (v === -999 ? 0 : (v - 720) * 0.015)), {
+    stiffness: 130,
+    damping: 22,
+  })
+
   const { playNote } = usePianoDock()
 
-  // Role rotation
+  useEffect(() => {
+    setIsClient(true)
+    const stored = window.localStorage.getItem('mm_sound_enabled')
+    setSoundEnabled(stored === '1')
+  }, [])
+
   useEffect(() => {
     const interval = setInterval(() => {
       setRoleIndex((prev) => (prev + 1) % ROLES.length)
     }, 2600)
-    return () => clearInterval(interval)
-  }, [])
 
-  // Mouse tracking
-  useEffect(() => {
-    const handleMove = (e: MouseEvent) => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect()
-        mouseX.set(e.clientX - rect.left)
-      }
+    const onBlur = () => {
+      active.set(0)
+      cursorX.set(-999)
     }
-    window.addEventListener('mousemove', handleMove)
-    return () => window.removeEventListener('mousemove', handleMove)
-  }, [mouseX])
 
-  const handlePlay = useCallback((idx: number) => {
-    playNote(idx)
-  }, [playNote])
+    window.addEventListener('blur', onBlur)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('blur', onBlur)
+    }
+  }, [active, cursorX])
 
-  const handleCTA = (target: 'reserva' | 'eventos') => {
-    playNote(0, 0.75)
-    const el = document.getElementById(target)
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const letters = useMemo(() => TITLE.split(''), [])
+
+  const handleMove: React.PointerEventHandler<HTMLDivElement> = (event) => {
+    cursorX.set(event.clientX)
+    active.set(1)
+  }
+
+  const handleExit = () => {
+    active.set(0)
+    cursorX.set(-999)
+  }
+
+  const handleSoundToggle = () => {
+    const next = !soundEnabled
+    setSoundEnabled(next)
+    window.localStorage.setItem('mm_sound_enabled', next ? '1' : '0')
   }
 
   return (
-    <section className="relative min-h-[94vh] flex flex-col justify-between pt-20 pb-16 overflow-hidden bg-black">
-      <div className="relative z-10 max-w-[1440px] mx-auto px-6 md:px-12 pt-12">
-        {/* Eyebrow */}
-        <div className="flex items-center gap-4 text-xs tracking-[0.28em] text-[#8a7fa0] mb-10 font-mono">
-          <div className="w-px h-3 bg-[#9b5fd6]" />
-          CIUDAD DE MÉXICO
-        </div>
+    <section className="hero-shell section relative min-h-[90vh] overflow-hidden border-b border-[color:var(--line)] pt-24 pb-16">
+      <motion.div className="pointer-events-none absolute inset-0 opacity-60" style={{ x: parallaxX }}>
+        <div className="absolute inset-0 bg-[radial-gradient(70%_60%_at_20%_15%,rgba(163,154,142,0.16),transparent_70%)]" />
+      </motion.div>
+      <div className="noise-layer" />
 
-        {/* Interactive Title - Musical Dock */}
-        <div 
+      <div className="relative z-10 mx-auto flex max-w-[1440px] flex-col gap-8 px-6 md:px-12">
+        <div className="text-[11px] tracking-[0.22em] text-[color:var(--fg-muted)]">CIUDAD DE MÉXICO · MANAGEMENT</div>
+
+        <div
           ref={containerRef}
-          className="relative flex flex-wrap gap-x-[1px] text-[min(16.5vw,210px)] font-black tracking-[-0.032em] leading-[0.88] text-white mb-9"
+          className="select-none text-[min(16vw,200px)] font-semibold leading-[0.88] tracking-[-0.035em] text-[color:var(--fg)]"
+          onPointerMove={handleMove}
+          onPointerLeave={handleExit}
         >
-          {TITLE.split('').map((char, i) => (
-            <Letter
-              key={i}
-              char={char}
-              index={i}
-              mouseX={mouseX}
-              containerRef={containerRef}
-              onPlay={handlePlay}
-            />
+          {letters.map((char, index) => (
+            <Letter key={`${char}-${index}`} char={char} index={index} cursorX={cursorX} active={active} onHover={(i) => playNote(i, 0.62, soundEnabled)} />
           ))}
         </div>
 
-        {/* Rotating Role */}
-        <div className="flex items-center gap-5 mb-11">
-          <div className="text-sm tracking-[0.18em] text-white flex items-center gap-3 font-mono">
-            → <span className="text-[#9b5fd6]">CDMX</span>
-          </div>
-          <motion.div 
-            key={roleIndex}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-[27px] md:text-[42px] font-semibold tracking-[-0.015em] text-white"
-          >
-            {ROLES[roleIndex]}
-          </motion.div>
-        </div>
+        <motion.p
+          key={roleIndex}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-[36ch] text-[clamp(1.2rem,2.2vw,2.4rem)] tracking-[-0.01em] text-[color:var(--fg)]"
+        >
+          {ROLES[roleIndex]}
+        </motion.p>
 
-        {/* Proposal */}
-        <p className="max-w-[38ch] text-[#8a7fa0] text-[15px] leading-relaxed mb-14">
-          Produzco noches de más de 4000 asistentes. Contratación, logística y dirección creativa para la escena nocturna y cultura joven de México.
+        <p className="max-w-[44ch] text-[15px] leading-relaxed text-[color:var(--fg-muted)]">
+          Plataforma editorial para roster, booking y alianzas culturales. Precisión operativa con identidad interactiva.
         </p>
 
-        {/* CTAs */}
-        <div className="flex flex-wrap gap-4">
-          <motion.button
-            onClick={() => handleCTA('reserva')}
-            className="btn btn-primary group"
-            whileHover={{ scale: 1.015 }}
-            whileTap={{ scale: 0.985 }}
-          >
-            Reservar
-            <span className="group-hover:translate-x-0.5 transition">↗</span>
-          </motion.button>
-
-          <motion.button
-            onClick={() => handleCTA('eventos')}
-            className="btn btn-ghost group"
-            whileHover={{ scale: 1.015 }}
-            whileTap={{ scale: 0.985 }}
-          >
-            Eventos
-            <span className="group-hover:translate-x-0.5 transition">↗</span>
-          </motion.button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button onClick={() => document.getElementById('reserva')?.scrollIntoView({ behavior: 'smooth' })} className="btn btn-primary btn-shine">
+            Booking
+          </button>
+          <button onClick={() => document.getElementById('artistas')?.scrollIntoView({ behavior: 'smooth' })} className="btn btn-ghost btn-shine">
+            Ver roster
+          </button>
+          <button onClick={handleSoundToggle} className="ml-1 rounded-full border border-[color:var(--line)] px-4 py-2 text-[11px] tracking-[0.16em] text-[color:var(--fg-muted)] transition hover:text-[color:var(--fg)]">
+            SOUND {isClient && soundEnabled ? 'ON' : 'OFF'}
+          </button>
         </div>
       </div>
     </section>
