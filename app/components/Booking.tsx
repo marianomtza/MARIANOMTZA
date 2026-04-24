@@ -9,7 +9,7 @@ import { ARTIST_NAMES } from '../lib/roster'
 const CONTACT = {
   email: 'hola@marianomtza.com',
   phone: '+52 443 426 4931',
-  phoneClean: '+524434264931',
+  phoneClean: '524434264931',
 }
 
 export const Booking: React.FC = () => {
@@ -135,13 +135,13 @@ export const Booking: React.FC = () => {
               <div className="space-y-1 text-sm">
                 <a
                   href={`mailto:${CONTACT.email}`}
-                  className="link-underline block text-[var(--fg)] text-base py-1"
+                  className="link-underline block text-[var(--fg)] text-base py-2 min-h-[44px]"
                 >
                   {CONTACT.email}
                 </a>
                 <a
-                  href={`tel:${CONTACT.phoneClean}`}
-                  className="link-underline block text-[var(--fg-muted)] font-mono text-sm py-1 tracking-wide"
+                  href={`https://wa.me/${CONTACT.phoneClean}`}
+                  className="link-underline block text-[var(--fg-muted)] font-mono text-sm py-2 min-h-[44px] tracking-wide"
                 >
                   {CONTACT.phone}
                 </a>
@@ -293,9 +293,11 @@ export const Booking: React.FC = () => {
                     className="form-input"
                   >
                     <option value="">Selecciona</option>
-                    <option value="$3,000 - $6,000 USD">$3k – $6k USD</option>
-                    <option value="$6,000 - $12,000 USD">$6k – $12k USD</option>
-                    <option value="$12,000+ USD">$12k+ USD</option>
+                    <option value="$2,000–$5,000 MXN">$2,000–$5,000 MXN</option>
+                    <option value="$5,000–$10,000 MXN">$5,000–$10,000 MXN</option>
+                    <option value="$10,000–$25,000 MXN">$10,000–$25,000 MXN</option>
+                    <option value="$25,000–$50,000 MXN">$25,000–$50,000 MXN</option>
+                    <option value="$50,000+ MXN">$50,000+ MXN</option>
                   </select>
                 </div>
               </div>

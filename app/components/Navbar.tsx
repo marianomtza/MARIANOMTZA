@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export const Navbar: React.FC = () => {
@@ -23,7 +24,6 @@ export const Navbar: React.FC = () => {
   const navLinks = [
     { label: 'Roster', id: 'artistas' },
     { label: 'Eventos', id: 'eventos' },
-    { label: 'Dibujos', id: 'dibujos' },
     { label: 'Booking', id: 'reserva' },
   ]
 
@@ -36,6 +36,7 @@ export const Navbar: React.FC = () => {
           {navLinks.map((link) => (
             <button key={link.id} onClick={() => scrollTo(link.id)} className="link-underline text-[var(--fg)] hover:text-[var(--accent)] transition-colors">{link.label}</button>
           ))}
+          <Link href="/inspiracion" className="link-underline text-[var(--fg)] hover:text-[var(--accent)] transition-colors">Inspiración</Link>
         </div>
 
         <div className="hidden md:block font-mono text-[10px] tracking-[0.28em] uppercase text-[var(--fg-muted)]">CDMX · 2026</div>
@@ -56,6 +57,7 @@ export const Navbar: React.FC = () => {
               {navLinks.map((link) => (
                 <button key={link.id} onClick={() => scrollTo(link.id)} className="text-left py-2 text-[var(--fg)]">{link.label}</button>
               ))}
+              <Link href="/inspiracion" className="py-2 text-[var(--fg)]" onClick={() => setIsOpen(false)}>Inspiración</Link>
             </div>
           </motion.div>
         )}
