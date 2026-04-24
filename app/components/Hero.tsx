@@ -36,7 +36,7 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onPl
 
   const scale = useTransform(distance, [0, 110], [1.55, 1])
   const yOffset = useTransform(distance, [0, 110], [-10, 0])
-  const colorVal = useTransform(distance, [0, 70], ['#9b5fd6', '#f4f1f7'])
+  const colorVal = useTransform(distance, [0, 70], ['var(--accent)', 'var(--fg)'])
 
   const springScale = useSpring(scale, { stiffness: 320, damping: 22 })
   const springY = useSpring(yOffset, { stiffness: 320, damping: 22 })
@@ -57,7 +57,7 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onPl
       style={{
         scale: springScale,
         y: springY,
-        color: hovered ? '#9b5fd6' : colorVal,
+        color: hovered ? 'var(--accent)' : colorVal,
         textShadow: hovered ? '0 0 18px rgba(155, 95, 214, 0.5)' : 'none',
       }}
       onMouseEnter={handleEnter}
@@ -106,18 +106,18 @@ export const Hero: React.FC = () => {
   }
 
   return (
-    <section className="relative min-h-[94vh] flex flex-col justify-between pt-20 pb-16 overflow-hidden bg-black">
+    <section className="relative min-h-[94vh] flex flex-col justify-between pt-20 pb-16 overflow-hidden bg-[var(--bg)]">
       <div className="relative z-10 max-w-[1440px] mx-auto px-6 md:px-12 pt-12">
         {/* Eyebrow */}
-        <div className="flex items-center gap-4 text-xs tracking-[0.28em] text-[#8a7fa0] mb-10 font-mono">
-          <div className="w-px h-3 bg-[#9b5fd6]" />
+        <div className="flex items-center gap-4 text-xs tracking-[0.28em] text-[var(--fg-muted)] mb-10 font-mono">
+          <div className="w-px h-3 bg-[var(--accent)]" />
           CIUDAD DE MÉXICO
         </div>
 
         {/* Interactive Title - Musical Dock */}
         <div 
           ref={containerRef}
-          className="relative flex flex-wrap gap-x-[1px] text-[min(16.5vw,210px)] font-black tracking-[-0.032em] leading-[0.88] text-white mb-9"
+          className="relative flex flex-wrap gap-x-[1px] fluid-title no-break-title font-black tracking-[-0.032em] leading-[0.88] text-[var(--fg)] mb-9"
         >
           {TITLE.split('').map((char, i) => (
             <Letter
@@ -133,21 +133,21 @@ export const Hero: React.FC = () => {
 
         {/* Rotating Role */}
         <div className="flex items-center gap-5 mb-11">
-          <div className="text-sm tracking-[0.18em] text-white flex items-center gap-3 font-mono">
-            → <span className="text-[#9b5fd6]">CDMX</span>
+          <div className="text-sm tracking-[0.18em] text-[var(--fg)] flex items-center gap-3 font-mono">
+            → <span className="text-[var(--accent)]">CDMX</span>
           </div>
           <motion.div 
             key={roleIndex}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-[27px] md:text-[42px] font-semibold tracking-[-0.015em] text-white"
+            className="text-[27px] md:text-[42px] font-semibold tracking-[-0.015em] text-[var(--fg)]"
           >
             {ROLES[roleIndex]}
           </motion.div>
         </div>
 
         {/* Proposal */}
-        <p className="max-w-[38ch] text-[#8a7fa0] text-[15px] leading-relaxed mb-14">
+        <p className="max-w-[38ch] text-[var(--fg-muted)] text-[15px] leading-relaxed mb-14">
           Produzco noches de más de 4000 asistentes. Contratación, logística y dirección creativa para la escena nocturna y cultura joven de México.
         </p>
 
