@@ -1,115 +1,146 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Environment, MeshTransmissionMaterial, Sphere } from '@react-three/drei'
+import { Group, MathUtils } from 'three'
 import { useReducedMotion } from 'framer-motion'
 
+function SceneObjects({ motionFactor }: { motionFactor: number }) {
+  const groupRef = useRef<Group>(null)
+  const orbRef = useRef<Group>(null)
+  const pulseRef = useRef<Group>(null)
+
+  useFrame(({ clock, pointer }, delta) => {
+    const group = groupRef.current
+    const orb = orbRef.current
+    const pulse = pulseRef.current
+    if (!group || !orb || !pulse) return
+
+    const t = clock.elapsedTime
+    const smooth = Math.min(delta * 2.8, 0.12) * motionFactor
+
+    group.rotation.y = MathUtils.lerp(group.rotation.y, pointer.x * 0.16, smooth)
+    group.rotation.x = MathUtils.lerp(group.rotation.x, -pointer.y * 0.1, smooth)
+
+    orb.position.y = Math.sin(t * 0.35) * 0.08 * motionFactor
+    orb.rotation.y += delta * 0.22 * motionFactor
+
+    const pulseBase = 1 + Math.sin(t * 1.3) * 0.045 * motionFactor
+    pulse.scale.setScalar(pulseBase)
+  })
+
+  return (
+    <group ref={groupRef}>
+      <ambientLight intensity={0.28} />
+      <directionalLight position={[3, 3, 2]} intensity={1.1} color="#d4c3ff" />
+      <pointLight position={[-4, 1.5, 3]} intensity={0.6} color="#4f6aff" />
+      <pointLight position={[0, -2, 4]} intensity={0.45} color="#7c3aed" />
+
+      <group ref={orbRef}>
+        <mesh position={[0, -0.15, 0]} castShadow receiveShadow>
+          <capsuleGeometry args={[0.95, 1.55, 22, 36]} />
+          <meshPhysicalMaterial
+            color="#08080c"
+            roughness={0.2}
+            metalness={0.7}
+            clearcoat={1}
+            clearcoatRoughness={0.08}
+            reflectivity={1}
+            envMapIntensity={1.2}
+          />
+        </mesh>
+
+        <group ref={pulseRef}>
+          <mesh position={[0, -0.1, 0.96]}>
+            <circleGeometry args={[0.43, 42]} />
+            <meshStandardMaterial color="#111120" emissive="#1d1333" emissiveIntensity={0.45} />
+          </mesh>
+          <mesh position={[0, -0.1, 0.98]}>
+            <ringGeometry args={[0.46, 0.62, 64]} />
+            <meshStandardMaterial color="#6d28d9" emissive="#7c3aed" emissiveIntensity={0.22} />
+          </mesh>
+        </group>
+      </group>
+
+      <Sphere args={[0.88, 48, 48]} position={[-2.1, 0.6, -0.9]}>
+        <MeshTransmissionMaterial
+          thickness={0.6}
+          roughness={0.08}
+          transmission={0.96}
+          ior={1.22}
+          chromaticAberration={0.04}
+          backside
+          color="#8b5cf6"
+        />
+      </Sphere>
+
+      <Sphere args={[0.62, 48, 48]} position={[1.5, -0.55, -1.1]}>
+        <MeshTransmissionMaterial
+          thickness={0.45}
+          roughness={0.12}
+          transmission={0.95}
+          ior={1.2}
+          chromaticAberration={0.03}
+          backside
+          color="#4f6aff"
+        />
+      </Sphere>
+
+      <Sphere args={[0.34, 48, 48]} position={[0.95, 1.3, -0.35]}>
+        <MeshTransmissionMaterial
+          thickness={0.4}
+          roughness={0.1}
+          transmission={0.96}
+          ior={1.19}
+          chromaticAberration={0.03}
+          backside
+          color="#f43f5e"
+        />
+      </Sphere>
+
+      <Environment preset="night" />
+    </group>
+  )
+}
+
 export default function HeroScene3D() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
   const reduceMotion = useReducedMotion()
+  const [inView, setInView] = useState(true)
+  const hostRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
+    const host = hostRef.current
+    if (!host) return
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold: 0.15 }
+    )
 
-    let frame = 0
-    let raf = 0
-    const pointer = { x: 0.5, y: 0.5 }
+    observer.observe(host)
+    return () => observer.disconnect()
+  }, [])
 
-    const resize = () => {
-      const ratio = Math.min(window.devicePixelRatio || 1, 2)
-      const width = canvas.clientWidth
-      const height = canvas.clientHeight
-      canvas.width = Math.floor(width * ratio)
-      canvas.height = Math.floor(height * ratio)
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
-    }
+  const isMobile = useMemo(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches,
+    []
+  )
 
-    const lines = Array.from({ length: 28 }).map((_, i) => ({
-      depth: 0.2 + i * 0.03,
-      phase: Math.random() * Math.PI * 2,
-      amp: 10 + Math.random() * 30,
-    }))
+  const motionFactor = !inView ? 0 : reduceMotion ? 0.32 : isMobile ? 0.55 : 1
 
-    const particles = Array.from({ length: 65 }).map(() => ({
-      x: Math.random(),
-      y: Math.random(),
-      z: 0.2 + Math.random() * 0.8,
-      r: 0.6 + Math.random() * 1.8,
-    }))
-
-    const draw = () => {
-      const width = canvas.clientWidth
-      const height = canvas.clientHeight
-      frame += reduceMotion ? 0.004 : 0.015
-
-      ctx.clearRect(0, 0, width, height)
-
-      const grad = ctx.createRadialGradient(
-        width * 0.56,
-        height * 0.42,
-        width * 0.05,
-        width * 0.56,
-        height * 0.45,
-        width * 0.65
-      )
-      grad.addColorStop(0, 'rgba(155,95,214,0.22)')
-      grad.addColorStop(0.5, 'rgba(76,29,149,0.16)')
-      grad.addColorStop(1, 'rgba(8,8,12,0)')
-      ctx.fillStyle = grad
-      ctx.fillRect(0, 0, width, height)
-
-      ctx.save()
-      ctx.translate(width * (pointer.x - 0.5) * 16, height * (pointer.y - 0.5) * 10)
-      lines.forEach((line, i) => {
-        const y = height * 0.22 + i * (height * 0.018)
-        ctx.beginPath()
-        for (let x = -40; x <= width + 40; x += 10) {
-          const wave = Math.sin((x / 100) * (1.1 + line.depth) + frame * (2.2 - line.depth) + line.phase)
-          const sway = Math.cos((x / 140) + frame * 1.2 + line.phase)
-          const yy = y + wave * line.amp * line.depth + sway * 8 * line.depth
-          if (x === -40) ctx.moveTo(x, yy)
-          else ctx.lineTo(x, yy)
-        }
-        ctx.strokeStyle = `rgba(188, 153, 255, ${0.07 + line.depth * 0.22})`
-        ctx.lineWidth = 0.7 + line.depth * 1.4
-        ctx.stroke()
-      })
-      ctx.restore()
-
-      particles.forEach((particle) => {
-        const px = (particle.x + frame * 0.007 * particle.z) % 1
-        const py = particle.y + Math.sin(frame * 2 + particle.x * Math.PI * 2) * 0.02
-        const parallaxX = (pointer.x - 0.5) * 40 * particle.z
-        const parallaxY = (pointer.y - 0.5) * 20 * particle.z
-        ctx.beginPath()
-        ctx.arc(px * width + parallaxX, py * height + parallaxY, particle.r * particle.z, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(232, 224, 255, ${0.08 + particle.z * 0.18})`
-        ctx.fill()
-      })
-
-      raf = requestAnimationFrame(draw)
-    }
-
-    const onPointer = (event: PointerEvent) => {
-      const rect = canvas.getBoundingClientRect()
-      pointer.x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width))
-      pointer.y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height))
-    }
-
-    resize()
-    draw()
-    window.addEventListener('resize', resize)
-    window.addEventListener('pointermove', onPointer, { passive: true })
-
-    return () => {
-      cancelAnimationFrame(raf)
-      window.removeEventListener('resize', resize)
-      window.removeEventListener('pointermove', onPointer)
-    }
-  }, [reduceMotion])
-
-  return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full pointer-events-none" aria-hidden />
+  return (
+    <div ref={hostRef} className="absolute inset-0 pointer-events-none">
+      <Canvas
+        camera={{ position: [0, 0.2, 5.2], fov: 46 }}
+        dpr={isMobile ? [1, 1.2] : [1, 1.7]}
+        frameloop={inView ? 'always' : 'demand'}
+        gl={{ antialias: !isMobile, alpha: true, powerPreference: 'high-performance' }}
+        className="absolute inset-0 pointer-events-none"
+      >
+        <fog attach="fog" args={['#07070a', 4.8, 11]} />
+        <SceneObjects motionFactor={motionFactor} />
+      </Canvas>
+    </div>
+  )
 }

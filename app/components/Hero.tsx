@@ -1,8 +1,10 @@
 'use client'
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { motion, useMotionValue, useSpring, useTransform, MotionValue } from 'framer-motion'
 import { usePianoDock } from '../hooks/usePianoDock'
+import { useSound } from '../contexts/SoundContext'
 import { HeroBackground } from './hero/HeroBackground'
 
 const TITLE = 'MARIANOMTZA'
@@ -95,14 +97,28 @@ export const Hero: React.FC = () => {
   const isActive = useMotionValue(0)
   const activeLetterRef = useRef<number>(-1)
   const [roleIndex, setRoleIndex] = useState(0)
+  const [showHint, setShowHint] = useState(false)
+  const hintShownRef = useRef(false)
+  const hintTimeoutRef = useRef<number | null>(null)
+  const pathname = usePathname()
 
   const { playNote, primeOnInteraction } = usePianoDock()
+  const { enabled } = useSound()
 
   useEffect(() => {
     const id = window.setInterval(() => {
       setRoleIndex((i) => (i + 1) % ROLES.length)
     }, 2600)
     return () => window.clearInterval(id)
+  }, [])
+
+
+  useEffect(() => {
+    return () => {
+      if (hintTimeoutRef.current !== null) {
+        window.clearTimeout(hintTimeoutRef.current)
+      }
+    }
   }, [])
 
   const reset = useCallback(() => {
@@ -123,6 +139,18 @@ export const Hero: React.FC = () => {
       document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [reset])
+
+  useEffect(() => {
+    reset()
+  }, [pathname, reset])
+
+  const handleHint = useCallback(() => {
+    if (hintShownRef.current) return
+    hintShownRef.current = true
+    setShowHint(true)
+    if (hintTimeoutRef.current !== null) window.clearTimeout(hintTimeoutRef.current)
+    hintTimeoutRef.current = window.setTimeout(() => setShowHint(false), 1800)
+  }, [])
 
   const handleMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -148,13 +176,14 @@ export const Hero: React.FC = () => {
 
       if (closestIdx !== -1 && closestIdx !== activeLetterRef.current) {
         activeLetterRef.current = closestIdx
+        if (!enabled) handleHint()
         void playNote(closestIdx)
       }
       if (closestIdx === -1) {
         activeLetterRef.current = -1
       }
     },
-    [mouseX, isActive, playNote]
+    [mouseX, isActive, playNote, enabled, handleHint]
   )
 
   const handleLeave = useCallback(() => {
@@ -186,6 +215,7 @@ export const Hero: React.FC = () => {
           ref={containerRef}
           onPointerMove={handleMove}
           onPointerLeave={handleLeave}
+          onPointerCancel={handleLeave}
           onPointerEnter={handleEnter}
           className="fluid-title font-display font-normal no-break-title text-[var(--fg)] mb-8 touch-none"
           style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}
@@ -201,6 +231,10 @@ export const Hero: React.FC = () => {
             />
           ))}
         </div>
+
+        {showHint && !enabled && (
+          <div className="mb-4 inline-flex rounded-full border border-[var(--line-strong)] bg-[var(--bg)]/75 px-3 py-1 text-xs text-[var(--fg-muted)]">Activa piano</div>
+        )}
 
         {/* Rotating Role */}
         <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2 mb-10 min-h-[3.25rem]">
