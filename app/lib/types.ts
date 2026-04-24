@@ -12,6 +12,7 @@ export type Drawing = {
   created_at: string
   updated_at?: string
   source?: 'web' | 'fallback-local'
+  pending_sync?: boolean
 }
 
 export type DrawingInput = {
@@ -27,7 +28,7 @@ export type DrawingsResponse = {
   drawings: Drawing[]
   source?: string
   storageKey?: string
-  nextOffset?: number
+  nextOffset?: number | null
 }
 
 export type DrawingPostResponse = Drawing | { error: string; fallback?: string; storageKey?: string }

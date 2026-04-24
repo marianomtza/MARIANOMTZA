@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 export type DrawingTool = 'pencil' | 'marker' | 'ink' | 'eraser'
 
+type LegacyTool = 'pencil' | 'marker' | 'ink'
+
 export type Point = {
   x: number
   y: number
@@ -18,16 +20,21 @@ export type Stroke = {
   tool: DrawingTool
 }
 
+const TOOL_DEFAULTS: Record<DrawingTool, number> = {
+  pencil: 2.4,
+  marker: 7.5,
+  ink: 4.8,
+  eraser: 14,
+}
+
 export const TOOLS = [
-  { id: 'pencil' as const, label: 'LÁPIZ', size: 2.4, icon: '✎' },
-  { id: 'marker' as const, label: 'MARCADOR', size: 7.5, icon: '▬' },
-  { id: 'ink' as const, label: 'TINTA', size: 4.8, icon: '≈' },
-  { id: 'eraser' as const, label: 'BORRAR', size: 16, icon: '⌫' },
+  { id: 'pencil' as const, label: 'LÁPIZ', icon: '✎' },
+  { id: 'marker' as const, label: 'MARCADOR', icon: '▬' },
+  { id: 'ink' as const, label: 'TINTA', icon: '≈' },
+  { id: 'eraser' as const, label: 'BORRADOR', icon: '⌫' },
 ]
 
-export const COLORS = ['#111111', '#6d28d9', '#be185d', '#0f172a', '#92400e']
-
-type LegacyTool = 'pencil' | 'marker' | 'ink'
+export const COLORS = ['#111111', '#8B5CF6', '#3772FF', '#DF2935', '#FDCA40', '#F8F5F0']
 
 type UseCanvasDrawingReturn = {
   canvasRef: React.RefObject<HTMLCanvasElement>
@@ -38,7 +45,10 @@ type UseCanvasDrawingReturn = {
   color: string
   setColor: (value: string) => void
   currentTool: LegacyTool
+  activeTool: DrawingTool
   setCurrentTool: (tool: DrawingTool) => void
+  brushSize: number
+  setBrushSize: (size: number) => void
   start: (e: React.PointerEvent<HTMLCanvasElement>) => void
   draw: (e: React.PointerEvent<HTMLCanvasElement>) => void
   stop: (e?: React.PointerEvent<HTMLCanvasElement>) => void
@@ -52,7 +62,7 @@ type UseCanvasDrawingReturn = {
   loadStrokes: (strokes: Stroke[]) => void
 }
 
-const PAPER_BASE = '#f6f1e8'
+const PAPER_BASE = '#f8f5f0'
 
 function createStableNoise(x: number, y: number) {
   const v = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453
@@ -64,38 +74,39 @@ function drawPaper(ctx: CanvasRenderingContext2D, width: number, height: number)
   ctx.fillStyle = PAPER_BASE
   ctx.fillRect(0, 0, width, height)
 
-  ctx.strokeStyle = 'rgba(20, 20, 20, 0.035)'
+  ctx.strokeStyle = 'rgba(20, 20, 20, 0.03)'
   ctx.lineWidth = 0.5
   for (let x = 10; x < width; x += 12) {
-    const wobble = (createStableNoise(x, 1) - 0.5) * 0.9
+    const wobble = (createStableNoise(x, 1) - 0.5) * 0.7
     ctx.beginPath()
     ctx.moveTo(x, 0)
     ctx.lineTo(x + wobble, height)
     ctx.stroke()
   }
 
-  ctx.fillStyle = 'rgba(100, 100, 100, 0.05)'
+  ctx.fillStyle = 'rgba(90, 90, 90, 0.04)'
   for (let y = 2; y < height; y += 8) {
     for (let x = 2; x < width; x += 8) {
-      if (createStableNoise(x, y) > 0.88) ctx.fillRect(x, y, 1, 1)
+      if (createStableNoise(x, y) > 0.9) ctx.fillRect(x, y, 1, 1)
     }
   }
+
   ctx.restore()
 }
 
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
-  if (stroke.points.length === 0) return
-  const points = stroke.points
-  const baseWidth = stroke.size
+  if (!stroke.points.length) return
 
   ctx.save()
   if (stroke.tool === 'eraser') {
     ctx.globalCompositeOperation = 'destination-out'
-    ctx.strokeStyle = 'rgba(0,0,0,1)'
+    ctx.strokeStyle = '#000'
+    ctx.fillStyle = '#000'
     ctx.shadowBlur = 0
   } else {
     ctx.globalCompositeOperation = 'source-over'
     ctx.strokeStyle = stroke.color
+    ctx.fillStyle = stroke.color
     ctx.shadowColor = stroke.tool === 'ink' ? stroke.color : 'transparent'
     ctx.shadowBlur = stroke.tool === 'ink' ? 5 : 0
   }
@@ -103,27 +114,27 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
 
-  if (points.length === 1) {
-    const p = points[0]
+  if (stroke.points.length === 1) {
+    const p = stroke.points[0]
     ctx.beginPath()
-    ctx.arc(p.x, p.y, Math.max(1, baseWidth * p.pressure * 0.5), 0, Math.PI * 2)
-    ctx.fillStyle = stroke.tool === 'eraser' ? 'rgba(0,0,0,1)' : stroke.color
+    ctx.arc(p.x, p.y, Math.max(1, stroke.size * p.pressure * 0.5), 0, Math.PI * 2)
     ctx.fill()
     ctx.restore()
     return
   }
 
   ctx.beginPath()
-  ctx.moveTo(points[0].x, points[0].y)
-  for (let i = 1; i < points.length; i++) {
-    const prev = points[i - 1]
-    const current = points[i]
+  ctx.moveTo(stroke.points[0].x, stroke.points[0].y)
+
+  for (let i = 1; i < stroke.points.length; i++) {
+    const prev = stroke.points[i - 1]
+    const current = stroke.points[i]
     const midX = (prev.x + current.x) / 2
     const midY = (prev.y + current.y) / 2
-    const pressure = current.pressure || 0.5
-    ctx.lineWidth = Math.max(1, baseWidth * pressure)
+    ctx.lineWidth = Math.max(1, stroke.size * (current.pressure || 0.5))
     ctx.quadraticCurveTo(prev.x, prev.y, midX, midY)
   }
+
   ctx.stroke()
   ctx.restore()
 }
@@ -139,7 +150,8 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
 
   const [, forceRerender] = useState(0)
   const [color, setColor] = useState(COLORS[0])
-  const [currentTool, setCurrentTool] = useState<DrawingTool>('pencil')
+  const [activeTool, setActiveTool] = useState<DrawingTool>('pencil')
+  const [brushSize, setBrushSize] = useState(TOOL_DEFAULTS.pencil)
 
   const flush = useCallback(() => forceRerender((v) => v + 1), [])
 
@@ -163,11 +175,12 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
   const setupCanvas = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+
     const rect = canvas.getBoundingClientRect()
     const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1))
     dprRef.current = dpr
 
-    const oldStrokes = strokesRef.current
+    const saved = strokesRef.current
     canvas.width = Math.max(1, Math.floor(rect.width * dpr))
     canvas.height = Math.max(1, Math.floor(rect.height * dpr))
     canvas.style.width = `${rect.width}px`
@@ -177,22 +190,20 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
     if (!ctx) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    strokesRef.current = oldStrokes
+    strokesRef.current = saved
     redraw()
   }, [redraw])
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-
     const observer = new ResizeObserver(() => setupCanvas())
     observer.observe(canvas)
     setupCanvas()
-
     return () => observer.disconnect()
   }, [setupCanvas])
 
-  const getPointFromEvent = useCallback((e: PointerEvent | React.PointerEvent<HTMLCanvasElement>): Point => {
+  const getPoint = useCallback((e: PointerEvent | React.PointerEvent<HTMLCanvasElement>): Point => {
     const canvas = canvasRef.current
     if (!canvas) return { x: 0, y: 0, pressure: 0.5 }
     const rect = canvas.getBoundingClientRect()
@@ -222,7 +233,7 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
 
     if (stroke.tool === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out'
-      ctx.strokeStyle = 'rgba(0,0,0,1)'
+      ctx.strokeStyle = '#000'
       ctx.shadowBlur = 0
     } else {
       ctx.globalCompositeOperation = 'source-over'
@@ -233,6 +244,7 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
 
     ctx.lineWidth = Math.max(1, stroke.size * curr.pressure)
     ctx.beginPath()
+
     if (len > 2) {
       const before = stroke.points[len - 3]
       const midPrevX = (before.x + prev.x) / 2
@@ -245,8 +257,17 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
       ctx.moveTo(prev.x, prev.y)
       ctx.lineTo(curr.x, curr.y)
     }
+
     ctx.stroke()
     ctx.restore()
+  }, [])
+
+  const setCurrentTool = useCallback((tool: DrawingTool) => {
+    setActiveTool(tool)
+    setBrushSize((prev) => {
+      if (prev > 0) return prev
+      return TOOL_DEFAULTS[tool]
+    })
   }, [])
 
   const start = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -257,36 +278,32 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
     canvas.setPointerCapture(e.pointerId)
     pointerIdRef.current = e.pointerId
 
-    const selectedTool = TOOLS.find((t) => t.id === currentTool)
-    const baseSize = selectedTool?.size ?? 2.4
-    const firstPoint = getPointFromEvent(e)
-
+    const first = getPoint(e)
     currentStrokeRef.current = {
       id: crypto.randomUUID(),
-      points: [firstPoint],
+      points: [first],
       color,
-      size: baseSize,
-      tool: currentTool,
+      size: brushSize,
+      tool: activeTool,
     }
 
     isDrawingRef.current = true
     redoRef.current = []
-  }, [color, currentTool, getPointFromEvent])
+  }, [activeTool, brushSize, color, getPoint])
 
   const draw = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawingRef.current || !currentStrokeRef.current) return
-
     e.preventDefault()
 
     const native = e.nativeEvent
     const events = typeof native.getCoalescedEvents === 'function' ? native.getCoalescedEvents() : [native]
 
     for (const event of events) {
-      const point = getPointFromEvent(event)
+      const point = getPoint(event)
       currentStrokeRef.current.points.push(point)
       drawIncrement(currentStrokeRef.current)
     }
-  }, [drawIncrement, getPointFromEvent])
+  }, [drawIncrement, getPoint])
 
   const stop = useCallback((e?: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawingRef.current || !currentStrokeRef.current) return
@@ -296,7 +313,7 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
       try {
         canvas.releasePointerCapture(pointerIdRef.current)
       } catch {
-        // Ignore if capture was already released.
+        // ignore release errors
       }
     }
 
@@ -309,6 +326,7 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
   }, [flush])
 
   const clear = useCallback(() => {
+    if (strokesRef.current.length === 0) return false
     if (!window.confirm('¿Limpiar la hoja?')) return false
     strokesRef.current = []
     redoRef.current = []
@@ -319,7 +337,7 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
   }, [flush, redraw])
 
   const undo = useCallback(() => {
-    if (strokesRef.current.length === 0) return
+    if (!strokesRef.current.length) return
     const last = strokesRef.current[strokesRef.current.length - 1]
     strokesRef.current = strokesRef.current.slice(0, -1)
     redoRef.current = [...redoRef.current, last]
@@ -328,7 +346,7 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
   }, [flush, redraw])
 
   const redo = useCallback(() => {
-    if (redoRef.current.length === 0) return
+    if (!redoRef.current.length) return
     const restore = redoRef.current[redoRef.current.length - 1]
     redoRef.current = redoRef.current.slice(0, -1)
     strokesRef.current = [...strokesRef.current, restore]
@@ -339,6 +357,7 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
   const exportPngBlob = useCallback(async () => {
     const canvas = canvasRef.current
     if (!canvas) return null
+
     return await new Promise<Blob | null>((resolve) => {
       canvas.toBlob((blob) => resolve(blob), 'image/png')
     })
@@ -357,6 +376,7 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
     const offscreen = document.createElement('canvas')
     offscreen.width = width
     offscreen.height = height
+
     const ctx = offscreen.getContext('2d')
     if (!ctx) return null
 
@@ -374,8 +394,8 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
     flush()
   }, [flush, redraw])
 
-  const legacyCurrentTool = (currentTool === 'eraser' ? 'pencil' : currentTool) as LegacyTool
   const exportImage = useCallback(() => canvasRef.current?.toDataURL('image/png', 0.94), [])
+  const currentTool = (activeTool === 'eraser' ? 'pencil' : activeTool) as LegacyTool
 
   return useMemo(() => ({
     canvasRef,
@@ -385,8 +405,11 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
     hasContent: strokesRef.current.length > 0,
     color,
     setColor,
-    currentTool: legacyCurrentTool,
+    currentTool,
+    activeTool,
     setCurrentTool,
+    brushSize,
+    setBrushSize,
     start,
     draw,
     stop,
@@ -399,9 +422,11 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
     exportWebpBlob,
     loadStrokes,
   }), [
+    activeTool,
+    brushSize,
     clear,
     color,
-    legacyCurrentTool,
+    currentTool,
     draw,
     exportImage,
     exportPngBlob,

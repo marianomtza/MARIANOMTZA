@@ -31,9 +31,22 @@ insert into storage.buckets (id, name, public)
 values ('drawings-wall', 'drawings-wall', true)
 on conflict (id) do nothing;
 
--- Public read access for gallery files
-create policy "Public can read drawings wall"
-on storage.objects for select
-using (bucket_id = 'drawings-wall');
+-- Public read access for gallery files (idempotent)
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'Public can read drawings wall'
+  ) then
+    execute $policy$
+      create policy "Public can read drawings wall"
+      on storage.objects for select
+      using (bucket_id = 'drawings-wall')
+    $policy$;
+  end if;
+end $$;
 
 -- Service role can insert/update/delete by default.

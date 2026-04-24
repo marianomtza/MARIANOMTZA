@@ -111,17 +111,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!hasServerSupabaseEnv()) {
-      return NextResponse.json(
-        {
-          error: 'Storage backend unavailable. Save locally.',
-          fallback: 'local-storage',
-          storageKey: LOCAL_KEY,
-        },
-        { status: 503 }
-      )
-    }
-
     const contentType = request.headers.get('content-type') || ''
 
     let name = 'Anónimo'
@@ -161,6 +150,17 @@ export async function POST(request: NextRequest) {
         throw new ValidationError('Drawing file too large', 422)
       }
 
+      if (!hasServerSupabaseEnv()) {
+        return NextResponse.json(
+          {
+            error: 'Storage backend unavailable. Save locally.',
+            fallback: 'local-storage',
+            storageKey: LOCAL_KEY,
+          },
+          { status: 503 }
+        )
+      }
+
       const id = crypto.randomUUID()
       imageUrl = await uploadAndGetPublicUrl(`${id}/full.webp`, full)
       thumbUrl = await uploadAndGetPublicUrl(`${id}/thumb.webp`, thumb)
@@ -174,6 +174,17 @@ export async function POST(request: NextRequest) {
       tool = payload.tool
       imageUrl = payload.image || ''
       thumbUrl = payload.image || ''
+
+      if (!hasServerSupabaseEnv()) {
+        return NextResponse.json(
+          {
+            error: 'Storage backend unavailable. Save locally.',
+            fallback: 'local-storage',
+            storageKey: LOCAL_KEY,
+          },
+          { status: 503 }
+        )
+      }
     } else {
       throw new ValidationError('Unsupported content-type', 400)
     }

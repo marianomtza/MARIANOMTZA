@@ -16,6 +16,23 @@ function safeParse<T>(raw: string | null, fallback: T): T {
   }
 }
 
+export function readDraftStrokes<T = unknown>(): T[] {
+  try {
+    return safeParse<T[]>(localStorage.getItem(DRAWING_DRAFT_KEY), [])
+  } catch {
+    return []
+  }
+}
+
+export function writeDraftStrokes<T>(strokes: T[]) {
+  try {
+    localStorage.setItem(DRAWING_DRAFT_KEY, JSON.stringify(strokes))
+    return { ok: true as const }
+  } catch {
+    return { ok: false as const, error: 'No se pudo guardar el borrador local (storage lleno).' }
+  }
+}
+
 export function readLocalDrawings(): SavedDrawing[] {
   try {
     return safeParse<SavedDrawing[]>(localStorage.getItem(LOCAL_DRAWINGS_KEY), [])
@@ -58,6 +75,22 @@ export function clearDraft() {
   }
 }
 
+export function pendingToDrawing(item: PendingDrawing): Drawing {
+  return {
+    id: item.id,
+    image: item.thumbDataUrl,
+    image_url: item.fullDataUrl,
+    thumb_url: item.thumbDataUrl,
+    full_url: item.fullDataUrl,
+    name: item.name || 'Anónimo',
+    message: item.message,
+    tool: item.tool,
+    created_at: item.created_at,
+    source: 'fallback-local',
+    pending_sync: true,
+  }
+}
+
 export async function fetchDrawings(limit = 24, offset = 0): Promise<DrawingsResponse> {
   const response = await fetch(`/api/drawings?limit=${limit}&offset=${offset}`, {
     method: 'GET',
@@ -82,9 +115,42 @@ export async function postDrawing(formData: FormData): Promise<DrawingPostRespon
 
   const data = (await response.json().catch(() => null)) as DrawingPostResponse | null
 
-  if (!response.ok || !data) {
+  if (!response.ok && response.status !== 503) {
     throw new Error((data as { error?: string } | null)?.error || 'No se pudo guardar el dibujo')
   }
 
-  return data
+  return data || { error: 'No se pudo guardar el dibujo' }
+}
+
+export async function syncPendingDrawings() {
+  const pending = readPendingDrawings()
+  if (!pending.length) return { synced: 0, remaining: 0 }
+
+  const remaining: PendingDrawing[] = []
+  let synced = 0
+
+  for (const item of pending) {
+    try {
+      const formData = new FormData()
+      const [fullRes, thumbRes] = await Promise.all([fetch(item.fullDataUrl), fetch(item.thumbDataUrl)])
+      const [fullBlob, thumbBlob] = await Promise.all([fullRes.blob(), thumbRes.blob()])
+      formData.append('full', new File([fullBlob], 'full.webp', { type: 'image/webp' }))
+      formData.append('thumb', new File([thumbBlob], 'thumb.webp', { type: 'image/webp' }))
+      formData.append('name', item.name)
+      formData.append('message', item.message)
+      formData.append('tool', item.tool)
+
+      const response = await postDrawing(formData)
+      if ('error' in response) {
+        remaining.push(item)
+      } else {
+        synced += 1
+      }
+    } catch {
+      remaining.push(item)
+    }
+  }
+
+  writePendingDrawings(remaining)
+  return { synced, remaining: remaining.length }
 }

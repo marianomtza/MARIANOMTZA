@@ -3,13 +3,15 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { COLORS, Stroke, TOOLS, useCanvasDrawing } from '../../hooks/useCanvasDrawing'
 import {
-  DRAWING_DRAFT_KEY,
   clearDraft,
   fetchDrawings,
+  pendingToDrawing,
   postDrawing,
+  readDraftStrokes,
   readLocalDrawings,
   readPendingDrawings,
-  writeLocalDrawings,
+  syncPendingDrawings,
+  writeDraftStrokes,
   writePendingDrawings,
 } from '../../lib/drawings'
 import { Drawing, PendingDrawing } from '../../lib/types'
@@ -43,8 +45,10 @@ export function DrawingSection() {
     hasContent,
     color,
     setColor,
-    currentTool,
+    activeTool,
     setCurrentTool,
+    brushSize,
+    setBrushSize,
     start,
     draw,
     stop,
@@ -63,29 +67,37 @@ export function DrawingSection() {
   const [saving, setSaving] = useState(false)
   const [status, setStatus] = useState('')
   const [offset, setOffset] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
   const [lightbox, setLightbox] = useState<Drawing | null>(null)
   const [hasDraft, setHasDraft] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
 
-  useEffect(() => {
-    setDrawings(readLocalDrawings())
-
-    try {
-      const draft = localStorage.getItem(DRAWING_DRAFT_KEY)
-      if (draft) setHasDraft(true)
-    } catch {
-      setHasDraft(false)
+  const mergeSources = (remote: Drawing[], local: Drawing[], pending: PendingDrawing[]) => {
+    const pendingMapped = pending.map(pendingToDrawing)
+    const all = [...pendingMapped, ...remote, ...local]
+    const map = new Map<string, Drawing>()
+    for (const item of all) {
+      if (!map.has(item.id)) map.set(item.id, item)
     }
+    return [...map.values()].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
+  }
+
+  useEffect(() => {
+    const local = readLocalDrawings()
+    const pending = readPendingDrawings()
+    setPendingCount(pending.length)
+    setDrawings(mergeSources([], local, pending))
+
+    const draft = readDraftStrokes<Stroke>()
+    if (draft.length) setHasDraft(true)
   }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!strokes.length) return
-      try {
-        localStorage.setItem(DRAWING_DRAFT_KEY, JSON.stringify(strokes))
-      } catch {
-        setStatus('No se pudo guardar el borrador local (storage lleno).')
-      }
+      const saved = writeDraftStrokes(strokes)
+      if (!saved.ok) setStatus(saved.error)
     }, AUTO_SAVE_MS)
 
     return () => clearTimeout(timer)
@@ -96,12 +108,14 @@ export function DrawingSection() {
       setLoading(true)
       try {
         const data = await fetchDrawings(24, 0)
-        if (data.drawings?.length) {
-          setDrawings(data.drawings)
-          setOffset(data.drawings.length)
-        }
+        const local = readLocalDrawings()
+        const pending = readPendingDrawings()
+        setPendingCount(pending.length)
+        setDrawings(mergeSources(data.drawings, local, pending))
+        setOffset(data.drawings.length)
+        setHasMore(Boolean(data.nextOffset))
       } catch {
-        // Local fallback already loaded.
+        setHasMore(false)
       } finally {
         setLoading(false)
       }
@@ -113,26 +127,42 @@ export function DrawingSection() {
   useEffect(() => {
     if (!lightbox) return
     closeBtnRef.current?.focus()
-
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setLightbox(null)
     }
-
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [lightbox])
 
-  const restoreDraft = () => {
-    try {
-      const raw = localStorage.getItem(DRAWING_DRAFT_KEY)
-      if (!raw) return
-      const parsed = JSON.parse(raw) as Stroke[]
-      loadStrokes(parsed)
-      setHasDraft(false)
-      setStatus('Borrador restaurado.')
-    } catch {
-      setStatus('No se pudo restaurar el borrador.')
+  useEffect(() => {
+    const onOnline = async () => {
+      const result = await syncPendingDrawings()
+      setPendingCount(result.remaining)
+      if (result.synced > 0) {
+        setStatus(`Se sincronizaron ${result.synced} dibujos pendientes.`)
+        const data = await fetchDrawings(24, 0).catch(() => null)
+        if (data) {
+          const pending = readPendingDrawings()
+          setDrawings(mergeSources(data.drawings, readLocalDrawings(), pending))
+          setOffset(data.drawings.length)
+          setHasMore(Boolean(data.nextOffset))
+        }
+      }
     }
+
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [])
+
+  const restoreDraft = () => {
+    const parsed = readDraftStrokes<Stroke>()
+    if (!parsed.length) {
+      setStatus('No se pudo restaurar el borrador.')
+      return
+    }
+    loadStrokes(parsed)
+    setHasDraft(false)
+    setStatus('Borrador restaurado.')
   }
 
   const exportPng = async () => {
@@ -145,51 +175,47 @@ export function DrawingSection() {
     link.download = 'mmtza-dibujo.png'
     link.click()
     URL.revokeObjectURL(url)
+    setStatus('PNG descargado.')
   }
 
-  const saveFallbackLocal = async () => {
-    const fullBlob = await exportPngBlob()
-    if (!fullBlob) return
+  const savePending = async () => {
+    const fullBlob = await exportWebpBlob(1200, 0.88)
+    const thumbBlob = await exportWebpBlob(480, 0.88)
+    if (!fullBlob || !thumbBlob) return
 
-    const fullUrl = await new Promise<string>((resolve) => {
+    const fullDataUrl = await new Promise<string>((resolve) => {
       const reader = new FileReader()
       reader.onload = () => resolve(String(reader.result || ''))
       reader.readAsDataURL(fullBlob)
     })
 
-    const localDrawing: Drawing = {
+    const thumbDataUrl = await new Promise<string>((resolve) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result || ''))
+      reader.readAsDataURL(thumbBlob)
+    })
+
+    const item: PendingDrawing = {
       id: crypto.randomUUID(),
-      image: fullUrl,
-      image_url: fullUrl,
-      thumb_url: fullUrl,
-      full_url: fullUrl,
       name: name.trim() || 'Anónimo',
       message: message.trim(),
-      tool: currentTool,
+      tool: activeTool,
+      fullDataUrl,
+      thumbDataUrl,
       created_at: new Date().toISOString(),
-      source: 'fallback-local',
-    }
-
-    const nextLocal = [localDrawing, ...readLocalDrawings()]
-    const write = writeLocalDrawings(nextLocal)
-    if (!write.ok) setStatus(write.error)
-
-    const pendingItem: PendingDrawing = {
-      id: localDrawing.id,
-      name: localDrawing.name,
-      message: localDrawing.message,
-      tool: localDrawing.tool,
-      fullDataUrl: fullUrl,
-      thumbDataUrl: fullUrl,
-      created_at: localDrawing.created_at,
     }
 
     const pending = readPendingDrawings()
-    const deduped = [pendingItem, ...pending.filter((item) => item.id !== pendingItem.id)].slice(0, 10)
-    const writePending = writePendingDrawings(deduped)
-    if (!writePending.ok) setStatus(writePending.error)
+    const nextPending = [item, ...pending.filter((d) => d.id !== item.id)].slice(0, 10)
+    const writeResult = writePendingDrawings(nextPending)
+    if (!writeResult.ok) {
+      setStatus(writeResult.error)
+      return
+    }
 
-    setDrawings((prev) => [localDrawing, ...prev.filter((item) => item.id !== localDrawing.id)].slice(0, 24))
+    setPendingCount(nextPending.length)
+    setDrawings((prev) => [pendingToDrawing(item), ...prev].slice(0, 100))
+    setStatus('Guardado localmente. Pendiente de sincronizar.')
   }
 
   const saveDrawing = async (event: FormEvent) => {
@@ -205,28 +231,19 @@ export function DrawingSection() {
     try {
       const full = await exportWebpBlob(1200, 0.88)
       const thumb = await exportWebpBlob(480, 0.88)
-
       if (!full || !thumb) throw new Error('No se pudo preparar imagen')
 
-      const formData = new FormData()
-      formData.append('full', new File([full], 'full.webp', { type: 'image/webp' }))
-      formData.append('thumb', new File([thumb], 'thumb.webp', { type: 'image/webp' }))
-      formData.append('name', name)
-      formData.append('message', message)
-      formData.append('tool', currentTool)
-      formData.append('website', '')
+      const formData = new FormData(event.currentTarget as HTMLFormElement)
+      formData.set('full', new File([full], 'full.webp', { type: 'image/webp' }))
+      formData.set('thumb', new File([thumb], 'thumb.webp', { type: 'image/webp' }))
+      formData.set('tool', activeTool)
 
       const saved = await postDrawing(formData)
-
       if ('error' in saved) {
-        if (saved.fallback) {
-          await saveFallbackLocal()
-          setStatus('Storage no configurado. Se guardó solo en este dispositivo.')
-        } else {
-          setStatus(saved.error)
-        }
+        await savePending()
       } else {
-        setDrawings((prev) => [saved, ...prev.filter((item) => item.id !== saved.id)].slice(0, 24))
+        setDrawings((prev) => [saved, ...prev.filter((item) => item.id !== saved.id)].slice(0, 100))
+        setStatus('Dibujo colgado.')
       }
 
       clearDraft()
@@ -234,8 +251,7 @@ export function DrawingSection() {
       setMessage('')
       setHasDraft(false)
     } catch {
-      await saveFallbackLocal()
-      setStatus('No se pudo guardar en servidor. Se guardó solo en este dispositivo.')
+      await savePending()
       clearDraft()
       loadStrokes([])
       setHasDraft(false)
@@ -247,10 +263,18 @@ export function DrawingSection() {
   const loadMore = async () => {
     try {
       const data = await fetchDrawings(24, offset)
-      if (!data.drawings?.length) return
-      const merged = [...drawings, ...data.drawings].slice(0, 24)
-      setDrawings(merged)
+      if (!data.drawings.length) {
+        setHasMore(false)
+        return
+      }
+      const merged = [...drawings, ...data.drawings]
+      const map = new Map<string, Drawing>()
+      for (const item of merged) {
+        if (!map.has(item.id)) map.set(item.id, item)
+      }
+      setDrawings([...map.values()])
       setOffset(offset + data.drawings.length)
+      setHasMore(Boolean(data.nextOffset))
     } catch {
       setStatus('No se pudieron cargar más dibujos.')
     }
@@ -272,10 +296,11 @@ export function DrawingSection() {
           <p className="font-mono text-[11px] tracking-[0.28em] uppercase text-[var(--accent)] mb-2">PARED ABIERTA</p>
           <h2 className="font-display fluid-h2">DEJA TU DIBUJO</h2>
           <p className="text-lg text-[var(--fg-muted)] mt-2">No acepto reseñas, ni opiniones, solo dibujitos.</p>
+          {pendingCount > 0 && <p className="text-sm text-[var(--fg-muted)] mt-2">{pendingCount} dibujo(s) pendientes de sincronizar.</p>}
         </header>
 
         <div className="grid lg:grid-cols-12 gap-6 items-start">
-          <div className="lg:col-span-8 rounded-2xl border border-[var(--line-strong)] bg-[#f6f1e8] p-3 shadow-[0_8px_28px_rgba(0,0,0,0.25)]">
+          <div className="lg:col-span-8 rounded-2xl border border-[var(--line-strong)] bg-[var(--bg-elevated)] p-3 shadow-[0_8px_28px_rgba(0,0,0,0.25)]">
             <canvas
               ref={canvasRef}
               className="w-full h-[320px] md:h-[460px] rounded-xl touch-none"
@@ -290,14 +315,15 @@ export function DrawingSection() {
 
           <aside className="lg:col-span-4 space-y-4">
             <div className="surface p-4 space-y-3">
-              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--fg-muted)]">Herramientas</p>
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--fg-muted)]">Herramienta</p>
               <div className="grid grid-cols-2 gap-2">
                 {TOOLS.map((tool) => (
                   <button
                     key={tool.id}
+                    type="button"
                     onClick={() => setCurrentTool(tool.id)}
-                    aria-pressed={currentTool === tool.id}
-                    className={`btn ${currentTool === tool.id ? 'btn-primary' : 'btn-ghost'} !px-3 !py-2 min-h-11`}
+                    aria-pressed={activeTool === tool.id}
+                    className={`btn ${activeTool === tool.id ? 'btn-primary' : 'btn-ghost'} !px-3 !py-2 min-h-11`}
                     aria-label={tool.label}
                   >
                     {tool.icon} {tool.label}
@@ -305,10 +331,12 @@ export function DrawingSection() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-5 gap-2">
+              <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--fg-muted)]">Color</p>
+              <div className="grid grid-cols-6 gap-2">
                 {COLORS.map((swatch) => (
                   <button
                     key={swatch}
+                    type="button"
                     onClick={() => setColor(swatch)}
                     className="min-h-11 rounded-full border-2"
                     style={{ background: swatch, borderColor: color === swatch ? 'var(--accent)' : 'var(--line)' }}
@@ -317,24 +345,42 @@ export function DrawingSection() {
                 ))}
               </div>
 
+              <label htmlFor="drawing-size" className="form-label">Tamaño</label>
+              <input
+                id="drawing-size"
+                type="range"
+                min={1}
+                max={24}
+                step={1}
+                value={Math.round(brushSize)}
+                onChange={(event) => setBrushSize(Number(event.target.value))}
+                className="w-full min-h-11"
+                aria-label="Tamaño del trazo"
+              />
+
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={undo} className="btn btn-ghost min-h-11" aria-label="Deshacer" disabled={!canUndo}>Deshacer</button>
-                <button onClick={redo} className="btn btn-ghost min-h-11" aria-label="Rehacer" disabled={!canRedo}>Rehacer</button>
-                <button onClick={() => clear()} className="btn btn-ghost min-h-11 col-span-2" aria-label="Limpiar dibujo">Limpiar</button>
+                <button type="button" onClick={undo} className="btn btn-ghost min-h-11" aria-label="Deshacer" disabled={!canUndo}>Deshacer</button>
+                <button type="button" onClick={redo} className="btn btn-ghost min-h-11" aria-label="Rehacer" disabled={!canRedo}>Rehacer</button>
+                <button type="button" onClick={() => clear()} className="btn btn-ghost min-h-11 col-span-2" aria-label="Limpiar dibujo">Limpiar</button>
+                <button type="button" onClick={exportPng} className="btn btn-ghost min-h-11 col-span-2" aria-label="Exportar PNG">Exportar PNG</button>
               </div>
             </div>
 
             <form onSubmit={saveDrawing} className="surface p-4 space-y-3">
               <label className="form-label" htmlFor="drawing-name">Firma</label>
-              <input id="drawing-name" value={name} onChange={(e) => setName(e.target.value)} className="form-input" maxLength={80} />
+              <input id="drawing-name" name="name" value={name} onChange={(e) => setName(e.target.value)} className="form-input" maxLength={80} />
 
               <label className="form-label" htmlFor="drawing-message">Mensaje</label>
-              <textarea id="drawing-message" value={message} onChange={(e) => setMessage(e.target.value)} className="form-input min-h-[90px]" maxLength={220} />
+              <textarea id="drawing-message" name="message" value={message} onChange={(e) => setMessage(e.target.value)} className="form-input min-h-[90px]" maxLength={220} />
+
+              <div className="sr-only" aria-hidden="true">
+                <label htmlFor="website">Website</label>
+                <input id="website" name="website" tabIndex={-1} autoComplete="off" />
+              </div>
 
               <button type="submit" className="btn btn-primary w-full min-h-11" disabled={saving}>
-                {saving ? 'Colgando...' : 'Colgar en la pared'}
+                {saving ? 'Colgando…' : 'Colgar dibujo'}
               </button>
-              <button type="button" onClick={exportPng} className="btn btn-ghost w-full min-h-11">Exportar PNG</button>
 
               {hasDraft && <button type="button" onClick={restoreDraft} className="btn btn-ghost w-full min-h-11">Restaurar borrador</button>}
               {status && <p className="text-sm text-[var(--fg-muted)]">{status}</p>}
@@ -370,14 +416,17 @@ export function DrawingSection() {
                       />
                       <div className="text-sm font-semibold">{drawing.name || 'Anónimo'}</div>
                       {drawing.message && <p className="text-sm text-[var(--fg-muted)] mt-1">{drawing.message}</p>}
+                      {drawing.pending_sync && <p className="text-xs text-[var(--accent)] mt-1">Pendiente de sincronizar</p>}
                       <p className="text-xs text-[var(--fg-subtle)] mt-2">{relativeDate(drawing.created_at)}</p>
                     </article>
                   )
                 })}
               </div>
-              <div className="mt-5">
-                <button onClick={loadMore} className="btn btn-ghost min-h-11">Cargar más</button>
-              </div>
+              {hasMore && (
+                <div className="mt-5">
+                  <button type="button" onClick={loadMore} className="btn btn-ghost min-h-11">Cargar más</button>
+                </div>
+              )}
             </>
           )}
         </div>
