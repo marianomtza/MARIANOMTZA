@@ -20,7 +20,7 @@ export const TOOLS = [
   { id: 'ink' as const, label: 'TINTA', size: 4.8, icon: '≈' },
 ]
 
-export const COLORS = ['#111111', '#9b5fd6', '#c026d3', '#5a3d7a']
+export const COLORS = ['#111111', '#8B5CF6', '#3772FF', '#DF2935', '#FDCA40', '#F8F5F0']
 
 export interface CanvasDrawingReturn {
   canvasRef: React.RefObject<HTMLCanvasElement>

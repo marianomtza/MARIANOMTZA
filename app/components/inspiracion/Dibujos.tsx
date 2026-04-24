@@ -168,10 +168,33 @@ export function Dibujos() {
                   </button>
                 ))}
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="space-y-2">
+                <label className="block font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--fg-muted)]" htmlFor="drawing-color-picker">
+                  Color libre
+                </label>
+                <input
+                  id="drawing-color-picker"
+                  type="color"
+                  value={color}
+                  onChange={(event) => setColor(event.target.value)}
+                  aria-label="Color libre"
+                  className="h-11 w-full cursor-pointer rounded-md border border-[var(--line)] bg-transparent p-1"
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--fg-muted)]">Color rápido</p>
+                <div className="grid grid-cols-6 gap-2">
                 {COLORS.map((swatch) => (
-                  <button key={swatch} onClick={() => setColor(swatch)} className="min-h-11 rounded-full border" style={{ background: swatch, borderColor: color === swatch ? 'var(--accent)' : 'var(--line)' }} aria-label={`Color ${swatch}`} />
+                  <button
+                    key={swatch}
+                    onClick={() => setColor(swatch)}
+                    className="min-h-11 rounded-full border transition-transform active:scale-95"
+                    style={{ background: swatch, borderColor: color.toLowerCase() === swatch.toLowerCase() ? 'var(--accent)' : 'var(--line)' }}
+                    aria-label={`Color rápido ${swatch}`}
+                    title={swatch}
+                  />
                 ))}
+              </div>
               </div>
               <button onClick={undo} className="btn btn-ghost min-h-11 w-full">Deshacer</button>
               <button onClick={clear} className="btn btn-ghost min-h-11 w-full">Limpiar</button>
