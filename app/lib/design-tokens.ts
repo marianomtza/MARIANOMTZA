@@ -3,9 +3,9 @@ export type ThemeName = 'base' | 'dark' | 'light' | 'rojo' | 'azul'
 export const THEMES: ThemeName[] = ['base', 'dark', 'light', 'rojo', 'azul']
 
 export const THEME_LABELS: Record<ThemeName, string> = {
-  base: 'Base',
-  dark: 'Dark',
-  light: 'Light',
+  base: 'Noche',
+  dark: 'Negro',
+  light: 'Papel',
   rojo: 'Rojo',
   azul: 'Azul',
 }

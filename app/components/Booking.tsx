@@ -9,8 +9,6 @@ import { fetchWithRetry } from '../lib/fetchWithRetry'
 
 const CONTACT = {
   email: 'hola@marianomtza.com',
-  phone: '+52 443 426 4931',
-  phoneClean: '+524434264931',
   whatsapp: 'https://wa.me/524434264931',
 }
 
@@ -151,7 +149,7 @@ export const Booking: React.FC = () => {
                   href={`mailto:${CONTACT.email}`}
                   className="btn btn-primary min-h-11 w-full justify-between"
                 >
-                  <span>Email · {CONTACT.email}</span>
+                  <span>{CONTACT.email}</span>
                   <span aria-hidden>↗</span>
                 </a>
                 <a
@@ -160,14 +158,8 @@ export const Booking: React.FC = () => {
                   rel="noreferrer"
                   className="btn btn-ghost min-h-11 w-full justify-between"
                 >
-                  <span>WhatsApp · {CONTACT.phone}</span>
+                  <span>WhatsApp</span>
                   <span aria-hidden>↗</span>
-                </a>
-                <a
-                  href={`tel:${CONTACT.phoneClean}`}
-                  className="link-underline block text-[var(--fg-muted)] font-mono text-sm py-2 tracking-wide"
-                >
-                  Tel: {CONTACT.phone}
                 </a>
               </div>
             </div>
