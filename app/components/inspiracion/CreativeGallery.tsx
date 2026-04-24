@@ -17,7 +17,7 @@ export function CreativeGallery() {
     <section className="relative min-h-screen px-6 md:px-12 py-24 bg-[radial-gradient(circle_at_top,rgba(155,95,214,0.3),transparent_45%)]">
       <div className="max-w-6xl mx-auto">
         <h1 className="font-display text-5xl md:text-7xl mb-6">Inspiración</h1>
-        <p className="text-[var(--fg-muted)] max-w-2xl mb-16">Laboratorio visual para referencias, ritmos y dirección creativa. Espacio exploratorio separado del landing principal.</p>
+        <p className="text-[var(--fg-muted)] max-w-2xl mb-16">Colección viva de referencias, ritmos y dirección creativa. Incluye el museo colaborativo de dibujos.</p>
         <div className="grid md:grid-cols-3 gap-6">
           {cards.map((card, i) => (
             <motion.article

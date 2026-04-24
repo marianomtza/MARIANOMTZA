@@ -4,18 +4,26 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
+export function hasServerSupabaseEnv() {
+  return Boolean(supabaseUrl && supabaseServiceRoleKey)
+}
+
 export function createSupabaseServerClient() {
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
+  if (!hasServerSupabaseEnv()) {
     throw new Error('Missing server Supabase environment variables')
   }
-  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+  return createClient(supabaseUrl!, supabaseServiceRoleKey!, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 }
 
+export function hasBrowserSupabaseEnv() {
+  return Boolean(supabaseUrl && supabaseAnonKey)
+}
+
 export function createSupabaseBrowserClient() {
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!hasBrowserSupabaseEnv()) {
     throw new Error('Missing browser Supabase environment variables')
   }
-  return createClient(supabaseUrl, supabaseAnonKey)
+  return createClient(supabaseUrl!, supabaseAnonKey!)
 }

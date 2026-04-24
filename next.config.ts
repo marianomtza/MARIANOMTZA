@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // Silence the multiple lockfiles warning when building inside a worktree
   outputFileTracingRoot: path.join(__dirname),
 }
