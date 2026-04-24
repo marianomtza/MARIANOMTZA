@@ -2,49 +2,38 @@
 
 import React from 'react'
 import { BookingProvider } from './contexts/BookingContext'
+import { ThemeProvider } from './contexts/ThemeContext'
+import { SoundProvider } from './contexts/SoundContext'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { Navbar } from './components/Navbar'
 import { Hero } from './components/Hero'
+import { RotatingBar } from './components/RotatingBar'
 import { Roster } from './components/Roster'
 import { Eventos } from './components/Eventos'
-import { Dibujos } from './components/Dibujos'
 import { Booking } from './components/Booking'
-import { ErrorBoundary } from './components/ErrorBoundary'
-import { ThemeProvider } from './contexts/ThemeContext'
-import { ExperienceProvider } from './contexts/ExperienceContext'
+import { Footer } from './components/Footer'
 import { ThemeSwitcher } from './components/system/ThemeSwitcher'
-import { ParticleField } from './components/system/ParticleField'
-import { DraggableStats } from './components/system/DraggableStats'
-import { ExperienceController } from './components/system/ExperienceController'
-import { useScrollEngine } from './hooks/useScrollEngine'
+import { SoundToggle } from './components/system/SoundToggle'
+import { MusicDock } from './components/MusicDock'
 
 function LandingExperience() {
-  useScrollEngine()
-
   return (
-    <div className="bg-[var(--bg)] text-[var(--fg)] overflow-hidden">
-      <ParticleField />
+    <div className="relative bg-[var(--bg)] text-[var(--fg)] overflow-x-clip">
       <Navbar />
       <Hero />
-      <Eventos />
-      <Dibujos />
+      <RotatingBar />
       <Roster />
-      <div className="max-w-[1440px] mx-auto px-6 md:px-12 pb-20">
-        <DraggableStats />
-      </div>
+      <Eventos />
       <Booking />
+      <Footer />
 
-      <footer id="contacto" className="border-t border-[var(--line)] py-20 bg-[var(--bg)]">
-        <div className="max-w-[1440px] mx-auto px-6 md:px-12 text-center">
-          <div className="font-mono text-xs tracking-[3px] text-[var(--fg-muted)] mb-5">CIUDAD DE MÉXICO • 2026</div>
-          <div className="text-2xl font-semibold tracking-tight mb-4">¿Listo para la próxima noche?</div>
-          <a href="mailto:mariano1302mariano1302@gmail.com" className="text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors text-sm">
-            mariano1302mariano1302@gmail.com
-          </a>
-        </div>
-      </footer>
+      {/* Floating controls */}
+      <div className="fixed left-4 bottom-4 z-[70] flex items-center gap-2">
+        <SoundToggle />
+        <ThemeSwitcher />
+      </div>
 
-      <ThemeSwitcher />
-      <ExperienceController />
+      <MusicDock />
     </div>
   )
 }
@@ -52,13 +41,13 @@ function LandingExperience() {
 export default function Page() {
   return (
     <ThemeProvider>
-      <ExperienceProvider>
+      <SoundProvider>
         <BookingProvider>
           <ErrorBoundary>
             <LandingExperience />
           </ErrorBoundary>
         </BookingProvider>
-      </ExperienceProvider>
+      </SoundProvider>
     </ThemeProvider>
   )
 }

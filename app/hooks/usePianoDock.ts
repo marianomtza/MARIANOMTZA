@@ -1,70 +1,136 @@
 'use client'
 
-import { useRef, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
+import { useSound } from '../contexts/SoundContext'
 
-type ToneModule = {
-  Synth: new (options?: unknown) => {
-    toDestination: () => unknown
-    triggerAttackRelease: (note: number, duration: string, time?: number, velocity?: number) => void
-    dispose: () => void
-  }
+type ToneLike = {
   start: () => Promise<void>
+  PolySynth: new (...args: unknown[]) => ToneInstrumentLike
+  Synth: unknown
+  Gain: new (value?: number) => { toDestination: () => { connect: (node: unknown) => void } }
+  now: () => number
+  context: { state: string; resume: () => Promise<void> }
 }
 
-const NOTE_FREQUENCIES = [261.63, 293.66, 329.63, 349.23, 392.0, 440.0, 493.88, 523.25, 587.33, 659.25, 698.46]
+interface ToneInstrumentLike {
+  connect: (node: unknown) => ToneInstrumentLike
+  toDestination: () => ToneInstrumentLike
+  triggerAttackRelease: (note: string | string[], duration: string, time?: number, velocity?: number) => void
+  dispose: () => void
+  volume: { value: number }
+  set: (opts: Record<string, unknown>) => void
+}
+
+// Pentatonic C major across 2 octaves — pleasing, never dissonant
+const NOTE_POOL = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6'] as const
+
+const GLOBAL_DEBOUNCE_MS = 60
+const PER_NOTE_DEBOUNCE_MS = 220
 
 export function usePianoDock() {
-  const toneRef = useRef<ToneModule | null>(null)
-  const synthRef = useRef<{
-    triggerAttackRelease: (note: number, duration: string, time?: number, velocity?: number) => void
-    dispose: () => void
-  } | null>(null)
-  const lastPlayRef = useRef(0)
-  const DEBOUNCE_MS = 70
+  const { enabled } = useSound()
+  const enabledRef = useRef(enabled)
+
+  const toneRef = useRef<ToneLike | null>(null)
+  const synthRef = useRef<ToneInstrumentLike | null>(null)
+  const gainRef = useRef<{ toDestination: () => { connect: (node: unknown) => void } } | null>(null)
+  const loadingRef = useRef(false)
+
+  const lastGlobalPlayRef = useRef(0)
+  const lastNotePlayRef = useRef<Record<number, number>>({})
 
   useEffect(() => {
-    let mounted = true
-    import('tone/build/Tone').then((toneModule) => {
-      if (!mounted) return
-      const Tone = toneModule as unknown as ToneModule
-      toneRef.current = Tone
-      const synth = new Tone.Synth({
-        oscillator: { type: 'sine' },
-        envelope: { attack: 0.008, decay: 0.18, sustain: 0.12, release: 0.35 },
-      })
-      synthRef.current = synth.toDestination() as {
-        triggerAttackRelease: (note: number, duration: string, time?: number, velocity?: number) => void
-        dispose: () => void
-      }
-    }).catch(() => {
-      toneRef.current = null
-      synthRef.current = null
-    })
+    enabledRef.current = enabled
+  }, [enabled])
 
-    return () => {
-      mounted = false
-      synthRef.current?.dispose()
-      synthRef.current = null
-      toneRef.current = null
-    }
-  }, [])
-
-  const playNote = useCallback(async (index: number, velocity = 0.65) => {
-    const now = Date.now()
-    if (now - lastPlayRef.current < DEBOUNCE_MS) return
-    lastPlayRef.current = now
-
-    if (!synthRef.current) return
-
+  const ensureLoaded = useCallback(async () => {
+    if (synthRef.current || loadingRef.current) return
+    loadingRef.current = true
     try {
-      if (!toneRef.current) return
-      await toneRef.current.start()
-      const freq = NOTE_FREQUENCIES[index % NOTE_FREQUENCIES.length]
-      synthRef.current.triggerAttackRelease(freq, '8n', undefined, velocity)
-    } catch (_error) {
-      // Ignorar errores de audio (autoplay policy o dispositivo sin salida)
+      const ToneModule = (await import('tone/build/Tone')) as unknown as ToneLike
+      toneRef.current = ToneModule
+
+      const gain = new ToneModule.Gain(0.5)
+      gain.toDestination()
+
+      const PolySynth = ToneModule.PolySynth as unknown as new (opts: unknown) => ToneInstrumentLike
+      const synth = new PolySynth({
+        maxPolyphony: 8,
+        voice: ToneModule.Synth,
+        options: {
+          oscillator: { type: 'triangle' },
+          envelope: { attack: 0.005, decay: 0.22, sustain: 0.0, release: 0.42 },
+        },
+      })
+      synth.volume.value = -12
+      synth.connect(gain as unknown)
+
+      gainRef.current = gain
+      synthRef.current = synth
+    } catch (err) {
+      console.warn('Piano init failed', err)
+    } finally {
+      loadingRef.current = false
     }
   }, [])
 
-  return { playNote }
+  useEffect(() => {
+    return () => {
+      try {
+        synthRef.current?.dispose()
+      } catch {
+        /* noop */
+      }
+      synthRef.current = null
+      gainRef.current = null
+      toneRef.current = null
+    }
+  }, [])
+
+  const playNote = useCallback(
+    async (index: number, velocity = 0.55) => {
+      if (!enabledRef.current) return
+
+      const now = performance.now()
+      if (now - lastGlobalPlayRef.current < GLOBAL_DEBOUNCE_MS) return
+      const lastForThis = lastNotePlayRef.current[index] ?? 0
+      if (now - lastForThis < PER_NOTE_DEBOUNCE_MS) return
+
+      lastGlobalPlayRef.current = now
+      lastNotePlayRef.current[index] = now
+
+      if (!synthRef.current) {
+        await ensureLoaded()
+      }
+
+      const synth = synthRef.current
+      const Tone = toneRef.current
+      if (!synth || !Tone) return
+
+      try {
+        if (Tone.context.state !== 'running') {
+          await Tone.start()
+        }
+        const note = NOTE_POOL[index % NOTE_POOL.length]
+        synth.triggerAttackRelease(note, '16n', undefined, velocity)
+      } catch {
+        /* swallow */
+      }
+    },
+    [ensureLoaded]
+  )
+
+  const primeOnInteraction = useCallback(async () => {
+    if (!enabledRef.current) return
+    await ensureLoaded()
+    try {
+      if (toneRef.current && toneRef.current.context.state !== 'running') {
+        await toneRef.current.start()
+      }
+    } catch {
+      /* swallow */
+    }
+  }, [ensureLoaded])
+
+  return { playNote, primeOnInteraction }
 }
