@@ -1,97 +1,39 @@
 import React from 'react'
-import { motion } from 'framer-motion'
 
-interface Event {
+interface EventItem {
   id: number
-  title: string
   date: string
+  city: string
   venue: string
+  title: string
   link: string
-  type: string
 }
 
-const EVENTS: Event[] = [
-  {
-    id: 1,
-    title: "Cercle Odyssey CDMX",
-    date: "2024",
-    venue: "CDMX",
-    link: "https://www.youtube.com/watch?v=UzPRso975PM",
-    type: "Festival"
-  },
-  {
-    id: 2,
-    title: "Knockout: Lago Algo w/ Vegyn",
-    date: "2024",
-    venue: "Lago Algo, CDMX",
-    link: "https://www.instagram.com/p/DNMhSKwx-uP/",
-    type: "Club Night"
-  },
-  {
-    id: 3,
-    title: "MUTEK MX x Club Furia x Lapi",
-    date: "2024",
-    venue: "CDMX",
-    link: "https://mexico.mutek.org/es/eventos/2024/colaboracion-especial-con-club-furia-x-lapi",
-    type: "Festival"
-  },
-  {
-    id: 4,
-    title: "Keep Hush CDMX",
-    date: "2024",
-    venue: "CDMX",
-    link: "https://www.youtube.com/playlist?list=PLhON8BygM1nIeGSsda4c5IvGvAbHyMysv",
-    type: "Club Series"
-  },
-  {
-    id: 5,
-    title: "Algo Bien Pride 2024",
-    date: "2024",
-    venue: "CDMX",
-    link: "https://www.youtube.com/watch?v=8GasfuDe4Dg",
-    type: "Pride Event"
-  }
+const EVENTS: EventItem[] = [
+  { id: 1, date: '2024-03-16', city: 'CDMX', venue: 'Cercle Odyssey', title: 'Cercle Odyssey', link: 'https://www.youtube.com/watch?v=UzPRso975PM' },
+  { id: 2, date: '2024-05-24', city: 'CDMX', venue: 'Lago Algo', title: 'Knockout w/ Vegyn', link: 'https://www.instagram.com/p/DNMhSKwx-uP/' },
+  { id: 3, date: '2024-10-13', city: 'CDMX', venue: 'MUTEK MX', title: 'MUTEK x Club Furia x Lapi', link: 'https://mexico.mutek.org/es/eventos/2024/colaboracion-especial-con-club-furia-x-lapi' },
+  { id: 4, date: '2024-11-02', city: 'CDMX', venue: 'Keep Hush', title: 'Keep Hush Series', link: 'https://www.youtube.com/playlist?list=PLhON8BygM1nIeGSsda4c5IvGvAbHyMysv' },
 ]
+
+const formatDate = (isoDate: string) =>
+  new Date(`${isoDate}T00:00:00`).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()
 
 export const Eventos: React.FC = () => {
   return (
-    <section id="eventos" className="section py-24 border-t border-white/10 bg-black">
-      <div className="max-w-[1440px] mx-auto px-6 md:px-12">
-        <div className="max-w-[620px] mb-16">
-          <h2 className="text-[42px] font-semibold tracking-tight mb-4">Eventos</h2>
-        </div>
+    <section id="eventos" className="section border-t border-[var(--line)] py-24">
+      <div className="mx-auto max-w-[1120px] px-6 md:px-12">
+        <h2 className="mb-12 text-[44px] font-semibold tracking-tight">Eventos</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-white/10 p-px rounded-3xl overflow-hidden">
-          {EVENTS.map((event, index) => (
-            <motion.a
-              key={event.id}
-              href={event.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group block bg-zinc-950 p-10 border border-white/10 hover:border-[#9b5fd6]/60 transition-all duration-500"
-              whileHover={{ y: -2 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <div className="flex items-start justify-between mb-8">
-                <div className="font-mono text-[10px] tracking-[3px] text-[#9b5fd6]">{event.type}</div>
-                <div className="text-xs text-white/40 group-hover:text-[#9b5fd6] transition">↗</div>
-              </div>
-
-              <h3 className="text-4xl font-semibold tracking-tight text-white leading-none mb-6 pr-8">
-                {event.title}
-              </h3>
-
-              <div className="flex items-center gap-4 text-sm text-[#8a7fa0]">
-                <span>{event.date}</span>
-                <span className="w-px h-3 bg-white/20" />
-                <span>{event.venue}</span>
-              </div>
-            </motion.a>
+        <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
+          {EVENTS.map((event) => (
+            <a key={event.id} href={event.link} target="_blank" rel="noopener noreferrer" className="group grid gap-3 py-7 md:grid-cols-[170px_1fr_220px] md:items-center">
+              <p className="font-mono text-xs tracking-[0.2em] text-[var(--fg-dim)]">{formatDate(event.date)}</p>
+              <h3 className="text-2xl font-medium tracking-tight transition-colors group-hover:text-[var(--muted-accent)]">{event.title}</h3>
+              <p className="text-sm text-[var(--fg-dim)] md:text-right">{event.city} · {event.venue}</p>
+            </a>
           ))}
         </div>
-
       </div>
     </section>
   )

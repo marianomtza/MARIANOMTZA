@@ -2,80 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --accent: #9b5fd6;
-  --accent-soft: #6b3fa8;
-  --accent-deep: #3d1d6e;
-  --bg: #000000;
-  --fg: #f4f1f7;
-  --fg-dim: #8a7fa0;
-  --line: rgba(255,255,255,0.08);
+:root,
+:root[data-theme='noir'] {
+  --bg: #101113;
+  --surface: #15171b;
+  --fg: #f3eee7;
+  --fg-dim: #a9a39a;
+  --line: rgba(255, 248, 238, 0.14);
+  --nav: rgba(15, 16, 18, 0.82);
+  --muted-accent: #cdbda8;
 }
 
-* {
-  box-sizing: border-box;
+:root[data-theme='ivory'] {
+  --bg: #ece8e2;
+  --surface: #e1dbd3;
+  --fg: #1b1c20;
+  --fg-dim: #5f5c56;
+  --line: rgba(27, 28, 32, 0.18);
+  --nav: rgba(236, 232, 226, 0.8);
+  --muted-accent: #7f6f5e;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #000;
-  color: #fff;
   margin: 0;
-  padding: 0;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
   overflow-x: hidden;
 }
 
-h1, h2, h3, h4 {
-  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  font-weight: 600;
-  letter-spacing: -0.025em;
+.site-shell {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--bg), #000 10%), var(--bg));
 }
 
-/* Custom components */
-.section {
-  scroll-margin-top: 80px;
+.section { scroll-margin-top: 84px; }
+
+.noise-layer {
+  opacity: 0.23;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.08) 1px, transparent 0);
+  background-size: 3px 3px;
+}
+
+.char {
+  transform-origin: center bottom;
+  will-change: transform;
 }
 
 .btn {
-  @apply inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full text-xs tracking-[0.22em] font-medium transition-all active:scale-[0.985];
+  @apply relative inline-flex items-center justify-center overflow-hidden rounded-full border px-7 py-3 text-[11px] tracking-[0.2em] transition;
+  border-color: var(--line);
 }
 
+.btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.32), transparent 80%);
+  transition: transform 0.35s ease;
+}
+
+.btn:hover::before { transform: translateX(120%); }
+
 .btn-primary {
-  @apply bg-[#9b5fd6] text-white hover:bg-[#b67de8];
+  background: var(--fg);
+  color: var(--bg);
 }
 
 .btn-ghost {
-  @apply border border-white/20 text-white hover:border-[#9b5fd6] hover:text-[#9b5fd6];
+  background: transparent;
+  color: var(--fg);
 }
 
-/* Musical dock letters */
-.char {
-  display: inline-block;
-  transition: color 0.1s ease;
-  user-select: none;
-}
-
-/* Form styles */
 .form-input {
-  @apply w-full bg-transparent border-b border-white/20 pb-3 text-lg placeholder:text-white/30 focus:border-[#9b5fd6] outline-none transition-colors;
+  @apply w-full border-b bg-transparent pb-3 text-base outline-none transition;
+  border-color: var(--line);
 }
 
 .form-label {
-  @apply block text-xs tracking-[0.24em] text-white/60 mb-3;
+  @apply mb-3 block text-xs tracking-[0.18em];
+  color: var(--fg-dim);
 }
 
-/* Roster cards */
 .artist-card {
-  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: border-color 0.3s ease, transform 0.3s ease;
 }
 
 .artist-card:hover {
-  border-color: rgba(155, 95, 214, 0.6);
-  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--muted-accent), transparent 35%);
 }
