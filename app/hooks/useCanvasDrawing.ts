@@ -1,160 +1,183 @@
 'use client'
 
-import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-interface Point {
+export type DrawingTool = 'pencil' | 'marker' | 'ink' | 'eraser'
+
+export type Point = {
   x: number
   y: number
+  pressure: number
 }
 
-interface Stroke {
+export type Stroke = {
+  id: string
   points: Point[]
   color: string
   size: number
-  tool: 'pencil' | 'marker' | 'ink'
+  tool: DrawingTool
 }
 
 export const TOOLS = [
-  { id: 'pencil' as const, label: 'LÁPIZ', size: 2.2, icon: '✎' },
+  { id: 'pencil' as const, label: 'LÁPIZ', size: 2.4, icon: '✎' },
   { id: 'marker' as const, label: 'MARCADOR', size: 7.5, icon: '▬' },
   { id: 'ink' as const, label: 'TINTA', size: 4.8, icon: '≈' },
+  { id: 'eraser' as const, label: 'BORRAR', size: 16, icon: '⌫' },
 ]
 
-export const COLORS = ['#111111', '#9b5fd6', '#c026d3', '#5a3d7a']
+export const COLORS = ['#111111', '#6d28d9', '#be185d', '#0f172a', '#92400e']
 
-export interface CanvasDrawingReturn {
+type LegacyTool = 'pencil' | 'marker' | 'ink'
+
+type UseCanvasDrawingReturn = {
   canvasRef: React.RefObject<HTMLCanvasElement>
+  strokes: Stroke[]
+  canUndo: boolean
+  canRedo: boolean
+  hasContent: boolean
+  color: string
+  setColor: (value: string) => void
+  currentTool: LegacyTool
+  setCurrentTool: (tool: DrawingTool) => void
   start: (e: React.PointerEvent<HTMLCanvasElement>) => void
   draw: (e: React.PointerEvent<HTMLCanvasElement>) => void
-  stop: () => void
-  clear: () => void
-  exportImage: () => string | undefined
+  stop: (e?: React.PointerEvent<HTMLCanvasElement>) => void
+  clear: () => boolean
   undo: () => void
-  color: string
-  setColor: (color: string) => void
-  currentTool: 'pencil' | 'marker' | 'ink'
-  setCurrentTool: (tool: 'pencil' | 'marker' | 'ink') => void
-  isDrawing: boolean
+  redo: () => void
+  exportPngBlob: () => Promise<Blob | null>
+  exportImage: () => string | undefined
   strokeCount: number
+  exportWebpBlob: (maxSize: number, quality?: number) => Promise<Blob | null>
+  loadStrokes: (strokes: Stroke[]) => void
 }
 
-export function useCanvasDrawing(): CanvasDrawingReturn {
-  const [currentTool, setCurrentTool] = useState<'pencil' | 'marker' | 'ink'>('pencil')
-  const [color, setColor] = useState('#111111')
-  const [isDrawing, setIsDrawing] = useState(false)
-  const [strokeCount, setStrokeCount] = useState(0)
+const PAPER_BASE = '#f6f1e8'
 
+function createStableNoise(x: number, y: number) {
+  const v = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453
+  return v - Math.floor(v)
+}
+
+function drawPaper(ctx: CanvasRenderingContext2D, width: number, height: number) {
+  ctx.save()
+  ctx.fillStyle = PAPER_BASE
+  ctx.fillRect(0, 0, width, height)
+
+  ctx.strokeStyle = 'rgba(20, 20, 20, 0.035)'
+  ctx.lineWidth = 0.5
+  for (let x = 10; x < width; x += 12) {
+    const wobble = (createStableNoise(x, 1) - 0.5) * 0.9
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x + wobble, height)
+    ctx.stroke()
+  }
+
+  ctx.fillStyle = 'rgba(100, 100, 100, 0.05)'
+  for (let y = 2; y < height; y += 8) {
+    for (let x = 2; x < width; x += 8) {
+      if (createStableNoise(x, y) > 0.88) ctx.fillRect(x, y, 1, 1)
+    }
+  }
+  ctx.restore()
+}
+
+function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
+  if (stroke.points.length === 0) return
+  const points = stroke.points
+  const baseWidth = stroke.size
+
+  ctx.save()
+  if (stroke.tool === 'eraser') {
+    ctx.globalCompositeOperation = 'destination-out'
+    ctx.strokeStyle = 'rgba(0,0,0,1)'
+    ctx.shadowBlur = 0
+  } else {
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.strokeStyle = stroke.color
+    ctx.shadowColor = stroke.tool === 'ink' ? stroke.color : 'transparent'
+    ctx.shadowBlur = stroke.tool === 'ink' ? 5 : 0
+  }
+
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+
+  if (points.length === 1) {
+    const p = points[0]
+    ctx.beginPath()
+    ctx.arc(p.x, p.y, Math.max(1, baseWidth * p.pressure * 0.5), 0, Math.PI * 2)
+    ctx.fillStyle = stroke.tool === 'eraser' ? 'rgba(0,0,0,1)' : stroke.color
+    ctx.fill()
+    ctx.restore()
+    return
+  }
+
+  ctx.beginPath()
+  ctx.moveTo(points[0].x, points[0].y)
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1]
+    const current = points[i]
+    const midX = (prev.x + current.x) / 2
+    const midY = (prev.y + current.y) / 2
+    const pressure = current.pressure || 0.5
+    ctx.lineWidth = Math.max(1, baseWidth * pressure)
+    ctx.quadraticCurveTo(prev.x, prev.y, midX, midY)
+  }
+  ctx.stroke()
+  ctx.restore()
+}
+
+export function useCanvasDrawing(): UseCanvasDrawingReturn {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const dprRef = useRef(1)
   const strokesRef = useRef<Stroke[]>([])
+  const redoRef = useRef<Stroke[]>([])
   const currentStrokeRef = useRef<Stroke | null>(null)
+  const isDrawingRef = useRef(false)
+  const pointerIdRef = useRef<number | null>(null)
+
+  const [, forceRerender] = useState(0)
+  const [color, setColor] = useState(COLORS[0])
+  const [currentTool, setCurrentTool] = useState<DrawingTool>('pencil')
+
+  const flush = useCallback(() => forceRerender((v) => v + 1), [])
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext('2d')!
-    const cssW = canvas.width / (window.devicePixelRatio || 1)
-    const cssH = canvas.height / (window.devicePixelRatio || 1)
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-    ctx.fillStyle = '#f8f5f0'
-    ctx.fillRect(0, 0, cssW, cssH)
+    const width = canvas.width / dprRef.current
+    const height = canvas.height / dprRef.current
 
-    ctx.fillStyle = 'rgba(155, 95, 214, 0.012)'
-    for (let i = 0; i < 280; i++) {
-      const x = Math.random() * cssW
-      const y = Math.random() * cssH
-      ctx.fillRect(x, y, 1.2, 1.2)
+    ctx.setTransform(dprRef.current, 0, 0, dprRef.current, 0, 0)
+    drawPaper(ctx, width, height)
+
+    for (const stroke of strokesRef.current) {
+      drawStroke(ctx, stroke)
     }
-
-    ctx.strokeStyle = 'rgba(17, 17, 17, 0.035)'
-    ctx.lineWidth = 0.4
-    for (let x = 8; x < cssW; x += 11) {
-      ctx.beginPath()
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x + (Math.random() - 0.5) * 0.8, cssH)
-      ctx.stroke()
-    }
-
-    strokesRef.current.forEach((stroke) => {
-      if (stroke.points.length < 2) return
-
-      ctx.strokeStyle = stroke.color
-      ctx.lineWidth = stroke.size
-      ctx.lineCap = 'round'
-      ctx.lineJoin = 'round'
-      ctx.shadowColor = stroke.color
-      ctx.shadowBlur = stroke.tool === 'ink' ? 6 : (stroke.tool === 'marker' ? 1.5 : 0)
-
-      ctx.beginPath()
-      ctx.moveTo(stroke.points[0].x, stroke.points[0].y)
-
-      for (let i = 1; i < stroke.points.length; i++) {
-        const p = stroke.points[i]
-        let x = p.x
-        let y = p.y
-
-        if (stroke.tool === 'pencil' && i % 2 === 0) {
-          x += (Math.random() - 0.5) * 0.9
-          y += (Math.random() - 0.5) * 0.9
-        }
-
-        if (stroke.tool === 'ink' && i % 3 === 0) {
-          ctx.save()
-          ctx.globalAlpha = 0.12 + Math.random() * 0.08
-          ctx.lineWidth = stroke.size * 1.65
-          ctx.shadowBlur = 9
-          const ox = (Math.random() - 0.5) * 1.8
-          const oy = (Math.random() - 0.5) * 1.8
-          ctx.lineTo(x + ox, y + oy)
-          ctx.stroke()
-          ctx.restore()
-
-          ctx.globalAlpha = 1
-          ctx.lineWidth = stroke.size
-          ctx.shadowBlur = 6
-        }
-
-        if (i > 1) {
-          const prev = stroke.points[i - 1]
-          const midX = (prev.x + x) / 2
-          const midY = (prev.y + y) / 2
-          ctx.quadraticCurveTo(prev.x, prev.y, midX, midY)
-        } else {
-          ctx.lineTo(x, y)
-        }
-      }
-      ctx.stroke()
-    })
-
-    ctx.shadowBlur = 0
   }, [])
 
   const setupCanvas = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-
     const rect = canvas.getBoundingClientRect()
-    const dpr = Math.max(window.devicePixelRatio || 1, 1)
+    const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1))
+    dprRef.current = dpr
 
-    canvas.width = Math.floor(rect.width * dpr)
-    canvas.height = Math.floor(rect.height * dpr)
+    const oldStrokes = strokesRef.current
+    canvas.width = Math.max(1, Math.floor(rect.width * dpr))
+    canvas.height = Math.max(1, Math.floor(rect.height * dpr))
     canvas.style.width = `${rect.width}px`
     canvas.style.height = `${rect.height}px`
 
-    const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true })!
-    ctx.scale(dpr, dpr)
+    const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true })
+    if (!ctx) return
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    ctx.fillStyle = '#f8f5f0'
-    ctx.fillRect(0, 0, rect.width, rect.height)
-
-    ctx.strokeStyle = 'rgba(17, 17, 17, 0.035)'
-    ctx.lineWidth = 0.4
-    for (let x = 8; x < rect.width; x += 11) {
-      ctx.beginPath()
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x + (Math.random() - 0.5) * 0.8, rect.height)
-      ctx.stroke()
-    }
-
+    strokesRef.current = oldStrokes
     redraw()
   }, [redraw])
 
@@ -162,131 +185,233 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const resizeObserver = new ResizeObserver(() => {
-      setupCanvas()
-    })
+    const observer = new ResizeObserver(() => setupCanvas())
+    observer.observe(canvas)
+    setupCanvas()
 
-    resizeObserver.observe(canvas)
-    setTimeout(setupCanvas, 50)
-
-    return () => resizeObserver.disconnect()
+    return () => observer.disconnect()
   }, [setupCanvas])
 
-  const getPoint = (e: React.PointerEvent<HTMLCanvasElement>): Point => {
-    const canvas = canvasRef.current!
+  const getPointFromEvent = useCallback((e: PointerEvent | React.PointerEvent<HTMLCanvasElement>): Point => {
+    const canvas = canvasRef.current
+    if (!canvas) return { x: 0, y: 0, pressure: 0.5 }
     const rect = canvas.getBoundingClientRect()
     return {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
+      pressure: e.pressure && e.pressure > 0 ? e.pressure : 0.5,
     }
-  }
+  }, [])
 
-  const start = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  const drawIncrement = useCallback((stroke: Stroke) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const len = stroke.points.length
+    if (len < 2) return
+
+    const prev = stroke.points[len - 2]
+    const curr = stroke.points[len - 1]
+
+    ctx.save()
+    ctx.setTransform(dprRef.current, 0, 0, dprRef.current, 0, 0)
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+
+    if (stroke.tool === 'eraser') {
+      ctx.globalCompositeOperation = 'destination-out'
+      ctx.strokeStyle = 'rgba(0,0,0,1)'
+      ctx.shadowBlur = 0
+    } else {
+      ctx.globalCompositeOperation = 'source-over'
+      ctx.strokeStyle = stroke.color
+      ctx.shadowColor = stroke.tool === 'ink' ? stroke.color : 'transparent'
+      ctx.shadowBlur = stroke.tool === 'ink' ? 5 : 0
+    }
+
+    ctx.lineWidth = Math.max(1, stroke.size * curr.pressure)
+    ctx.beginPath()
+    if (len > 2) {
+      const before = stroke.points[len - 3]
+      const midPrevX = (before.x + prev.x) / 2
+      const midPrevY = (before.y + prev.y) / 2
+      const midCurrX = (prev.x + curr.x) / 2
+      const midCurrY = (prev.y + curr.y) / 2
+      ctx.moveTo(midPrevX, midPrevY)
+      ctx.quadraticCurveTo(prev.x, prev.y, midCurrX, midCurrY)
+    } else {
+      ctx.moveTo(prev.x, prev.y)
+      ctx.lineTo(curr.x, curr.y)
+    }
+    ctx.stroke()
+    ctx.restore()
+  }, [])
+
+  const start = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const point = getPoint(e)
-    const toolConfig = TOOLS.find(t => t.id === currentTool)!
+    e.preventDefault()
+    canvas.setPointerCapture(e.pointerId)
+    pointerIdRef.current = e.pointerId
 
-    setIsDrawing(true)
-    if (strokeCount === 0) setStrokeCount(1)
+    const selectedTool = TOOLS.find((t) => t.id === currentTool)
+    const baseSize = selectedTool?.size ?? 2.4
+    const firstPoint = getPointFromEvent(e)
+
     currentStrokeRef.current = {
-      points: [point],
-      color: color,
-      size: toolConfig.size * (e.pressure || 0.65) * (currentTool === 'marker' ? 1.1 : 1),
+      id: crypto.randomUUID(),
+      points: [firstPoint],
+      color,
+      size: baseSize,
       tool: currentTool,
     }
 
-    const ctx = canvas.getContext('2d')!
-    ctx.strokeStyle = color
-    ctx.lineWidth = currentStrokeRef.current.size
-    ctx.lineCap = 'round'
-    ctx.lineJoin = 'round'
-    ctx.shadowColor = color
-    ctx.shadowBlur = currentTool === 'ink' ? 5 : 0
+    isDrawingRef.current = true
+    redoRef.current = []
+  }, [color, currentTool, getPointFromEvent])
 
-    ctx.beginPath()
-    ctx.moveTo(point.x, point.y)
-  }
+  const draw = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current || !currentStrokeRef.current) return
 
-  const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !currentStrokeRef.current) return
+    e.preventDefault()
 
-    const point = getPoint(e)
-    const stroke = currentStrokeRef.current
-    stroke.points.push(point)
+    const native = e.nativeEvent
+    const events = typeof native.getCoalescedEvents === 'function' ? native.getCoalescedEvents() : [native]
 
-    const ctx = canvasRef.current!.getContext('2d')!
+    for (const event of events) {
+      const point = getPointFromEvent(event)
+      currentStrokeRef.current.points.push(point)
+      drawIncrement(currentStrokeRef.current)
+    }
+  }, [drawIncrement, getPointFromEvent])
 
-    let drawX = point.x
-    let drawY = point.y
+  const stop = useCallback((e?: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawingRef.current || !currentStrokeRef.current) return
 
-    if (stroke.tool === 'pencil') {
-      drawX += (Math.random() - 0.5) * 0.7
-      drawY += (Math.random() - 0.5) * 0.7
+    const canvas = canvasRef.current
+    if (canvas && e && pointerIdRef.current !== null) {
+      try {
+        canvas.releasePointerCapture(pointerIdRef.current)
+      } catch {
+        // Ignore if capture was already released.
+      }
     }
 
-    ctx.lineTo(drawX, drawY)
-    ctx.stroke()
+    isDrawingRef.current = false
+    pointerIdRef.current = null
 
-    if (stroke.tool === 'ink') {
-      ctx.save()
-      ctx.globalAlpha = 0.09
-      ctx.lineWidth = stroke.size * 1.9
-      ctx.shadowBlur = 10
-      ctx.lineTo(
-        drawX + (Math.random() - 0.5) * 2.2,
-        drawY + (Math.random() - 0.5) * 2.2
-      )
-      ctx.stroke()
-      ctx.restore()
-      ctx.globalAlpha = 1
-      ctx.lineWidth = stroke.size
-      ctx.shadowBlur = 5
-    }
-  }
-
-  const stop = () => {
-    if (!isDrawing || !currentStrokeRef.current) return
-    setIsDrawing(false)
-
-    if (currentStrokeRef.current.points.length > 3) {
-      strokesRef.current.push(currentStrokeRef.current)
-      setStrokeCount(c => c + 1)
-    }
+    strokesRef.current = [...strokesRef.current, currentStrokeRef.current]
     currentStrokeRef.current = null
-  }
+    flush()
+  }, [flush])
 
-  const clear = () => {
+  const clear = useCallback(() => {
+    if (!window.confirm('¿Limpiar la hoja?')) return false
     strokesRef.current = []
-    setStrokeCount(0)
-    setIsDrawing(false)
+    redoRef.current = []
+    currentStrokeRef.current = null
     redraw()
-  }
+    flush()
+    return true
+  }, [flush, redraw])
 
-  const undo = () => {
-    strokesRef.current.pop()
-    setStrokeCount(c => Math.max(0, c - 1))
+  const undo = useCallback(() => {
+    if (strokesRef.current.length === 0) return
+    const last = strokesRef.current[strokesRef.current.length - 1]
+    strokesRef.current = strokesRef.current.slice(0, -1)
+    redoRef.current = [...redoRef.current, last]
     redraw()
-  }
+    flush()
+  }, [flush, redraw])
 
-  const exportImage = () => {
-    return canvasRef.current?.toDataURL('image/png', 0.94)
-  }
+  const redo = useCallback(() => {
+    if (redoRef.current.length === 0) return
+    const restore = redoRef.current[redoRef.current.length - 1]
+    redoRef.current = redoRef.current.slice(0, -1)
+    strokesRef.current = [...strokesRef.current, restore]
+    redraw()
+    flush()
+  }, [flush, redraw])
 
-  return {
+  const exportPngBlob = useCallback(async () => {
+    const canvas = canvasRef.current
+    if (!canvas) return null
+    return await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), 'image/png')
+    })
+  }, [])
+
+  const exportWebpBlob = useCallback(async (maxSize: number, quality = 0.88) => {
+    const canvas = canvasRef.current
+    if (!canvas) return null
+
+    const sourceWidth = canvas.width / dprRef.current
+    const sourceHeight = canvas.height / dprRef.current
+    const ratio = Math.min(1, maxSize / Math.max(sourceWidth, sourceHeight))
+    const width = Math.max(1, Math.round(sourceWidth * ratio))
+    const height = Math.max(1, Math.round(sourceHeight * ratio))
+
+    const offscreen = document.createElement('canvas')
+    offscreen.width = width
+    offscreen.height = height
+    const ctx = offscreen.getContext('2d')
+    if (!ctx) return null
+
+    ctx.drawImage(canvas, 0, 0, width, height)
+
+    return await new Promise<Blob | null>((resolve) => {
+      offscreen.toBlob((blob) => resolve(blob), 'image/webp', quality)
+    })
+  }, [])
+
+  const loadStrokes = useCallback((strokes: Stroke[]) => {
+    strokesRef.current = Array.isArray(strokes) ? strokes : []
+    redoRef.current = []
+    redraw()
+    flush()
+  }, [flush, redraw])
+
+  const legacyCurrentTool = (currentTool === 'eraser' ? 'pencil' : currentTool) as LegacyTool
+  const exportImage = useCallback(() => canvasRef.current?.toDataURL('image/png', 0.94), [])
+
+  return useMemo(() => ({
     canvasRef,
+    strokes: strokesRef.current,
+    canUndo: strokesRef.current.length > 0,
+    canRedo: redoRef.current.length > 0,
+    hasContent: strokesRef.current.length > 0,
+    color,
+    setColor,
+    currentTool: legacyCurrentTool,
+    setCurrentTool,
     start,
     draw,
     stop,
     clear,
-    exportImage,
     undo,
+    redo,
+    exportPngBlob,
+    exportImage,
+    strokeCount: strokesRef.current.length,
+    exportWebpBlob,
+    loadStrokes,
+  }), [
+    clear,
     color,
+    legacyCurrentTool,
+    draw,
+    exportImage,
+    exportPngBlob,
+    exportWebpBlob,
+    loadStrokes,
+    redo,
     setColor,
-    currentTool,
     setCurrentTool,
-    isDrawing,
-    strokeCount,
-  }
+    start,
+    stop,
+    undo,
+  ])
 }
