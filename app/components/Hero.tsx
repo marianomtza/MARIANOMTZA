@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, useMotionValue, useSpring, useTransform, MotionValue } from 'framer-motion'
 import { usePianoDock } from '../hooks/usePianoDock'
 import { HeroBackground } from './hero/HeroBackground'
+import { usePathname } from 'next/navigation'
 
 const TITLE = 'MARIANOMTZA'
 
@@ -97,6 +98,7 @@ export const Hero: React.FC = () => {
   const [roleIndex, setRoleIndex] = useState(0)
 
   const { playNote, primeOnInteraction } = usePianoDock()
+  const pathname = usePathname()
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -165,6 +167,10 @@ export const Hero: React.FC = () => {
     void primeOnInteraction()
   }, [primeOnInteraction])
 
+
+  useEffect(() => {
+    reset()
+  }, [pathname, reset])
   const handleCTA = (target: 'reserva' | 'eventos' | 'artistas') => {
     const el = document.getElementById(target)
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -186,6 +192,7 @@ export const Hero: React.FC = () => {
           ref={containerRef}
           onPointerMove={handleMove}
           onPointerLeave={handleLeave}
+          onPointerCancel={handleLeave}
           onPointerEnter={handleEnter}
           className="fluid-title font-display font-normal no-break-title text-[var(--fg)] mb-8 touch-none"
           style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}

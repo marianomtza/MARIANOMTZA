@@ -1,46 +1,46 @@
 'use client'
 
 import React from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useSound } from '../../contexts/SoundContext'
 
 export function SoundToggle() {
   const { enabled, toggle } = useSound()
+  const reduceMotion = useReducedMotion()
 
   return (
     <button
       onClick={toggle}
-      aria-label={enabled ? 'Silenciar' : 'Activar sonido'}
+      aria-label={enabled ? 'Desactivar piano' : 'Activar piano'}
       aria-pressed={enabled}
-      className="glass group flex items-center gap-2.5 px-3.5 py-2.5 rounded-full text-[10px] font-mono tracking-[0.2em] uppercase hover:border-[var(--accent)] transition-colors"
+      title={enabled ? 'Piano activado' : 'Piano desactivado'}
+      className="glass group flex items-end gap-1.5 px-3 py-2.5 min-h-11 rounded-full hover:border-[var(--accent)] transition-colors"
     >
-      <span className="flex items-center gap-[3px] h-3">
-        {[0, 1, 2, 3].map((i) => (
-          <motion.span
-            key={i}
-            className="w-[2px] bg-[var(--fg)] rounded-full"
-            animate={
-              enabled
-                ? { height: ['30%', '100%', '50%', '80%', '30%'][i % 5] }
-                : { height: '30%' }
-            }
-            transition={
-              enabled
-                ? {
-                    duration: 0.9 + i * 0.12,
-                    repeat: Infinity,
-                    repeatType: 'reverse',
-                    ease: 'easeInOut',
-                  }
-                : { duration: 0.2 }
-            }
-            style={{ height: '30%' }}
-          />
-        ))}
-      </span>
-      <span className="text-[var(--fg-muted)] group-hover:text-[var(--fg)] transition-colors">
-        {enabled ? 'Sonido · ON' : 'Activar sonido'}
-      </span>
+      {[0, 1, 2].map((i) => (
+        <motion.span
+          key={i}
+          className="w-[3px] rounded-full bg-[var(--fg)]"
+          initial={false}
+          animate={
+            enabled
+              ? {
+                  opacity: [0.48, 0.95, 0.6, 0.9],
+                  height: reduceMotion ? ['8px', '12px'] : [`${8 + i * 2}px`, `${14 + i * 4}px`, `${10 + i * 2}px`],
+                }
+              : { opacity: 0.38, height: '8px' }
+          }
+          transition={
+            enabled
+              ? {
+                  duration: reduceMotion ? 1.6 : 0.9 + i * 0.16,
+                  repeat: Infinity,
+                  repeatType: 'mirror',
+                  ease: 'easeInOut',
+                }
+              : { duration: 0.2 }
+          }
+        />
+      ))}
     </button>
   )
 }

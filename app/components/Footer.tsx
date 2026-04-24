@@ -5,8 +5,6 @@ import Link from 'next/link'
 
 const CONTACT = {
   email: 'hola@marianomtza.com',
-  phone: '+52 443 426 4931',
-  phoneClean: '+524434264931',
   whatsapp: 'https://wa.me/524434264931',
 }
 
@@ -29,7 +27,6 @@ export const Footer: React.FC = () => {
               <span>WhatsApp</span>
               <span aria-hidden>↗</span>
             </a>
-            <a href={`tel:${CONTACT.phoneClean}`} className="link-underline text-[var(--fg-muted)] font-mono text-sm py-2">{CONTACT.phone}</a>
           </div>
         </div>
 

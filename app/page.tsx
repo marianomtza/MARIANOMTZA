@@ -12,6 +12,7 @@ import { Roster } from './components/Roster'
 import { Eventos } from './components/Eventos'
 import { Booking } from './components/Booking'
 import { Footer } from './components/Footer'
+import { DibujosSection } from './components/dibujos/DibujosSection'
 import { ThemeSwitcher } from './components/system/ThemeSwitcher'
 import { SoundToggle } from './components/system/SoundToggle'
 import { MusicDock } from './components/MusicDock'
@@ -45,6 +46,7 @@ function LandingExperience() {
       <Roster />
       <RotatingBar entries={BRANDS} direction="right" speed={64} ariaLabel="Marcas con las que ha colaborado" variant="brands" />
       <Eventos />
+      <DibujosSection />
       <Booking />
       <Footer />
 
