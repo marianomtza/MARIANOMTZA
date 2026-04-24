@@ -24,11 +24,23 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = createSupabaseServerClient()
-    const { data, error } = await supabase
+
+    let result: any = await supabase
       .from('drawings')
-      .select('id,image,name,message,tool,created_at,updated_at')
+      .select('id,image,name,message,tool,status,created_at,updated_at')
+      .eq('status', 'public')
       .order('created_at', { ascending: false })
       .range(offset, Math.max(offset + limit - 1, 0))
+
+    if (result.error && String(result.error.message || '').includes('status')) {
+      result = await supabase
+        .from('drawings')
+        .select('id,image,name,message,tool,created_at,updated_at')
+        .order('created_at', { ascending: false })
+        .range(offset, Math.max(offset + limit - 1, 0))
+    }
+
+    const { data, error } = result
 
     if (error) throw error
 
@@ -86,7 +98,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase
       .from('drawings')
       .insert(payload)
-      .select('id,image,name,message,tool,created_at,updated_at')
+      .select('id,image,name,message,tool,status,created_at,updated_at')
       .single()
 
     if (error) throw error
