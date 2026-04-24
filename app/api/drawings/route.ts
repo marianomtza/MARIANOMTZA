@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Drawing } from '../../lib/types'
 import { createSupabaseServerClient } from '../../lib/supabase'
 
+const VALID_TOOLS = new Set(['pencil', 'marker', 'ink', 'spray', 'neon', 'eraser'])
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createSupabaseServerClient()
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
       image: body.image,
       name: body.name || 'Anónimo',
       message: body.message || '',
-      tool: body.tool || 'pencil',
+      tool: VALID_TOOLS.has(body.tool) ? body.tool : 'pencil',
     }
 
     const { data, error } = await supabase

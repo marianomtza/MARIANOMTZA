@@ -10,6 +10,51 @@ import {
   Text,
 } from '@react-three/drei'
 import * as THREE from 'three'
+import { ThemeName } from '../../lib/design-tokens'
+
+const THEME_3D: Record<ThemeName, {
+  background: string
+  fog: string
+  lights: [string, string]
+  blobs: [string, string, string, string]
+  text: string
+}> = {
+  base: {
+    background: '#0a0712',
+    fog: '#0a0712',
+    lights: ['#a78bfa', '#38bdf8'],
+    blobs: ['#8b5cf6', '#38bdf8', '#ef4444', '#f0abfc'],
+    text: '#f5f0ff',
+  },
+  dark: {
+    background: '#050505',
+    fog: '#050505',
+    lights: ['#ffffff', '#8a8a8a'],
+    blobs: ['#eeeeee', '#d1d1d1', '#7c7c7c', '#bcbcbc'],
+    text: '#ffffff',
+  },
+  light: {
+    background: '#f4f1e8',
+    fog: '#f4f1e8',
+    lights: ['#232323', '#5b5b5b'],
+    blobs: ['#171717', '#6a6a6a', '#8f8f8f', '#303030'],
+    text: '#0f0f0f',
+  },
+  rojo: {
+    background: '#100808',
+    fog: '#100808',
+    lights: ['#ef4444', '#f97316'],
+    blobs: ['#dc2626', '#f97316', '#f43f5e', '#fb7185'],
+    text: '#fff1f2',
+  },
+  azul: {
+    background: '#07101d',
+    fog: '#07101d',
+    lights: ['#38bdf8', '#818cf8'],
+    blobs: ['#0ea5e9', '#38bdf8', '#2563eb', '#818cf8'],
+    text: '#eff6ff',
+  },
+}
 
 function DistortedSphere({
   position,
@@ -85,7 +130,7 @@ function CursorCamera() {
   return null
 }
 
-function FloatingText() {
+function FloatingText({ color }: { color: string }) {
   return (
     <Float speed={0.8} rotationIntensity={0.12} floatIntensity={0.35}>
       <Text
@@ -96,7 +141,7 @@ function FloatingText() {
         anchorY="middle"
         outlineWidth={0.004}
         outlineColor="#0a0712"
-        color="#f5f0ff"
+        color={color}
         maxWidth={10}
       >
         MARIANOMTZA
@@ -105,7 +150,15 @@ function FloatingText() {
   )
 }
 
-export function LabScene() {
+export function LabScene({
+  theme = 'base',
+  asBackground = false,
+}: {
+  theme?: ThemeName
+  asBackground?: boolean
+}) {
+  const palette = THEME_3D[theme] || THEME_3D.base
+
   return (
     <Canvas
       shadows
@@ -117,46 +170,46 @@ export function LabScene() {
       }}
       dpr={[1, 2]}
     >
-      <color attach="background" args={['#0a0712']} />
-      <fog attach="fog" args={['#0a0712', 5, 20]} />
+      <color attach="background" args={[palette.background]} />
+      <fog attach="fog" args={[palette.fog, 5, 20]} />
 
       <ambientLight intensity={0.35} />
       <directionalLight position={[4, 5, 3]} intensity={1.1} castShadow />
-      <pointLight position={[-4, 2, -2]} intensity={0.6} color="#a78bfa" />
-      <pointLight position={[4, -2, 3]} intensity={0.6} color="#38bdf8" />
+      <pointLight position={[-4, 2, -2]} intensity={0.6} color={palette.lights[0]} />
+      <pointLight position={[4, -2, 3]} intensity={0.6} color={palette.lights[1]} />
 
       <GlassKnot />
 
       <DistortedSphere
         position={[-3.2, 1.6, -1.8]}
-        color="#8b5cf6"
+        color={palette.blobs[0]}
         speed={1.2}
         distort={0.5}
         scale={0.95}
       />
       <DistortedSphere
         position={[3.4, -1.4, -1.5]}
-        color="#38bdf8"
+        color={palette.blobs[1]}
         speed={1.8}
         distort={0.4}
         scale={0.7}
       />
       <DistortedSphere
         position={[2.6, 2.4, -3]}
-        color="#ef4444"
+        color={palette.blobs[2]}
         speed={0.9}
         distort={0.3}
         scale={0.5}
       />
       <DistortedSphere
         position={[-2.8, -2.1, -2.5]}
-        color="#f0abfc"
+        color={palette.blobs[3]}
         speed={1.4}
         distort={0.6}
         scale={0.6}
       />
 
-      <FloatingText />
+      {!asBackground && <FloatingText color={palette.text} />}
 
       <Environment preset="city" />
 
