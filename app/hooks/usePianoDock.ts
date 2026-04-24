@@ -46,8 +46,8 @@ export function usePianoDock() {
   const ensureLoaded = useCallback(async () => {
     if (synthRef.current || loadingRef.current) return
     loadingRef.current = true
+    const ToneModule = (await import('tone/build/Tone')) as unknown as ToneLike
     try {
-      const ToneModule = (await import('tone/build/Tone')) as unknown as ToneLike
       toneRef.current = ToneModule
 
       const gain = new ToneModule.Gain(0.5)

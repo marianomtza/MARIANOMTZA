@@ -10,7 +10,7 @@ export function SoundToggle() {
   return (
     <button
       onClick={toggle}
-      aria-label={enabled ? 'Silenciar' : 'Activar sonido'}
+      aria-label={enabled ? 'PIANO ON' : 'PIANO OFF'}
       aria-pressed={enabled}
       className="glass group flex items-center gap-2.5 px-3.5 py-2.5 rounded-full text-[10px] font-mono tracking-[0.2em] uppercase hover:border-[var(--accent)] transition-colors"
     >
@@ -39,7 +39,7 @@ export function SoundToggle() {
         ))}
       </span>
       <span className="text-[var(--fg-muted)] group-hover:text-[var(--fg)] transition-colors">
-        {enabled ? 'Sonido · ON' : 'Activar sonido'}
+        {enabled ? 'PIANO ON' : 'PIANO OFF'}
       </span>
     </button>
   )

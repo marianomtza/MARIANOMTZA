@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 
 interface Point {
   x: number
@@ -11,13 +11,14 @@ interface Stroke {
   points: Point[]
   color: string
   size: number
-  tool: 'pencil' | 'marker' | 'ink'
+  tool: 'pencil' | 'marker' | 'ink' | 'eraser'
 }
 
 export const TOOLS = [
   { id: 'pencil' as const, label: 'LÁPIZ', size: 2.2, icon: '✎' },
   { id: 'marker' as const, label: 'MARCADOR', size: 7.5, icon: '▬' },
-  { id: 'ink' as const, label: 'TINTA', size: 4.8, icon: '≈' },
+  { id: 'ink' as const, label: 'NEON', size: 4.8, icon: '≈' },
+  { id: 'eraser' as const, label: 'BORRAR', size: 12, icon: '⌫' },
 ]
 
 export const COLORS = ['#111111', '#9b5fd6', '#c026d3', '#5a3d7a']
@@ -32,15 +33,18 @@ export interface CanvasDrawingReturn {
   undo: () => void
   color: string
   setColor: (color: string) => void
-  currentTool: 'pencil' | 'marker' | 'ink'
-  setCurrentTool: (tool: 'pencil' | 'marker' | 'ink') => void
+  currentTool: 'pencil' | 'marker' | 'ink' | 'eraser'
+  setCurrentTool: (tool: 'pencil' | 'marker' | 'ink' | 'eraser') => void
+  brushSize: number
+  setBrushSize: (value: number) => void
   isDrawing: boolean
   strokeCount: number
 }
 
 export function useCanvasDrawing(): CanvasDrawingReturn {
-  const [currentTool, setCurrentTool] = useState<'pencil' | 'marker' | 'ink'>('pencil')
+  const [currentTool, setCurrentTool] = useState<'pencil' | 'marker' | 'ink' | 'eraser'>('pencil')
   const [color, setColor] = useState('#111111')
+  const [brushSize, setBrushSize] = useState(1)
   const [isDrawing, setIsDrawing] = useState(false)
   const [strokeCount, setStrokeCount] = useState(0)
 
@@ -60,9 +64,7 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
 
     ctx.fillStyle = 'rgba(155, 95, 214, 0.012)'
     for (let i = 0; i < 280; i++) {
-      const x = Math.random() * cssW
-      const y = Math.random() * cssH
-      ctx.fillRect(x, y, 1.2, 1.2)
+      ctx.fillRect(Math.random() * cssW, Math.random() * cssH, 1.2, 1.2)
     }
 
     ctx.strokeStyle = 'rgba(17, 17, 17, 0.035)'
@@ -77,12 +79,13 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
     strokesRef.current.forEach((stroke) => {
       if (stroke.points.length < 2) return
 
-      ctx.strokeStyle = stroke.color
+      const strokeColor = stroke.tool === 'eraser' ? '#f8f5f0' : stroke.color
+      ctx.strokeStyle = strokeColor
       ctx.lineWidth = stroke.size
       ctx.lineCap = 'round'
       ctx.lineJoin = 'round'
-      ctx.shadowColor = stroke.color
-      ctx.shadowBlur = stroke.tool === 'ink' ? 6 : (stroke.tool === 'marker' ? 1.5 : 0)
+      ctx.shadowColor = strokeColor
+      ctx.shadowBlur = stroke.tool === 'ink' ? 6 : stroke.tool === 'marker' ? 1.5 : 0
 
       ctx.beginPath()
       ctx.moveTo(stroke.points[0].x, stroke.points[0].y)
@@ -102,9 +105,7 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
           ctx.globalAlpha = 0.12 + Math.random() * 0.08
           ctx.lineWidth = stroke.size * 1.65
           ctx.shadowBlur = 9
-          const ox = (Math.random() - 0.5) * 1.8
-          const oy = (Math.random() - 0.5) * 1.8
-          ctx.lineTo(x + ox, y + oy)
+          ctx.lineTo(x + (Math.random() - 0.5) * 1.8, y + (Math.random() - 0.5) * 1.8)
           ctx.stroke()
           ctx.restore()
 
@@ -115,9 +116,7 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
 
         if (i > 1) {
           const prev = stroke.points[i - 1]
-          const midX = (prev.x + x) / 2
-          const midY = (prev.y + y) / 2
-          ctx.quadraticCurveTo(prev.x, prev.y, midX, midY)
+          ctx.quadraticCurveTo(prev.x, prev.y, (prev.x + x) / 2, (prev.y + y) / 2)
         } else {
           ctx.lineTo(x, y)
         }
@@ -143,18 +142,6 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
     const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true })!
     ctx.scale(dpr, dpr)
 
-    ctx.fillStyle = '#f8f5f0'
-    ctx.fillRect(0, 0, rect.width, rect.height)
-
-    ctx.strokeStyle = 'rgba(17, 17, 17, 0.035)'
-    ctx.lineWidth = 0.4
-    for (let x = 8; x < rect.width; x += 11) {
-      ctx.beginPath()
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x + (Math.random() - 0.5) * 0.8, rect.height)
-      ctx.stroke()
-    }
-
     redraw()
   }, [redraw])
 
@@ -162,12 +149,9 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const resizeObserver = new ResizeObserver(() => {
-      setupCanvas()
-    })
-
+    const resizeObserver = new ResizeObserver(setupCanvas)
     resizeObserver.observe(canvas)
-    setTimeout(setupCanvas, 50)
+    window.setTimeout(setupCanvas, 50)
 
     return () => resizeObserver.disconnect()
   }, [setupCanvas])
@@ -175,10 +159,7 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
   const getPoint = (e: React.PointerEvent<HTMLCanvasElement>): Point => {
     const canvas = canvasRef.current!
     const rect = canvas.getBoundingClientRect()
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    }
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
   }
 
   const start = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -186,25 +167,24 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
     if (!canvas) return
 
     const point = getPoint(e)
-    const toolConfig = TOOLS.find(t => t.id === currentTool)!
+    const toolConfig = TOOLS.find((t) => t.id === currentTool)!
+    const paintColor = currentTool === 'eraser' ? '#f8f5f0' : color
 
     setIsDrawing(true)
-    if (strokeCount === 0) setStrokeCount(1)
     currentStrokeRef.current = {
       points: [point],
-      color: color,
-      size: toolConfig.size * (e.pressure || 0.65) * (currentTool === 'marker' ? 1.1 : 1),
+      color: paintColor,
+      size: toolConfig.size * brushSize * Math.max(e.pressure || 0.65, 0.5) * (currentTool === 'marker' ? 1.1 : 1),
       tool: currentTool,
     }
 
     const ctx = canvas.getContext('2d')!
-    ctx.strokeStyle = color
+    ctx.strokeStyle = paintColor
     ctx.lineWidth = currentStrokeRef.current.size
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
-    ctx.shadowColor = color
+    ctx.shadowColor = paintColor
     ctx.shadowBlur = currentTool === 'ink' ? 5 : 0
-
     ctx.beginPath()
     ctx.moveTo(point.x, point.y)
   }
@@ -234,10 +214,7 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
       ctx.globalAlpha = 0.09
       ctx.lineWidth = stroke.size * 1.9
       ctx.shadowBlur = 10
-      ctx.lineTo(
-        drawX + (Math.random() - 0.5) * 2.2,
-        drawY + (Math.random() - 0.5) * 2.2
-      )
+      ctx.lineTo(drawX + (Math.random() - 0.5) * 2.2, drawY + (Math.random() - 0.5) * 2.2)
       ctx.stroke()
       ctx.restore()
       ctx.globalAlpha = 1
@@ -252,8 +229,9 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
 
     if (currentStrokeRef.current.points.length > 3) {
       strokesRef.current.push(currentStrokeRef.current)
-      setStrokeCount(c => c + 1)
+      setStrokeCount((c) => c + 1)
     }
+
     currentStrokeRef.current = null
   }
 
@@ -266,13 +244,11 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
 
   const undo = () => {
     strokesRef.current.pop()
-    setStrokeCount(c => Math.max(0, c - 1))
+    setStrokeCount((c) => Math.max(0, c - 1))
     redraw()
   }
 
-  const exportImage = () => {
-    return canvasRef.current?.toDataURL('image/png', 0.94)
-  }
+  const exportImage = () => canvasRef.current?.toDataURL('image/png', 0.94)
 
   return {
     canvasRef,
@@ -286,6 +262,8 @@ export function useCanvasDrawing(): CanvasDrawingReturn {
     setColor,
     currentTool,
     setCurrentTool,
+    brushSize,
+    setBrushSize,
     isDrawing,
     strokeCount,
   }

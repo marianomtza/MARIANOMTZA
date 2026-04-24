@@ -9,14 +9,29 @@ type Drawing = {
   image: string
   name: string
   message: string
-  tool: 'pencil' | 'marker' | 'ink'
+  tool: 'pencil' | 'marker' | 'ink' | 'eraser'
   created_at: string
 }
 
 const STORAGE_KEY = 'mmtza-local-drawings'
 
 export function Dibujos() {
-  const { canvasRef, start, draw, stop, clear, exportImage, undo, color, setColor, currentTool, setCurrentTool, strokeCount } = useCanvasDrawing()
+  const {
+    canvasRef,
+    start,
+    draw,
+    stop,
+    clear,
+    exportImage,
+    undo,
+    color,
+    setColor,
+    currentTool,
+    setCurrentTool,
+    strokeCount,
+    brushSize,
+    setBrushSize,
+  } = useCanvasDrawing()
 
   const [name, setName] = useState('Anónimo')
   const [message, setMessage] = useState('')
@@ -161,7 +176,7 @@ export function Dibujos() {
           <aside className="lg:col-span-4 space-y-5">
             <div className="surface p-4 space-y-3">
               <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--fg-muted)]">Herramientas</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {TOOLS.map((tool) => (
                   <button key={tool.id} onClick={() => setCurrentTool(tool.id)} className={`btn ${currentTool === tool.id ? 'btn-primary' : 'btn-ghost'} !px-3 !py-2 min-h-11`}>
                     {tool.icon}
@@ -175,6 +190,18 @@ export function Dibujos() {
               </div>
               <button onClick={undo} className="btn btn-ghost min-h-11 w-full">Deshacer</button>
               <button onClick={clear} className="btn btn-ghost min-h-11 w-full">Limpiar</button>
+              <label className="text-xs text-[var(--fg-muted)] flex items-center justify-between gap-2">
+                Tamaño de brocha
+                <input
+                  type="range"
+                  min={0.7}
+                  max={1.8}
+                  step={0.1}
+                  value={brushSize}
+                  onChange={(e) => setBrushSize(Number(e.target.value))}
+                  className="w-36"
+                />
+              </label>
             </div>
 
             <div className="surface p-4 space-y-3">
