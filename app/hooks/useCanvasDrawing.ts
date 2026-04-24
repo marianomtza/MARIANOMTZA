@@ -4,8 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 export type DrawingTool = 'pencil' | 'marker' | 'ink' | 'eraser'
 
-type LegacyTool = 'pencil' | 'marker' | 'ink'
-
 export type Point = {
   x: number
   y: number
@@ -44,7 +42,7 @@ type UseCanvasDrawingReturn = {
   hasContent: boolean
   color: string
   setColor: (value: string) => void
-  currentTool: LegacyTool
+  currentTool: 'pencil' | 'marker' | 'ink'
   activeTool: DrawingTool
   setCurrentTool: (tool: DrawingTool) => void
   brushSize: number
@@ -395,7 +393,8 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
   }, [flush, redraw])
 
   const exportImage = useCallback(() => canvasRef.current?.toDataURL('image/png', 0.94), [])
-  const currentTool = (activeTool === 'eraser' ? 'pencil' : activeTool) as LegacyTool
+
+  const compatibilityTool = (activeTool === 'eraser' ? 'pencil' : activeTool) as 'pencil' | 'marker' | 'ink'
 
   return useMemo(() => ({
     canvasRef,
@@ -405,7 +404,7 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
     hasContent: strokesRef.current.length > 0,
     color,
     setColor,
-    currentTool,
+    currentTool: compatibilityTool,
     activeTool,
     setCurrentTool,
     brushSize,
@@ -425,8 +424,8 @@ export function useCanvasDrawing(): UseCanvasDrawingReturn {
     activeTool,
     brushSize,
     clear,
+    compatibilityTool,
     color,
-    currentTool,
     draw,
     exportImage,
     exportPngBlob,
