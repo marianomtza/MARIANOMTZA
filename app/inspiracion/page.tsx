@@ -1,24 +1,15 @@
-'use client'
-
-import React from 'react'
 import Link from 'next/link'
-import { useScrollEngine } from '../hooks/useScrollEngine'
-import { CreativeGallery } from '../components/inspiracion/CreativeGallery'
-import { Dibujos } from '../components/inspiracion/Dibujos'
 
 export default function InspiracionPage() {
-  useScrollEngine()
-
   return (
-    <main className="relative bg-[var(--bg)] text-[var(--fg)] overflow-hidden min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[var(--bg)]/85 backdrop-blur">
-        <div className="max-w-6xl mx-auto h-16 px-6 md:px-12 flex items-center justify-between">
-          <Link href="/" className="text-sm tracking-[0.2em] uppercase">← Volver</Link>
-          <div className="text-xs text-[var(--fg-muted)]">INSPIRACIÓN</div>
-        </div>
-      </header>
-      <CreativeGallery />
-      <Dibujos />
+    <main className="min-h-screen bg-[var(--bg)] px-6 py-16 text-[var(--fg)] md:px-12">
+      <div className="mx-auto max-w-3xl">
+        <h1 className="font-display text-5xl">INSPIRACIÓN</h1>
+        <p className="mt-4 text-[var(--fg-muted)]">Archivo en construcción.</p>
+        <Link href="/" className="btn btn-ghost mt-8 inline-flex min-h-11 items-center">
+          Volver al inicio
+        </Link>
+      </div>
     </main>
   )
 }

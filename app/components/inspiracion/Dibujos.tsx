@@ -9,14 +9,14 @@ type Drawing = {
   image: string
   name: string
   message: string
-  tool: 'pencil' | 'marker' | 'ink'
+  tool: 'pencil' | 'marker' | 'ink' | 'eraser'
   created_at: string
 }
 
 const STORAGE_KEY = 'mmtza-local-drawings'
 
 export function Dibujos() {
-  const { canvasRef, start, draw, stop, clear, exportImage, undo, color, setColor, currentTool, setCurrentTool, strokeCount } = useCanvasDrawing()
+  const { canvasRef, start, draw, stop, clear, exportImage, undo, color, setColor, activeTool, setCurrentTool, strokeCount } = useCanvasDrawing()
 
   const [name, setName] = useState('Anónimo')
   const [message, setMessage] = useState('')
@@ -81,7 +81,7 @@ export function Dibujos() {
       image,
       name: name.trim() || 'Anónimo',
       message: message.trim(),
-      tool: currentTool,
+      tool: activeTool,
     }
 
     const localItem: Drawing = {
@@ -89,7 +89,7 @@ export function Dibujos() {
       image,
       name: payload.name,
       message: payload.message,
-      tool: currentTool,
+      tool: activeTool,
       created_at: new Date().toISOString(),
     }
 
@@ -163,7 +163,7 @@ export function Dibujos() {
               <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-[var(--fg-muted)]">Herramientas</p>
               <div className="grid grid-cols-3 gap-2">
                 {TOOLS.map((tool) => (
-                  <button key={tool.id} onClick={() => setCurrentTool(tool.id)} className={`btn ${currentTool === tool.id ? 'btn-primary' : 'btn-ghost'} !px-3 !py-2 min-h-11`}>
+                  <button key={tool.id} onClick={() => setCurrentTool(tool.id)} className={`btn ${activeTool === tool.id ? 'btn-primary' : 'btn-ghost'} !px-3 !py-2 min-h-11`}>
                     {tool.icon}
                   </button>
                 ))}

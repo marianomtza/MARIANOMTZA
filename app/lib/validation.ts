@@ -85,7 +85,7 @@ export function validateDrawingPayload(input: unknown): DrawingInput {
   }
 
   const tool = sanitizeOptionalText(raw.tool, 20) as DrawingInput['tool']
-  if (tool && !['pencil', 'marker', 'ink'].includes(tool)) {
+  if (tool && !['pencil', 'marker', 'ink', 'eraser'].includes(tool)) {
     throw new ValidationError('Invalid drawing tool')
   }
 
