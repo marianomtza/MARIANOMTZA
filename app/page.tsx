@@ -1,58 +1,50 @@
 'use client'
 
 import React from 'react'
+import dynamic from 'next/dynamic'
 import Lenis from '@studio-freight/lenis'
 import { BookingProvider } from './contexts/BookingContext'
 import { Navbar } from './components/Navbar'
 import { Hero } from './components/Hero'
 import { Roster } from './components/Roster'
 import { Eventos } from './components/Eventos'
-import { Dibujos } from './components/Dibujos'
 import { Booking } from './components/Booking'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { Inspiracion } from './components/Inspiracion'
+
+const AppleMusicDock = dynamic(() => import('./components/AppleMusicDock').then((mod) => mod.AppleMusicDock), {
+  ssr: false,
+})
 
 export default function Page() {
   React.useEffect(() => {
-    const lenis = new Lenis({
-      lerp: 0.18,
-      smoothWheel: true,
-      wheelMultiplier: 1.4,
-      touchMultiplier: 1.8,
-    })
+    const lenis = new Lenis({ lerp: 0.12, smoothWheel: true, wheelMultiplier: 1.1, touchMultiplier: 1.2 })
 
-    function raf(time: number) {
+    const raf = (time: number) => {
       lenis.raf(time)
       requestAnimationFrame(raf)
     }
-    requestAnimationFrame(raf)
 
+    requestAnimationFrame(raf)
     return () => lenis.destroy()
   }, [])
 
   return (
     <BookingProvider>
       <ErrorBoundary>
-        <div className="bg-black text-white overflow-hidden">
+        <div className="site-shell overflow-hidden">
           <Navbar />
           <Hero />
-          <Eventos />
-          <Dibujos />
           <Roster />
+          <Eventos />
           <Booking />
-          <Inspiracion />
+          <AppleMusicDock />
 
-          {/* Footer */}
-          <footer id="contacto" className="border-t border-white/10 py-20 bg-black">
-            <div className="max-w-[1440px] mx-auto px-6 md:px-12 text-center">
-              <div className="font-mono text-xs tracking-[3px] text-white/50 mb-5">CIUDAD DE MÉXICO • 2026</div>
-
-              <div className="text-2xl font-semibold tracking-tight mb-4">¿Listo para la próxima noche?</div>
-              <a
-                href="mailto:mariano1302mariano1302@gmail.com"
-                className="text-white/60 hover:text-white transition-colors text-sm"
-              >
-                mariano1302mariano1302@gmail.com
+          <footer id="contacto" className="border-t border-[var(--line)] py-20">
+            <div className="mx-auto max-w-[1440px] px-6 text-center md:px-12">
+              <div className="mb-5 font-mono text-xs tracking-[3px] text-[var(--fg-dim)]">CIUDAD DE MÉXICO • 2026</div>
+              <div className="mb-4 text-2xl font-semibold tracking-tight">¿Listo para la próxima noche?</div>
+              <a href="mailto:hola@marianomtza.com" className="text-sm text-[var(--fg-dim)] hover:text-[var(--fg)]">
+                hola@marianomtza.com
               </a>
             </div>
           </footer>

@@ -1,68 +1,67 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react'
-import { motion, useMotionValue, useTransform, useSpring, MotionValue } from 'framer-motion'
+import React, { useCallback, useEffect, useMemo, useRef } from 'react'
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { usePianoDock } from '../hooks/usePianoDock'
 
 const TITLE = 'MARIANOMTZA'
-
-const ROLES = [
-  'Productor de Eventos',
-  'Muevo Gente',
-  'Manager',
-  'Conecto Puntos',
-  'A&R',
-  'Documento todo',
-  'Director Creativo',
+const MARQUEE_ITEMS = [
+  'SEKS',
+  'LUDBOY',
+  'KNOCKOUT',
+  'LA FAMA',
+  'SPOTIFY',
+  'HENNESSY',
+  'BACARDÍ',
+  'ZACAPA',
+  'FOUR LOKO',
+  'ZYN',
+  'HYPNOTIQ',
+  'MEZCAL VERDE',
+  'VIUDA DE ROMERO',
 ]
 
-interface LetterProps {
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
+const HeroLetter: React.FC<{
   char: string
   index: number
-  mouseX: MotionValue<number>
-  containerRef: React.RefObject<HTMLDivElement>
-  onPlay: (idx: number) => void
-}
+  cursorX: ReturnType<typeof useMotionValue<number>>
+  active: ReturnType<typeof useMotionValue<number>>
+}> = ({ char, index, cursorX, active }) => {
+  const centerX = useMotionValue(-9999)
 
-const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onPlay }) => {
-  const letterRef = useRef<HTMLSpanElement>(null)
-  const [hovered, setHovered] = useState(false)
-
-  const distance = useTransform(mouseX, (x: number) => {
-    if (!letterRef.current || !containerRef.current) return 0
-    const rect = letterRef.current.getBoundingClientRect()
-    const containerRect = containerRef.current.getBoundingClientRect()
-    const center = rect.left + rect.width / 2 - containerRect.left
-    return Math.abs(x - center)
+  const distance = useTransform([cursorX, centerX], (values) => {
+    const [pointer, center] = values as number[]
+    return Math.abs(pointer - center)
   })
 
-  const scale = useTransform(distance, [0, 110], [1.55, 1])
-  const yOffset = useTransform(distance, [0, 110], [-10, 0])
-  const colorVal = useTransform(distance, [0, 70], ['#9b5fd6', '#f4f1f7'])
+  const dockScale = useTransform(distance, (d) => {
+    const factor = 1 - clamp(d, 0, 200) / 200
+    return 1 + factor * 0.32
+  })
 
-  const springScale = useSpring(scale, { stiffness: 320, damping: 22 })
-  const springY = useSpring(yOffset, { stiffness: 320, damping: 22 })
+  const activeScale = useTransform(active, (activeIndex) => (activeIndex === index ? 1.04 : 1))
+  const scale = useTransform([dockScale, activeScale], (values) => {
+    const [dock, focused] = values as number[]
+    return dock * focused
+  })
 
-  const handleEnter = useCallback(() => {
-    setHovered(true)
-    onPlay(index)
-  }, [index, onPlay])
+  const y = useTransform(distance, (d) => {
+    const factor = 1 - clamp(d, 0, 180) / 180
+    return -6 * factor
+  })
 
-  const handleLeave = useCallback(() => {
-    setHovered(false)
-  }, [])
+  const springScale = useSpring(scale, { stiffness: 460, damping: 34, mass: 0.23 })
+  const springY = useSpring(y, { stiffness: 430, damping: 36, mass: 0.24 })
 
   return (
     <motion.span
-      ref={letterRef}
-      className="char inline-block select-none"
-      style={{
-        scale: springScale,
-        y: springY,
-        color: hovered ? '#9b5fd6' : colorVal,
-        textShadow: hovered ? '0 0 18px rgba(155, 95, 214, 0.5)' : 'none',
+      ref={(el) => {
+        if (!el) return
+        const rect = el.getBoundingClientRect()
+        centerX.set(rect.left + rect.width / 2)
       }}
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
-      whileHover={{ scale: 1.55, y: -10 }}
+      className="char inline-block select-none"
+      style={{ scale: springScale, y: springY }}
     >
       {char}
     </motion.span>
@@ -70,108 +69,114 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, containerRef, onPl
 }
 
 export const Hero: React.FC = () => {
-  const [roleIndex, setRoleIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
-  const mouseX = useMotionValue(0)
-  const { playNote } = usePianoDock()
+  const cursorX = useMotionValue(-9999)
+  const activeIndex = useMotionValue(-1)
+  const { playNote, enabled, toggleSound } = usePianoDock()
+  const lastFrameRef = useRef(0)
 
-  // Role rotation
+  const letters = useMemo(() => TITLE.split(''), [])
+  const marquee = useMemo(() => [...MARQUEE_ITEMS, ...MARQUEE_ITEMS], [])
+
+  const resetDock = useCallback(() => {
+    cursorX.set(-9999)
+    activeIndex.set(-1)
+  }, [activeIndex, cursorX])
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setRoleIndex((prev) => (prev + 1) % ROLES.length)
-    }, 2600)
-    return () => clearInterval(interval)
+    const handleBlur = () => resetDock()
+    window.addEventListener('blur', handleBlur)
+    return () => window.removeEventListener('blur', handleBlur)
+  }, [resetDock])
+
+  const setFromPointer = useCallback((clientX: number) => {
+    const now = performance.now()
+    if (now - lastFrameRef.current < 16) return
+    lastFrameRef.current = now
+
+    cursorX.set(clientX)
+
+    const nodes = containerRef.current?.querySelectorAll('[data-letter]')
+    if (!nodes?.length) return
+
+    let closest = -1
+    let closestDistance = Number.POSITIVE_INFINITY
+
+    nodes.forEach((node, index) => {
+      const rect = (node as HTMLElement).getBoundingClientRect()
+      const distance = Math.abs(clientX - (rect.left + rect.width / 2))
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closest = index
+      }
+    })
+
+    if (closest !== activeIndex.get()) {
+      activeIndex.set(closest)
+      if (closest > -1) playNote(closest)
+    }
+  }, [activeIndex, cursorX, playNote])
+
+  const handleCTA = useCallback((target: 'reserva' | 'eventos') => {
+    document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
-  // Mouse tracking
-  useEffect(() => {
-    const handleMove = (e: MouseEvent) => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect()
-        mouseX.set(e.clientX - rect.left)
-      }
-    }
-    window.addEventListener('mousemove', handleMove)
-    return () => window.removeEventListener('mousemove', handleMove)
-  }, [mouseX])
-
-  const handlePlay = useCallback((idx: number) => {
-    playNote(idx)
-  }, [playNote])
-
-  const handleCTA = (target: 'reserva' | 'eventos') => {
-    playNote(0, 0.75)
-    const el = document.getElementById(target)
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
   return (
-    <section className="relative min-h-[94vh] flex flex-col justify-between pt-20 pb-16 overflow-hidden bg-black">
-      <div className="relative z-10 max-w-[1440px] mx-auto px-6 md:px-12 pt-12">
-        {/* Eyebrow */}
-        <div className="flex items-center gap-4 text-xs tracking-[0.28em] text-[#8a7fa0] mb-10 font-mono">
-          <div className="w-px h-3 bg-[#9b5fd6]" />
-          CIUDAD DE MÉXICO
+    <section className="relative min-h-[96vh] overflow-hidden border-b border-[var(--line)] pt-24 pb-14">
+      <div className="pointer-events-none absolute inset-0 opacity-80">
+        <div className="absolute inset-0 bg-[radial-gradient(90%_70%_at_15%_12%,rgba(187,167,145,0.12)_0%,rgba(17,17,18,0)_65%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(70%_65%_at_85%_0%,rgba(107,96,120,0.15)_0%,rgba(17,17,18,0)_70%)]" />
+        <div className="noise-layer absolute inset-0" />
+      </div>
+
+      <div className="relative z-10 mx-auto flex max-w-[1440px] flex-col gap-16 px-6 md:px-12">
+        <div className="flex items-center justify-between text-[11px] tracking-[0.28em] text-[var(--fg-dim)]">
+          <span>CIUDAD DE MÉXICO</span>
+          <button onClick={toggleSound} className="rounded-full border border-[var(--line)] px-4 py-1.5 text-[10px] tracking-[0.18em]">
+            SOUND {enabled ? 'ON' : 'OFF'}
+          </button>
         </div>
 
-        {/* Interactive Title - Musical Dock */}
-        <div 
+        <div
           ref={containerRef}
-          className="relative flex flex-wrap gap-x-[1px] text-[min(16.5vw,210px)] font-black tracking-[-0.032em] leading-[0.88] text-white mb-9"
+          onPointerMove={(e) => setFromPointer(e.clientX)}
+          onPointerLeave={resetDock}
+          className="flex flex-wrap gap-x-[2px] text-[min(16vw,218px)] font-black leading-[0.84] tracking-[-0.03em] text-[var(--fg)]"
         >
-          {TITLE.split('').map((char, i) => (
-            <Letter
-              key={i}
-              char={char}
-              index={i}
-              mouseX={mouseX}
-              containerRef={containerRef}
-              onPlay={handlePlay}
-            />
+          {letters.map((char, i) => (
+            <span key={`${char}-${i}`} data-letter>
+              <HeroLetter char={char} index={i} cursorX={cursorX} active={activeIndex} />
+            </span>
           ))}
         </div>
 
-        {/* Rotating Role */}
-        <div className="flex items-center gap-5 mb-11">
-          <div className="text-sm tracking-[0.18em] text-white flex items-center gap-3 font-mono">
-            → <span className="text-[#9b5fd6]">CDMX</span>
-          </div>
-          <motion.div 
-            key={roleIndex}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-[27px] md:text-[42px] font-semibold tracking-[-0.015em] text-white"
-          >
-            {ROLES[roleIndex]}
-          </motion.div>
-        </div>
-
-        {/* Proposal */}
-        <p className="max-w-[38ch] text-[#8a7fa0] text-[15px] leading-relaxed mb-14">
-          Produzco noches de más de 4000 asistentes. Contratación, logística y dirección creativa para la escena nocturna y cultura joven de México.
+        <p className="max-w-[52ch] text-base leading-relaxed text-[var(--fg-dim)]">
+          Curaduría, booking y dirección creativa para artistas y marcas. El roster es el foco; cada interfaz está diseñada para convertir en segundos.
         </p>
 
-        {/* CTAs */}
         <div className="flex flex-wrap gap-4">
-          <motion.button
-            onClick={() => handleCTA('reserva')}
-            className="btn btn-primary group"
-            whileHover={{ scale: 1.015 }}
-            whileTap={{ scale: 0.985 }}
-          >
-            Reservar
-            <span className="group-hover:translate-x-0.5 transition">↗</span>
-          </motion.button>
+          <button onClick={() => handleCTA('reserva')} className="btn btn-primary">Booking</button>
+          <button onClick={() => handleCTA('eventos')} className="btn btn-ghost">Eventos</button>
+        </div>
 
-          <motion.button
-            onClick={() => handleCTA('eventos')}
-            className="btn btn-ghost group"
-            whileHover={{ scale: 1.015 }}
-            whileTap={{ scale: 0.985 }}
+        <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] py-3">
+          <motion.div
+            drag="x"
+            dragMomentum={false}
+            dragElastic={0.04}
+            dragConstraints={{ left: -520, right: 0 }}
+            style={{ touchAction: 'pan-y' }}
+            className="flex min-w-max items-center gap-5 px-5 text-xs tracking-[0.24em] text-[var(--fg-dim)]"
+            animate={{ x: ['0%', '-50%'] }}
+            transition={{ repeat: Infinity, ease: 'linear', duration: 24 }}
           >
-            Eventos
-            <span className="group-hover:translate-x-0.5 transition">↗</span>
-          </motion.button>
+            {marquee.map((item, i) => (
+              <React.Fragment key={`${item}-${i}`}>
+                <span>{item}</span>
+                <span className="h-1 w-1 rounded-full bg-[var(--fg-dim)]/60" />
+              </React.Fragment>
+            ))}
+          </motion.div>
         </div>
       </div>
     </section>

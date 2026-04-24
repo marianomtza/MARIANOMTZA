@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Mariano Martínez — Eventos y Experiencias Sonoras',
-  description: 'Productor de eventos y experiencias sonoras en Ciudad de México',
+  title: 'MARIANOMTZA — Roster & Booking',
+  description: 'Plataforma curada de artistas, booking y experiencias en Ciudad de México.',
 }
 
 export const viewport: Viewport = {
@@ -13,14 +13,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
-    <html lang="es">
-      <body className="bg-black text-white overflow-hidden">
-        {children}
-      </body>
+    <html lang="es" data-theme="noir">
+      <body>{children}</body>
     </html>
   )
 }
