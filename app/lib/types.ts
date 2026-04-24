@@ -3,7 +3,7 @@ export type Drawing = {
   image: string
   name: string
   message: string
-  tool: 'pencil' | 'marker' | 'ink'
+  tool: 'pencil' | 'marker' | 'ink' | 'spray' | 'neon' | 'eraser'
   created_at: string
   updated_at?: string
 }
