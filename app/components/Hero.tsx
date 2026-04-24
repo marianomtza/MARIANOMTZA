@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, useMotionValue, useSpring, useTransform, MotionValue } from 'framer-motion'
 import { usePianoDock } from '../hooks/usePianoDock'
+import { useSound } from '../contexts/SoundContext'
 import { HeroBackground } from './hero/HeroBackground'
 
 const TITLE = 'MARIANOMTZA'
@@ -97,6 +98,7 @@ export const Hero: React.FC = () => {
   const [roleIndex, setRoleIndex] = useState(0)
 
   const { playNote, primeOnInteraction } = usePianoDock()
+  const { enabled, setEnabled } = useSound()
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -162,8 +164,9 @@ export const Hero: React.FC = () => {
   }, [reset])
 
   const handleEnter = useCallback(() => {
+    if (!enabled) setEnabled(true)
     void primeOnInteraction()
-  }, [primeOnInteraction])
+  }, [enabled, primeOnInteraction, setEnabled])
 
   const handleCTA = (target: 'reserva' | 'eventos' | 'artistas') => {
     const el = document.getElementById(target)
@@ -187,6 +190,7 @@ export const Hero: React.FC = () => {
           onPointerMove={handleMove}
           onPointerLeave={handleLeave}
           onPointerEnter={handleEnter}
+          onPointerOver={handleMove}
           className="fluid-title font-display font-normal no-break-title text-[var(--fg)] mb-8 touch-none"
           style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}
         >

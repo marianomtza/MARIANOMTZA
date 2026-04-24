@@ -12,7 +12,7 @@ interface Track {
   album: string
 }
 
-const SEED_ARTISTS = ['Sega Bodega', 'Oklou'] as const
+const SEED_ARTISTS = ['Sega Bodega', 'Oklou', 'Musical Monday'] as const
 
 async function fetchTracksForArtist(artist: string): Promise<Track[]> {
   const url = `https://itunes.apple.com/search?term=${encodeURIComponent(artist)}&media=music&entity=song&limit=5`
@@ -252,7 +252,7 @@ export const MusicDock: React.FC = () => {
               </div>
               <div className="px-3 py-2 text-[9px] text-[var(--fg-muted)] font-mono tracking-[0.22em] uppercase border-t border-[var(--line)] flex items-center justify-between">
                 <span>Preview · 30s</span>
-                <span>iTunes · Sega Bodega × Oklou</span>
+                <span>iTunes · Sega Bodega × Oklou × Musical Monday</span>
               </div>
             </motion.div>
           )}
