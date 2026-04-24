@@ -39,7 +39,7 @@ export function SoundToggle() {
         ))}
       </span>
       <span className="text-[var(--fg-muted)] group-hover:text-[var(--fg)] transition-colors">
-        {enabled ? 'Sonido · On' : 'Sonido · Off'}
+        {enabled ? 'Sonido · ON' : 'Activar sonido'}
       </span>
     </button>
   )

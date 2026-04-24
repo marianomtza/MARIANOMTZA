@@ -1,37 +1,36 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
-import { motion, useAnimationFrame, useMotionValue, useTransform } from 'framer-motion'
+import React, { useEffect, useMemo, useRef } from 'react'
+import Link from 'next/link'
+import { motion, useAnimationFrame, useMotionValue, useReducedMotion } from 'framer-motion'
 
-type Entry = { label: string; type: 'project' | 'brand' }
+export type RotatingEntry = { label: string; href?: string }
 
-const ENTRIES: Entry[] = [
-  { label: 'SEKS', type: 'project' },
-  { label: 'Spotify', type: 'brand' },
-  { label: 'LUDBOY', type: 'project' },
-  { label: 'Hennessy', type: 'brand' },
-  { label: 'KNOCKOUT', type: 'project' },
-  { label: 'Bacardí', type: 'brand' },
-  { label: 'LA FAMA', type: 'project' },
-  { label: 'Zacapa', type: 'brand' },
-  { label: 'Four Loko', type: 'brand' },
-  { label: 'Zyn', type: 'brand' },
-  { label: 'Hypnotiq', type: 'brand' },
-  { label: 'Mezcal Verde', type: 'brand' },
-  { label: 'Viuda de Romero', type: 'brand' },
-]
+interface RotatingBarProps {
+  entries: RotatingEntry[]
+  direction?: 'left' | 'right'
+  speed?: number
+  ariaLabel: string
+  variant?: 'projects' | 'brands'
+}
 
-const PIXELS_PER_SECOND = 70
-
-export const RotatingBar: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const trackRef = useRef<HTMLDivElement>(null)
+export const RotatingBar: React.FC<RotatingBarProps> = ({
+  entries,
+  direction = 'left',
+  speed = 70,
+  ariaLabel,
+  variant = 'brands',
+}) => {
   const x = useMotionValue(0)
   const widthRef = useRef(0)
+  const trackRef = useRef<HTMLDivElement>(null)
   const draggingRef = useRef(false)
-  const hoveringRef = useRef(false)
   const dragOffsetRef = useRef(0)
-  const lastTsRef = useRef<number>(0)
+  const lastTsRef = useRef(0)
+  const didDragRef = useRef(false)
+  const reduceMotion = useReducedMotion()
+
+  const duplicated = useMemo(() => [...entries, ...entries], [entries])
 
   useEffect(() => {
     const measure = () => {
@@ -46,7 +45,7 @@ export const RotatingBar: React.FC = () => {
       ro.disconnect()
       window.removeEventListener('resize', measure)
     }
-  }, [])
+  }, [duplicated])
 
   useAnimationFrame((ts) => {
     if (lastTsRef.current === 0) {
@@ -56,72 +55,79 @@ export const RotatingBar: React.FC = () => {
     const dt = (ts - lastTsRef.current) / 1000
     lastTsRef.current = ts
 
-    if (draggingRef.current || hoveringRef.current) return
+    if (draggingRef.current) return
     const w = widthRef.current
     if (!w) return
 
-    let next = x.get() - PIXELS_PER_SECOND * dt
-    if (next <= -w) next += w
-    x.set(next)
-  })
+    const multiplier = reduceMotion ? 0.35 : 1
+    const delta = speed * multiplier * dt * (direction === 'left' ? -1 : 1)
+    let next = x.get() + delta
 
-  const handleDragStart = () => {
-    draggingRef.current = true
-    dragOffsetRef.current = x.get()
-  }
-
-  const handleDrag = (_: unknown, info: { offset: { x: number } }) => {
-    const w = widthRef.current
-    if (!w) return
-    let next = dragOffsetRef.current + info.offset.x
-    // wrap into [-w, 0]
     while (next <= -w) next += w
     while (next > 0) next -= w
     x.set(next)
-  }
-
-  const handleDragEnd = () => {
-    draggingRef.current = false
-  }
+  })
 
   return (
-    <section className="relative border-y border-[var(--line)] py-8 overflow-hidden bg-[var(--bg)]">
-      <div
-        ref={containerRef}
-        className="cursor-grab select-none"
-        onPointerEnter={() => (hoveringRef.current = true)}
-        onPointerLeave={() => (hoveringRef.current = false)}
+    <section className="relative border-y border-[var(--line)] py-7 overflow-hidden bg-[var(--bg)]" aria-label={ariaLabel}>
+      <motion.div
+        ref={trackRef}
+        drag="x"
+        dragConstraints={{ left: -Infinity, right: Infinity }}
+        dragElastic={0}
+        dragMomentum={false}
+        style={{ x }}
+        onDragStart={() => {
+          draggingRef.current = true
+          dragOffsetRef.current = x.get()
+          didDragRef.current = false
+        }}
+        onDrag={(_, info) => {
+          const w = widthRef.current
+          if (!w) return
+          if (Math.abs(info.offset.x) > 6) didDragRef.current = true
+          let next = dragOffsetRef.current + info.offset.x
+          while (next <= -w) next += w
+          while (next > 0) next -= w
+          x.set(next)
+        }}
+        onDragEnd={() => {
+          draggingRef.current = false
+        }}
+        className="flex gap-10 whitespace-nowrap cursor-grab active:cursor-grabbing select-none"
       >
-        <motion.div
-          ref={trackRef}
-          drag="x"
-          dragConstraints={{ left: -Infinity, right: Infinity }}
-          dragElastic={0}
-          dragMomentum={false}
-          onDragStart={handleDragStart}
-          onDrag={handleDrag}
-          onDragEnd={handleDragEnd}
-          style={{ x }}
-          className="flex gap-12 whitespace-nowrap"
-        >
-          {[...ENTRIES, ...ENTRIES].map((entry, i) => (
-            <span
-              key={`${entry.label}-${i}`}
-              className="inline-flex items-center gap-4 font-display text-[clamp(2rem,5vw,4rem)] text-[var(--fg)]"
+        {duplicated.map((entry, i) => {
+          const content = (
+            <motion.span
+              whileHover={reduceMotion ? undefined : { scale: 1.02, rotate: -0.4, opacity: 0.96 }}
+              className={`inline-flex items-center gap-3 font-display text-[clamp(1.8rem,4vw,3.4rem)] ${
+                variant === 'projects' ? 'text-[var(--fg)]' : 'text-[var(--fg-muted)]'
+              }`}
             >
               {entry.label}
-              <span
-                className="inline-block w-2 h-2 rounded-full"
-                style={{
-                  background:
-                    entry.type === 'project' ? 'var(--accent)' : 'var(--accent-soft)',
-                  opacity: 0.7,
-                }}
-              />
-            </span>
-          ))}
-        </motion.div>
-      </div>
+              <span className="inline-block w-2 h-2 rounded-full bg-[var(--accent)] opacity-70" />
+            </motion.span>
+          )
+
+          if (!entry.href) {
+            return <span key={`${entry.label}-${i}`}>{content}</span>
+          }
+
+          return (
+            <Link
+              key={`${entry.label}-${i}`}
+              href={entry.href}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => {
+                if (didDragRef.current) e.preventDefault()
+              }}
+            >
+              {content}
+            </Link>
+          )
+        })}
+      </motion.div>
     </section>
   )
 }

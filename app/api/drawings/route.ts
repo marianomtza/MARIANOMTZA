@@ -1,14 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Drawing } from '../../lib/types'
-import { createSupabaseServerClient } from '../../lib/supabase'
+import { createSupabaseServerClient, hasServerSupabaseEnv } from '../../lib/supabase'
+import { checkRateLimit, getClientIp } from '../../lib/rateLimit'
+import {
+  ValidationError,
+  getSafePagination,
+  validateDrawingPayload,
+} from '../../lib/validation'
+
+const DRAWING_RATE_LIMIT = 15
+const LOCAL_KEY = 'mmtza-local-drawings'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient()
     const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const { limit, offset } = getSafePagination(searchParams)
 
+    if (!hasServerSupabaseEnv()) {
+      return NextResponse.json(
+        { drawings: [], source: 'local-fallback', storageKey: LOCAL_KEY },
+        { status: 200 }
+      )
+    }
+
+    const supabase = createSupabaseServerClient()
     const { data, error } = await supabase
       .from('drawings')
       .select('id,image,name,message,tool,created_at,updated_at')
@@ -17,12 +32,19 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error
 
-    return NextResponse.json((data || []) as Drawing[], {
-      headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
-      },
-    })
+    return NextResponse.json(
+      { drawings: (data || []) as Drawing[], source: 'supabase' },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        },
+      }
+    )
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+
     console.error('GET /api/drawings error:', error)
     return NextResponse.json({ error: 'Failed to fetch drawings' }, { status: 500 })
   }
@@ -30,21 +52,37 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request)
+    const rate = checkRateLimit(`drawings:${ip}`, DRAWING_RATE_LIMIT)
+
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests, try again later.' },
+        { status: 429, headers: { 'Retry-After': String(rate.retryAfterSeconds) } }
+      )
+    }
+
+    let parsedBody: unknown
+    try {
+      parsedBody = await request.json()
+    } catch {
+      throw new ValidationError('Invalid JSON body', 400)
+    }
+
+    const payload = validateDrawingPayload(parsedBody)
+
+    if (!hasServerSupabaseEnv()) {
+      return NextResponse.json(
+        {
+          error: 'Drawings API unavailable. Save locally.',
+          fallback: 'local-storage',
+          storageKey: LOCAL_KEY,
+        },
+        { status: 503 }
+      )
+    }
+
     const supabase = createSupabaseServerClient()
-    const body = await request.json()
-
-    // Validate
-    if (!body.image || typeof body.image !== 'string') {
-      return NextResponse.json({ error: 'Missing or invalid image' }, { status: 400 })
-    }
-
-    const payload = {
-      image: body.image,
-      name: body.name || 'Anónimo',
-      message: body.message || '',
-      tool: body.tool || 'pencil',
-    }
-
     const { data, error } = await supabase
       .from('drawings')
       .insert(payload)
@@ -55,6 +93,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(data as Drawing, { status: 201 })
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+
     console.error('POST /api/drawings error:', error)
     return NextResponse.json({ error: 'Failed to save drawing' }, { status: 500 })
   }

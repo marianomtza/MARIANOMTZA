@@ -7,7 +7,7 @@ import { SoundProvider } from './contexts/SoundContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Navbar } from './components/Navbar'
 import { Hero } from './components/Hero'
-import { RotatingBar } from './components/RotatingBar'
+import { RotatingBar, RotatingEntry } from './components/RotatingBar'
 import { Roster } from './components/Roster'
 import { Eventos } from './components/Eventos'
 import { Booking } from './components/Booking'
@@ -17,18 +17,37 @@ import { SoundToggle } from './components/system/SoundToggle'
 import { MusicDock } from './components/MusicDock'
 import { EasterEgg } from './components/system/EasterEgg'
 
+const PROJECTS: RotatingEntry[] = [
+  { label: 'SEKS', href: 'https://www.instagram.com/seks.gratis/' },
+  { label: 'LUDBOY', href: 'https://www.ludboy.com/' },
+  { label: 'KNOCKOUT', href: 'https://www.instagram.com/knockout.fm/' },
+  { label: 'LA FAMA', href: 'https://www.instagram.com/es.lafama/' },
+]
+
+const BRANDS: RotatingEntry[] = [
+  { label: 'Spotify' },
+  { label: 'Hennessy' },
+  { label: 'Bacardí' },
+  { label: 'Zacapa' },
+  { label: 'Four Loko' },
+  { label: 'Zyn' },
+  { label: 'Hypnotiq' },
+  { label: 'Mezcal Verde' },
+  { label: 'Viuda de Romero' },
+]
+
 function LandingExperience() {
   return (
     <div className="relative bg-[var(--bg)] text-[var(--fg)] overflow-x-clip">
       <Navbar />
       <Hero />
-      <RotatingBar />
+      <RotatingBar entries={PROJECTS} direction="left" speed={82} ariaLabel="Proyectos destacados" variant="projects" />
       <Roster />
+      <RotatingBar entries={BRANDS} direction="right" speed={64} ariaLabel="Marcas con las que ha colaborado" variant="brands" />
       <Eventos />
       <Booking />
       <Footer />
 
-      {/* Floating controls */}
       <div className="fixed left-4 bottom-4 z-[70] flex items-center gap-2">
         <SoundToggle />
         <ThemeSwitcher />

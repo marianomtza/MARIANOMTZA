@@ -43,3 +43,4 @@ dist/
 
 # Data files
 data/drawings.json
+tsconfig.tsbuildinfo

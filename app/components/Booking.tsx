@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import { useBookingState } from '../contexts/BookingContext'
 import { ARTIST_NAMES } from '../lib/roster'
+import { fetchWithRetry } from '../lib/fetchWithRetry'
 
 const CONTACT = {
   email: 'hola@marianomtza.com',
   phone: '+52 443 426 4931',
   phoneClean: '+524434264931',
+  whatsapp: 'https://wa.me/524434264931',
 }
 
 export const Booking: React.FC = () => {
@@ -74,11 +76,18 @@ export const Booking: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (!navigator.onLine) {
+      setStatus('error')
+      setError('Sin conexión. Revisa internet e inténtalo de nuevo.')
+      return
+    }
+
     if (!validate()) return
 
     setStatus('loading')
     try {
-      const response = await fetch('/api/booking', {
+      const response = await fetchWithRetry('/api/booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -94,7 +103,12 @@ export const Booking: React.FC = () => {
           notes: formData.notes,
         }),
       })
-      if (!response.ok) throw new Error('failed')
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null
+        throw new Error(data?.error || 'No se pudo enviar la solicitud')
+      }
+
       setStatus('success')
       confetti({ particleCount: 140, spread: 70, origin: { y: 0.6 }, disableForReducedMotion: true })
       setTimeout(() => {
@@ -108,7 +122,8 @@ export const Booking: React.FC = () => {
     } catch (err) {
       console.error(err)
       setStatus('error')
-      setError('No pudimos enviar tu solicitud. Escríbenos directo a ' + CONTACT.email)
+      const message = err instanceof Error ? err.message : 'Error inesperado'
+      setError(message)
     }
   }
 
@@ -119,7 +134,6 @@ export const Booking: React.FC = () => {
     >
       <div className="max-w-[1240px] mx-auto px-6 md:px-12">
         <div className="grid md:grid-cols-12 gap-x-16 gap-y-12">
-          {/* Left info */}
           <aside className="md:col-span-5">
             <div className="md:sticky md:top-24">
               <div className="font-mono text-[11px] tracking-[0.28em] text-[var(--accent)] mb-4 uppercase">
@@ -128,28 +142,37 @@ export const Booking: React.FC = () => {
               <h2 className="font-display text-[clamp(2.5rem,5.5vw,4.5rem)] leading-[0.95] tracking-[-0.02em] text-[var(--fg)] mb-8">
                 Hablemos de tu próxima noche.
               </h2>
-              <p className="font-editorial text-lg text-[var(--fg-muted)] max-w-[38ch] mb-10">
+              <p className="font-editorial text-lg text-[var(--fg-muted)] max-w-[38ch] mb-8">
                 Booking de roster, dirección creativa y producción integral. Respuesta en 24h hábiles.
               </p>
 
-              <div className="space-y-1 text-sm">
+              <div className="grid gap-3 max-w-md">
                 <a
                   href={`mailto:${CONTACT.email}`}
-                  className="link-underline block text-[var(--fg)] text-base py-1"
+                  className="btn btn-primary min-h-11 w-full justify-between"
                 >
-                  {CONTACT.email}
+                  <span>Email · {CONTACT.email}</span>
+                  <span aria-hidden>↗</span>
+                </a>
+                <a
+                  href={CONTACT.whatsapp}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn btn-ghost min-h-11 w-full justify-between"
+                >
+                  <span>WhatsApp · {CONTACT.phone}</span>
+                  <span aria-hidden>↗</span>
                 </a>
                 <a
                   href={`tel:${CONTACT.phoneClean}`}
-                  className="link-underline block text-[var(--fg-muted)] font-mono text-sm py-1 tracking-wide"
+                  className="link-underline block text-[var(--fg-muted)] font-mono text-sm py-2 tracking-wide"
                 >
-                  {CONTACT.phone}
+                  Tel: {CONTACT.phone}
                 </a>
               </div>
             </div>
           </aside>
 
-          {/* Form */}
           <div className="md:col-span-7">
             <div className="flex mb-10 border-b border-[var(--line-strong)]">
               {(['artista', 'servicio'] as const).map((m) => (
@@ -205,77 +228,33 @@ export const Booking: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <label className="form-label">Nombre *</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="form-input"
-                    placeholder="Alex Rivera"
-                  />
+                  <input type="text" name="name" value={formData.name} onChange={handleChange} required className="form-input" />
                 </div>
                 <div>
                   <label className="form-label">Email *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="form-input"
-                    placeholder="tu@empresa.com"
-                  />
+                  <input type="email" name="email" value={formData.email} onChange={handleChange} required className="form-input" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <label className="form-label">Fecha *</label>
-                  <input
-                    type="text"
-                    name="date"
-                    value={formData.date}
-                    onChange={handleChange}
-                    required
-                    placeholder="06 / 2026"
-                    className="form-input"
-                  />
+                  <input type="text" name="date" value={formData.date} onChange={handleChange} required className="form-input" />
                 </div>
                 <div>
                   <label className="form-label">Ciudad · Venue *</label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    required
-                    placeholder="CDMX · Foro Indie Rocks"
-                    className="form-input"
-                  />
+                  <input type="text" name="city" value={formData.city} onChange={handleChange} required className="form-input" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
                   <label className="form-label">Capacidad</label>
-                  <input
-                    type="text"
-                    name="capacity"
-                    value={formData.capacity}
-                    onChange={handleChange}
-                    placeholder="800 – 1200"
-                    className="form-input"
-                  />
+                  <input type="text" name="capacity" value={formData.capacity} onChange={handleChange} className="form-input" />
                 </div>
                 <div>
                   <label className="form-label">Tipo</label>
-                  <select
-                    name="eventType"
-                    value={formData.eventType}
-                    onChange={handleChange}
-                    className="form-input"
-                  >
+                  <select name="eventType" value={formData.eventType} onChange={handleChange} className="form-input">
                     <option value="">Selecciona</option>
                     <option value="Noche de club">Noche de club</option>
                     <option value="Festival">Festival</option>
@@ -286,12 +265,7 @@ export const Booking: React.FC = () => {
                 </div>
                 <div>
                   <label className="form-label">Presupuesto</label>
-                  <select
-                    name="budget"
-                    value={formData.budget}
-                    onChange={handleChange}
-                    className="form-input"
-                  >
+                  <select name="budget" value={formData.budget} onChange={handleChange} className="form-input">
                     <option value="">Selecciona</option>
                     <option value="$3,000 - $6,000 USD">$3k – $6k USD</option>
                     <option value="$6,000 - $12,000 USD">$6k – $12k USD</option>
@@ -302,44 +276,20 @@ export const Booking: React.FC = () => {
 
               <div>
                 <label className="form-label">Notas</label>
-                <textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChange}
-                  rows={4}
-                  placeholder="Visión, referencias, requerimientos especiales…"
-                  className="form-input resize-y min-h-[92px]"
-                />
+                <textarea name="notes" value={formData.notes} onChange={handleChange} rows={4} className="form-input resize-y min-h-[92px]" />
               </div>
 
               <div className="pt-3 flex items-center justify-between flex-wrap gap-4">
-                <div className="text-[10px] tracking-[0.22em] text-[var(--fg-muted)] font-mono uppercase">
-                  * Campos obligatorios
-                </div>
-                <button
-                  type="submit"
-                  disabled={status === 'loading'}
-                  className="btn btn-primary disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  <span>
-                    {status === 'loading'
-                      ? 'Enviando…'
-                      : status === 'success'
-                        ? 'Recibido ✓'
-                        : 'Enviar solicitud'}
-                  </span>
+                <div className="text-[10px] tracking-[0.22em] text-[var(--fg-muted)] font-mono uppercase">* Campos obligatorios</div>
+                <button type="submit" disabled={status === 'loading'} className="btn btn-primary disabled:opacity-70 disabled:cursor-not-allowed">
+                  <span>{status === 'loading' ? 'Enviando…' : status === 'success' ? 'Recibido ✓' : 'Enviar solicitud'}</span>
                   <span aria-hidden>↗</span>
                 </button>
               </div>
 
               <AnimatePresence>
                 {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="text-[var(--accent)] text-sm"
-                  >
+                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                     {error}
                   </motion.div>
                 )}
