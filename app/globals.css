@@ -3,43 +3,43 @@
 @tailwind utilities;
 
 :root {
+  --bg: #07050d;
+  --bg-elevated: #120b21;
+  --fg: #f5f0ff;
+  --fg-muted: #b9aecf;
   --accent: #9b5fd6;
-  --accent-soft: #6b3fa8;
-  --accent-deep: #3d1d6e;
-  --bg: #000000;
-  --fg: #f4f1f7;
-  --fg-dim: #8a7fa0;
-  --line: rgba(255,255,255,0.08);
+  --accent-soft: #c69af6;
+  --line: rgba(255, 255, 255, 0.12);
 }
 
 * {
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background: #000;
-  color: #fff;
-  margin: 0;
-  padding: 0;
-  line-height: 1.6;
+  font-family: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
-h1, h2, h3, h4 {
-  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-  font-weight: 600;
-  letter-spacing: -0.025em;
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: 'Bungee', 'Bricolage Grotesque', sans-serif;
 }
 
-/* Custom components */
 .section {
-  scroll-margin-top: 80px;
+  scroll-margin-top: 90px;
 }
 
 .btn {
@@ -47,35 +47,65 @@ h1, h2, h3, h4 {
 }
 
 .btn-primary {
-  @apply bg-[#9b5fd6] text-white hover:bg-[#b67de8];
+  background: var(--accent);
+  color: var(--fg);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.08);
 }
 
 .btn-ghost {
-  @apply border border-white/20 text-white hover:border-[#9b5fd6] hover:text-[#9b5fd6];
+  border: 1px solid var(--line);
+  color: var(--fg);
 }
 
-/* Musical dock letters */
+.btn-ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .char {
   display: inline-block;
   transition: color 0.1s ease;
   user-select: none;
 }
 
-/* Form styles */
 .form-input {
-  @apply w-full bg-transparent border-b border-white/20 pb-3 text-lg placeholder:text-white/30 focus:border-[#9b5fd6] outline-none transition-colors;
+  @apply w-full bg-transparent border-b pb-3 text-lg outline-none transition-colors;
+  border-color: var(--line);
+}
+
+.form-input::placeholder {
+  color: color-mix(in srgb, var(--fg-muted), transparent 35%);
+}
+
+.form-input:focus {
+  border-color: var(--accent);
 }
 
 .form-label {
-  @apply block text-xs tracking-[0.24em] text-white/60 mb-3;
+  @apply block text-xs tracking-[0.24em] mb-3;
+  color: var(--fg-muted);
 }
 
-/* Roster cards */
-.artist-card {
-  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+.fluid-title {
+  font-size: clamp(2.6rem, 12vw, 12rem);
+  line-height: 0.9;
 }
 
-.artist-card:hover {
-  border-color: rgba(155, 95, 214, 0.6);
-  transform: translateY(-4px);
+.no-break-title {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

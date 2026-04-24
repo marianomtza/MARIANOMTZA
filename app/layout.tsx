@@ -11,16 +11,10 @@ export const viewport: Viewport = {
   initialScale: 1,
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body className="bg-black text-white overflow-hidden">
-        {children}
-      </body>
+      <body className="bg-[var(--bg)] text-[var(--fg)]">{children}</body>
     </html>
   )
 }
