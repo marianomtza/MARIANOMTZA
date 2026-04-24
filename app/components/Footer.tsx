@@ -24,7 +24,7 @@ export const Footer: React.FC = () => {
             ¿Listo para <br />
             la próxima noche?
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 items-start">
             <a href={`mailto:${CONTACT.email}`} className="btn btn-primary min-h-[44px]">
               <span>{CONTACT.email}</span>
               <span aria-hidden>↗</span>

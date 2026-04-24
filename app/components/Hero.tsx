@@ -24,12 +24,13 @@ interface LetterProps {
   mouseX: MotionValue<number>
   isActive: MotionValue<number>
   containerRef: React.RefObject<HTMLDivElement | null>
+  onFocusNote: (index: number) => void
 }
 
 const FALLOFF = 140
 const COLOR_FALLOFF = 70
 
-const Letter: React.FC<LetterProps> = ({ char, index, mouseX, isActive, containerRef }) => {
+const Letter: React.FC<LetterProps> = ({ char, index, mouseX, isActive, containerRef, onFocusNote }) => {
   const letterRef = useRef<HTMLSpanElement>(null)
 
   const rawScale = useTransform<number, number>([mouseX, isActive], (values) => {
@@ -85,6 +86,8 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, isActive, containe
       tabIndex={0}
       className="inline-block select-none will-change-transform focus:outline-none focus:text-[var(--accent)]"
       style={{ scale, y, color, display: 'inline-block' }}
+      onFocus={() => onFocusNote(index)}
+      onMouseEnter={() => onFocusNote(index)}
     >
       {char === ' ' ? '\u00A0' : char}
     </motion.span>
@@ -213,6 +216,7 @@ export const Hero: React.FC = () => {
               mouseX={mouseX}
               isActive={isActive}
               containerRef={containerRef}
+              onFocusNote={handleFocusNote}
             />
           ))}
         </div>

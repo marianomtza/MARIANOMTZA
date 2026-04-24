@@ -23,7 +23,7 @@ const MIXES: Mix[] = [
 ]
 
 export const MusicDock: React.FC = () => {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const [mixId, setMixId] = useState(MIXES[0].id)
   const [failed, setFailed] = useState(false)
   const active = useMemo(() => MIXES.find((m) => m.id === mixId) ?? MIXES[0], [mixId])
@@ -48,9 +48,10 @@ export const MusicDock: React.FC = () => {
                   </button>
                 ))}
               </div>
-              <p className="px-3 pb-2 text-xs text-[var(--fg-muted)]">{active.note}</p>
+              <p className="px-3 pb-1 text-xs text-[var(--fg-muted)]">{active.note}</p>
+              <a href={active.embed} target="_blank" rel="noreferrer" className="px-3 pb-2 block text-[11px] text-[var(--accent)]">Abrir en Apple Music ↗</a>
               {failed ? (
-                <div className="px-3 pb-3 text-xs text-[var(--fg-muted)]">No se pudo cargar el reproductor. Puedes abrir Apple Music manualmente.</div>
+                <div className="px-3 pb-3 text-xs text-[var(--fg-muted)]">No se pudo cargar el reproductor. Abre Musical Monday en Apple Music.</div>
               ) : (
                 <iframe
                   key={active.id}
