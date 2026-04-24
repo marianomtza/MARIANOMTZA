@@ -6,6 +6,7 @@ type ToneModule = typeof import('tone/build/Tone')
 
 type PianoVoice = {
   triggerAttackRelease: (note: string, duration: string, time?: number, velocity?: number) => void
+  triggerRelease: () => void
   dispose: () => void
 }
 
@@ -14,12 +15,10 @@ const SOUND_STORAGE_KEY = 'marianomtza:sound-enabled'
 const DEBOUNCE_MS = 80
 
 export function usePianoDock() {
-  const toneRef = useRef<ToneModule | null>(null)
   const voicesRef = useRef<PianoVoice[]>([])
   const isReadyRef = useRef(false)
   const lastPlayRef = useRef(0)
   const nextVoiceRef = useRef(0)
-
   const [enabled, setEnabled] = useState(false)
 
   useEffect(() => {
@@ -31,18 +30,21 @@ export function usePianoDock() {
     window.localStorage.setItem(SOUND_STORAGE_KEY, String(enabled))
   }, [enabled])
 
+  const stopAll = useCallback(() => {
+    voicesRef.current.forEach((voice) => voice.triggerRelease())
+  }, [])
+
   const initAudio = useCallback(async () => {
     if (isReadyRef.current) return true
 
     try {
-      const Tone = await import('tone/build/Tone')
-      toneRef.current = Tone
+      const Tone = (await import('tone/build/Tone')) as ToneModule
       await Tone.start()
 
-      voicesRef.current = Array.from({ length: 6 }).map(() => {
+      voicesRef.current = Array.from({ length: 5 }).map(() => {
         const synth = new Tone.Synth({
           oscillator: { type: 'triangle' },
-          envelope: { attack: 0.005, decay: 0.14, sustain: 0.06, release: 0.24 },
+          envelope: { attack: 0.004, decay: 0.1, sustain: 0.04, release: 0.2 },
         }).toDestination()
 
         return synth as unknown as PianoVoice
@@ -55,7 +57,7 @@ export function usePianoDock() {
     }
   }, [])
 
-  const playNote = useCallback(async (index: number, velocity = 0.55) => {
+  const playNote = useCallback(async (index: number, velocity = 0.5) => {
     if (!enabled) return
 
     const now = performance.now()
@@ -65,11 +67,9 @@ export function usePianoDock() {
     const ready = await initAudio()
     if (!ready || voicesRef.current.length === 0) return
 
-    const note = NOTES[index % NOTES.length]
     const voice = voicesRef.current[nextVoiceRef.current]
     nextVoiceRef.current = (nextVoiceRef.current + 1) % voicesRef.current.length
-
-    voice.triggerAttackRelease(note, '16n', undefined, velocity)
+    voice.triggerAttackRelease(NOTES[index % NOTES.length], '16n', undefined, velocity)
   }, [enabled, initAudio])
 
   const toggleSound = useCallback(async () => {
@@ -78,17 +78,30 @@ export function usePianoDock() {
 
     if (next) {
       await initAudio()
+      return
     }
-  }, [enabled, initAudio])
+
+    stopAll()
+  }, [enabled, initAudio, stopAll])
 
   useEffect(() => {
+    const handleBlur = () => {
+      lastPlayRef.current = 0
+      stopAll()
+    }
+
+    window.addEventListener('blur', handleBlur)
+    document.addEventListener('visibilitychange', handleBlur)
+
     return () => {
+      window.removeEventListener('blur', handleBlur)
+      document.removeEventListener('visibilitychange', handleBlur)
+      stopAll()
       voicesRef.current.forEach((voice) => voice.dispose())
       voicesRef.current = []
-      toneRef.current = null
       isReadyRef.current = false
     }
-  }, [])
+  }, [stopAll])
 
   return { playNote, enabled, toggleSound }
 }

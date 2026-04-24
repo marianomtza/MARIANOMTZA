@@ -16,8 +16,8 @@ const ArtistCard: React.FC<{ artist: Artist; onSelect: (artist: Artist) => void 
       layoutId={`artist-${artist.id}`}
       onClick={() => onSelect(artist)}
       className="artist-card group relative flex min-h-[340px] w-full flex-col justify-end overflow-hidden rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-7 text-left"
-      whileHover={{ y: -2 }}
-      transition={{ duration: 0.24, ease: [0.2, 0.65, 0.3, 1] }}
+      whileHover={{ y: -2, scale: 1.01 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 28 }}
     >
       <div className="absolute inset-0 bg-[radial-gradient(120%_100%_at_90%_95%,rgba(216,201,184,0.13)_0%,rgba(0,0,0,0)_48%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       <div className="relative z-10">
@@ -65,7 +65,7 @@ export const Roster: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.45 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
             onClick={close}
           >
             <motion.article

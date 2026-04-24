@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { usePianoDock } from '../hooks/usePianoDock'
 
@@ -33,26 +33,25 @@ const HeroLetter: React.FC<{
     const [pointer, center] = values as number[]
     return Math.abs(pointer - center)
   })
+
   const dockScale = useTransform(distance, (d) => {
-    const clamped = clamp(d, 0, 220)
-    const factor = 1 - clamped / 220
-    return 1 + factor * 0.36
+    const factor = 1 - clamp(d, 0, 200) / 200
+    return 1 + factor * 0.32
   })
 
-  const popScale = useTransform(active, (activeIndex) => (activeIndex === index ? 1.08 : 1))
-  const finalScale = useTransform([dockScale, popScale], (values) => {
-    const [dock, pop] = values as number[]
-    return dock * pop
+  const activeScale = useTransform(active, (activeIndex) => (activeIndex === index ? 1.04 : 1))
+  const scale = useTransform([dockScale, activeScale], (values) => {
+    const [dock, focused] = values as number[]
+    return dock * focused
   })
 
-  const yOffset = useTransform(distance, (d) => {
-    const clamped = clamp(d, 0, 200)
-    const factor = 1 - clamped / 200
-    return -8 * factor
+  const y = useTransform(distance, (d) => {
+    const factor = 1 - clamp(d, 0, 180) / 180
+    return -6 * factor
   })
 
-  const springScale = useSpring(finalScale, { stiffness: 460, damping: 36, mass: 0.22 })
-  const springY = useSpring(yOffset, { stiffness: 420, damping: 34 })
+  const springScale = useSpring(scale, { stiffness: 460, damping: 34, mass: 0.23 })
+  const springY = useSpring(y, { stiffness: 430, damping: 36, mass: 0.24 })
 
   return (
     <motion.span
@@ -79,15 +78,27 @@ export const Hero: React.FC = () => {
   const letters = useMemo(() => TITLE.split(''), [])
   const marquee = useMemo(() => [...MARQUEE_ITEMS, ...MARQUEE_ITEMS], [])
 
-  const setFromPointer = (clientX: number) => {
+  const resetDock = useCallback(() => {
+    cursorX.set(-9999)
+    activeIndex.set(-1)
+  }, [activeIndex, cursorX])
+
+  useEffect(() => {
+    const handleBlur = () => resetDock()
+    window.addEventListener('blur', handleBlur)
+    return () => window.removeEventListener('blur', handleBlur)
+  }, [resetDock])
+
+  const setFromPointer = useCallback((clientX: number) => {
     const now = performance.now()
     if (now - lastFrameRef.current < 16) return
     lastFrameRef.current = now
 
     cursorX.set(clientX)
-    if (!containerRef.current) return
 
-    const nodes = containerRef.current.querySelectorAll('[data-letter]')
+    const nodes = containerRef.current?.querySelectorAll('[data-letter]')
+    if (!nodes?.length) return
+
     let closest = -1
     let closestDistance = Number.POSITIVE_INFINITY
 
@@ -102,27 +113,13 @@ export const Hero: React.FC = () => {
 
     if (closest !== activeIndex.get()) {
       activeIndex.set(closest)
-      if (closest !== -1) {
-        playNote(closest)
-      }
+      if (closest > -1) playNote(closest)
     }
-  }
+  }, [activeIndex, cursorX, playNote])
 
-  const resetDock = () => {
-    cursorX.set(-9999)
-    activeIndex.set(-1)
-  }
-
-  React.useEffect(() => {
-    const handleBlur = () => resetDock()
-    window.addEventListener('blur', handleBlur)
-    return () => window.removeEventListener('blur', handleBlur)
+  const handleCTA = useCallback((target: 'reserva' | 'eventos') => {
+    document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
-
-  const handleCTA = (target: 'reserva' | 'eventos') => {
-    const el = document.getElementById(target)
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
 
   return (
     <section className="relative min-h-[96vh] overflow-hidden border-b border-[var(--line)] pt-24 pb-14">
@@ -158,18 +155,17 @@ export const Hero: React.FC = () => {
         </p>
 
         <div className="flex flex-wrap gap-4">
-          <button onClick={() => handleCTA('reserva')} className="btn btn-primary">
-            Booking
-          </button>
-          <button onClick={() => handleCTA('eventos')} className="btn btn-ghost">
-            Eventos
-          </button>
+          <button onClick={() => handleCTA('reserva')} className="btn btn-primary">Booking</button>
+          <button onClick={() => handleCTA('eventos')} className="btn btn-ghost">Eventos</button>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] py-3">
           <motion.div
             drag="x"
+            dragMomentum={false}
+            dragElastic={0.04}
             dragConstraints={{ left: -520, right: 0 }}
+            style={{ touchAction: 'pan-y' }}
             className="flex min-w-max items-center gap-5 px-5 text-xs tracking-[0.24em] text-[var(--fg-dim)]"
             animate={{ x: ['0%', '-50%'] }}
             transition={{ repeat: Infinity, ease: 'linear', duration: 24 }}

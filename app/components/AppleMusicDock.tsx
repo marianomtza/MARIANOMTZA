@@ -30,6 +30,7 @@ export const AppleMusicDock: React.FC = () => {
         window.MusicKit.configure({ developerToken: token, app: { name: 'MARIANOMTZA', build: '1.0.0' } })
       }
     }
+
     document.body.appendChild(script)
     return () => {
       document.body.removeChild(script)
@@ -44,22 +45,22 @@ export const AppleMusicDock: React.FC = () => {
   }
 
   return (
-    <aside className="fixed bottom-4 left-1/2 z-[90] w-[min(760px,calc(100%-24px))] -translate-x-1/2 rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-xl">
-      <div className="flex flex-wrap items-center gap-3">
+    <aside className="fixed bottom-4 left-1/2 z-[90] hidden w-[min(760px,calc(100%-24px))] -translate-x-1/2 rounded-2xl border border-[var(--line)] bg-[color:color-mix(in_srgb,var(--surface),transparent_20%)] p-3 backdrop-blur-xl lg:block">
+      <div className="flex items-center gap-3">
         {TRACKS.map((track, i) => (
           <button
             key={track.title}
             onClick={() => setActive(i)}
-            className={`rounded-xl px-4 py-2 text-left text-xs ${active === i ? 'bg-white/20' : 'bg-transparent'}`}
+            className={`rounded-xl px-4 py-2 text-left text-xs transition ${active === i ? 'bg-[color:color-mix(in_srgb,var(--muted-accent),transparent_80%)]' : 'bg-transparent hover:bg-[color:color-mix(in_srgb,var(--line),transparent_50%)]'}`}
           >
-            <p className="font-medium text-white">{track.title}</p>
-            <p className="text-white/70">{track.artist}</p>
+            <p className="font-medium text-[var(--fg)]">{track.title}</p>
+            <p className="text-[var(--fg-dim)]">{track.artist}</p>
           </button>
         ))}
 
         <audio className="ml-auto h-8" controls src={TRACKS[active].preview} preload="none" />
 
-        <button onClick={authorize} className="rounded-full border border-white/30 px-4 py-2 text-[10px] tracking-[0.18em] text-white">
+        <button onClick={authorize} className="rounded-full border border-[var(--line)] px-4 py-2 text-[10px] tracking-[0.18em] text-[var(--fg)]">
           {authorized ? 'APPLE CONNECTED' : 'LOGIN APPLE MUSIC'}
         </button>
       </div>

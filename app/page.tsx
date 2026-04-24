@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import dynamic from 'next/dynamic'
 import Lenis from '@studio-freight/lenis'
 import { BookingProvider } from './contexts/BookingContext'
 import { Navbar } from './components/Navbar'
@@ -9,7 +10,10 @@ import { Roster } from './components/Roster'
 import { Eventos } from './components/Eventos'
 import { Booking } from './components/Booking'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { AppleMusicDock } from './components/AppleMusicDock'
+
+const AppleMusicDock = dynamic(() => import('./components/AppleMusicDock').then((mod) => mod.AppleMusicDock), {
+  ssr: false,
+})
 
 export default function Page() {
   React.useEffect(() => {
