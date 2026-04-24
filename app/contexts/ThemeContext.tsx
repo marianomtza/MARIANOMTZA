@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { THEMES, ThemeName, themeTokens } from '../lib/design-tokens'
 
 const STORAGE_KEY = 'mmtza-theme-v2'
-const DEFAULT_THEME: ThemeName = 'base'
+const DEFAULT_THEME: ThemeName = 'dark'
 
 interface ThemeContextValue {
   theme: ThemeName

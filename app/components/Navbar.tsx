@@ -21,7 +21,7 @@ export const Navbar: React.FC = () => {
     setIsOpen(false)
   }
 
-  const navLinks = [
+  const sectionLinks = [
     { label: 'Roster', id: 'artistas' },
     { label: 'Eventos', id: 'eventos' },
     { label: 'Booking', id: 'reserva' },
@@ -44,7 +44,7 @@ export const Navbar: React.FC = () => {
         </button>
 
         <div className="hidden md:flex items-center gap-7 text-[11px] tracking-[0.22em] font-mono uppercase">
-          {navLinks.map((link) => (
+          {sectionLinks.map((link) => (
             <button
               key={link.id}
               onClick={() => scrollTo(link.id)}
@@ -54,10 +54,10 @@ export const Navbar: React.FC = () => {
             </button>
           ))}
           <Link
-            href="/lab"
+            href="/inspiracion"
             className="link-underline text-[var(--fg)] hover:text-[var(--accent)] transition-colors"
           >
-            Lab
+            Inspiración
           </Link>
         </div>
 
@@ -71,18 +71,9 @@ export const Navbar: React.FC = () => {
           aria-label="Menú"
         >
           <div className="space-y-[5px]">
-            <motion.div
-              className="w-5 h-px bg-current"
-              animate={{ rotate: isOpen ? 45 : 0, y: isOpen ? 6 : 0 }}
-            />
-            <motion.div
-              className="w-5 h-px bg-current"
-              animate={{ opacity: isOpen ? 0 : 1 }}
-            />
-            <motion.div
-              className="w-5 h-px bg-current"
-              animate={{ rotate: isOpen ? -45 : 0, y: isOpen ? -6 : 0 }}
-            />
+            <motion.div className="w-5 h-px bg-current" animate={{ rotate: isOpen ? 45 : 0, y: isOpen ? 6 : 0 }} />
+            <motion.div className="w-5 h-px bg-current" animate={{ opacity: isOpen ? 0 : 1 }} />
+            <motion.div className="w-5 h-px bg-current" animate={{ rotate: isOpen ? -45 : 0, y: isOpen ? -6 : 0 }} />
           </div>
         </button>
       </div>
@@ -96,21 +87,13 @@ export const Navbar: React.FC = () => {
             className="md:hidden border-t border-[var(--line)] bg-[var(--bg)]/95 backdrop-blur-xl overflow-hidden"
           >
             <div className="px-6 py-8 flex flex-col gap-6 text-lg font-mono tracking-[0.2em] uppercase">
-              {navLinks.map((link) => (
-                <button
-                  key={link.id}
-                  onClick={() => scrollTo(link.id)}
-                  className="text-left py-2 text-[var(--fg)]"
-                >
+              {sectionLinks.map((link) => (
+                <button key={link.id} onClick={() => scrollTo(link.id)} className="text-left py-2 text-[var(--fg)]">
                   {link.label}
                 </button>
               ))}
-              <Link
-                href="/lab"
-                className="py-2 text-[var(--fg)]"
-                onClick={() => setIsOpen(false)}
-              >
-                Lab
+              <Link href="/inspiracion" className="py-2 text-[var(--fg)]" onClick={() => setIsOpen(false)}>
+                Inspiración
               </Link>
             </div>
           </motion.div>
