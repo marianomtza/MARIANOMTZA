@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import { useCanvasDrawing, TOOLS, COLORS } from '../hooks/useCanvasDrawing'
@@ -10,6 +10,8 @@ export const Dibujos: React.FC = () => {
   const [mode, setMode] = useState<'dibujar' | 'galeria'>('galeria')
   const [gallery, setGallery] = useState<Drawing[]>([])
   const [selected, setSelected] = useState<Drawing | null>(null)
+  const [canvasWidth, setCanvasWidth] = useState(800)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle')
@@ -49,6 +51,18 @@ export const Dibujos: React.FC = () => {
     }
 
     loadGallery()
+  }, [])
+
+  // Responsive canvas width
+  useEffect(() => {
+    const update = () => {
+      const container = canvasContainerRef.current
+      if (container) setCanvasWidth(Math.min(800, container.offsetWidth))
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    if (canvasContainerRef.current) ro.observe(canvasContainerRef.current)
+    return () => ro.disconnect()
   }, [])
 
   // Gallery positions — organic, pinned-note layout
@@ -251,16 +265,18 @@ export const Dibujos: React.FC = () => {
                   </div>
 
                   {/* CANVAS */}
+                  <div ref={canvasContainerRef} className="w-full">
                   <canvas
                     ref={canvasRef}
-                    width={800}
-                    height={400}
+                    width={canvasWidth}
+                    height={Math.round(canvasWidth * 0.5)}
                     onPointerDown={start}
                     onPointerMove={draw}
                     onPointerUp={stop}
                     onPointerLeave={stop}
-                    className="w-full border border-white/10 rounded-2xl cursor-crosshair bg-white"
+                    className="w-full border border-white/10 rounded-2xl cursor-crosshair bg-white touch-none"
                   />
+                  </div>
 
                   {/* FORM */}
                   <div className="space-y-6">

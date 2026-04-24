@@ -23,6 +23,7 @@ export function HeroBackground() {
   const fastY = useSpring(my, { stiffness: 100, damping: 20, mass: 0.8 })
 
   useEffect(() => {
+    if (window.matchMedia('(pointer: coarse)').matches) return
     const onMove = (e: PointerEvent) => {
       const el = ref.current
       if (!el) return
