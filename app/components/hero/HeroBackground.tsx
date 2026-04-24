@@ -1,7 +1,13 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import { useTheme } from '../../contexts/ThemeContext'
+
+const LabScene = dynamic(() => import('../lab/LabScene').then((m) => m.LabScene), {
+  ssr: false,
+})
 
 /**
  * Layered editorial background — multi-depth, 3D-feeling.
@@ -11,6 +17,7 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
  * - No WebGL — purely GPU compositing
  */
 export function HeroBackground() {
+  const { theme } = useTheme()
   const ref = useRef<HTMLDivElement>(null)
   const mx = useMotionValue(0.5)
   const my = useMotionValue(0.5)
@@ -59,6 +66,10 @@ export function HeroBackground() {
       className="noise absolute inset-0 overflow-hidden pointer-events-none"
       style={{ background: 'var(--bg)' }}
     >
+      <div className="absolute inset-0 opacity-55">
+        <LabScene theme={theme} asBackground />
+      </div>
+
       {/* Layer 1: Far — large ambient blob top-left */}
       <motion.div
         className="absolute -top-1/2 -left-1/3 w-[110vw] h-[110vw] rounded-full blur-[180px] opacity-50"

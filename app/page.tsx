@@ -17,16 +17,36 @@ import { ThemeSwitcher } from './components/system/ThemeSwitcher'
 import { SoundToggle } from './components/system/SoundToggle'
 import { MusicDock } from './components/MusicDock'
 
+const ROTATING_BAR_ONE = [
+  { label: 'SEKS', href: 'https://www.instagram.com/seks.gratis/' },
+  { label: 'LUDBOY', href: 'https://www.ludboy.com/' },
+  { label: 'KNOCKOUT', href: 'https://www.instagram.com/knockout.fm/' },
+  { label: 'LA FAMA', href: 'https://www.instagram.com/es.lafama/' },
+]
+
+const ROTATING_BAR_TWO = [
+  { label: 'Spotify' },
+  { label: 'Hennessy' },
+  { label: 'Bacardí' },
+  { label: 'Zacapa' },
+  { label: 'Four Loko' },
+  { label: 'Zyn' },
+  { label: 'Hypnotiq' },
+  { label: 'Mezcal Verde' },
+  { label: 'Viuda de Romero' },
+]
+
 function LandingExperience() {
   return (
     <div className="relative bg-[var(--bg)] text-[var(--fg)] overflow-x-clip">
       <Navbar />
       <Hero />
-      <RotatingBar />
-      <Roster />
+      <RotatingBar entries={ROTATING_BAR_ONE} />
       <Eventos />
-      <Dibujos />
+      <Roster />
+      <RotatingBar entries={ROTATING_BAR_TWO} />
       <Booking />
+      <Dibujos />
       <Footer />
 
       {/* Floating controls */}

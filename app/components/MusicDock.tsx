@@ -252,7 +252,14 @@ export const MusicDock: React.FC = () => {
               </div>
               <div className="px-3 py-2 text-[9px] text-[var(--fg-muted)] font-mono tracking-[0.22em] uppercase border-t border-[var(--line)] flex items-center justify-between">
                 <span>Preview · 30s</span>
-                <span>iTunes · Sega Bodega × Oklou</span>
+                <a
+                  href="https://music.apple.com/mx/playlist/musical-monday/pl.u-9WpbHaq6d86?l=en"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-[var(--accent)] hover:opacity-80 transition"
+                >
+                  Apple Music · Musical Monday
+                </a>
               </div>
             </motion.div>
           )}

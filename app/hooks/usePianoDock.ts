@@ -24,7 +24,7 @@ interface ToneInstrumentLike {
 // Pentatonic C major across 2 octaves — pleasing, never dissonant
 const NOTE_POOL = ['C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6'] as const
 
-const GLOBAL_DEBOUNCE_MS = 60
+const GLOBAL_DEBOUNCE_MS = 80
 const PER_NOTE_DEBOUNCE_MS = 220
 
 export function usePianoDock() {

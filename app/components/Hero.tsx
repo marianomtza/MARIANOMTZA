@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, useMotionValue, useSpring, useTransform, MotionValue } from 'framer-motion'
 import { usePianoDock } from '../hooks/usePianoDock'
 import { HeroBackground } from './hero/HeroBackground'
@@ -28,7 +28,7 @@ interface LetterProps {
 const FALLOFF = 140
 const COLOR_FALLOFF = 70
 
-const Letter: React.FC<LetterProps> = ({ char, index, mouseX, isActive, containerRef }) => {
+const LetterBase: React.FC<LetterProps> = ({ char, index, mouseX, isActive, containerRef }) => {
   const letterRef = useRef<HTMLSpanElement>(null)
 
   const rawScale = useTransform<number, number>([mouseX, isActive], (values) => {
@@ -89,11 +89,15 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, isActive, containe
   )
 }
 
+const Letter = React.memo(LetterBase)
+
 export const Hero: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const mouseX = useMotionValue(-9999)
   const isActive = useMotionValue(0)
   const activeLetterRef = useRef<number>(-1)
+  const hoveringTitleRef = useRef(false)
+  const keyCursorRef = useRef<Record<string, number>>({})
   const [roleIndex, setRoleIndex] = useState(0)
 
   const { playNote, primeOnInteraction } = usePianoDock()
@@ -123,6 +127,25 @@ export const Hero: React.FC = () => {
       document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [reset])
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!hoveringTitleRef.current) return
+      const key = e.key.toUpperCase()
+      const positions: number[] = []
+      TITLE.split('').forEach((ch, idx) => {
+        if (ch === key) positions.push(idx)
+      })
+      if (positions.length === 0) return
+      const cursor = keyCursorRef.current[key] ?? 0
+      const idx = positions[cursor % positions.length]
+      keyCursorRef.current[key] = cursor + 1
+      void playNote(idx)
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [playNote])
 
   const handleMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -158,10 +181,12 @@ export const Hero: React.FC = () => {
   )
 
   const handleLeave = useCallback(() => {
+    hoveringTitleRef.current = false
     reset()
   }, [reset])
 
   const handleEnter = useCallback(() => {
+    hoveringTitleRef.current = true
     void primeOnInteraction()
   }, [primeOnInteraction])
 
@@ -169,6 +194,21 @@ export const Hero: React.FC = () => {
     const el = document.getElementById(target)
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
+
+  const titleLetters = useMemo(
+    () =>
+      TITLE.split('').map((char, i) => (
+        <Letter
+          key={`${char}-${i}`}
+          char={char}
+          index={i}
+          mouseX={mouseX}
+          isActive={isActive}
+          containerRef={containerRef}
+        />
+      )),
+    [mouseX, isActive]
+  )
 
   return (
     <section className="relative min-h-screen flex flex-col justify-center pt-28 pb-24 overflow-hidden">
@@ -190,16 +230,7 @@ export const Hero: React.FC = () => {
           className="fluid-title font-display font-normal no-break-title text-[var(--fg)] mb-8 touch-none"
           style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}
         >
-          {TITLE.split('').map((char, i) => (
-            <Letter
-              key={`${char}-${i}`}
-              char={char}
-              index={i}
-              mouseX={mouseX}
-              isActive={isActive}
-              containerRef={containerRef}
-            />
-          ))}
+          {titleLetters}
         </div>
 
         {/* Rotating Role */}

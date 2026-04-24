@@ -1,29 +1,13 @@
 'use client'
 
 import React, { useEffect, useRef } from 'react'
-import { motion, useAnimationFrame, useMotionValue, useTransform } from 'framer-motion'
+import { motion, useAnimationFrame, useMotionValue } from 'framer-motion'
 
-type Entry = { label: string; type: 'project' | 'brand' }
-
-const ENTRIES: Entry[] = [
-  { label: 'SEKS', type: 'project' },
-  { label: 'Spotify', type: 'brand' },
-  { label: 'LUDBOY', type: 'project' },
-  { label: 'Hennessy', type: 'brand' },
-  { label: 'KNOCKOUT', type: 'project' },
-  { label: 'Bacardí', type: 'brand' },
-  { label: 'LA FAMA', type: 'project' },
-  { label: 'Zacapa', type: 'brand' },
-  { label: 'Four Loko', type: 'brand' },
-  { label: 'Zyn', type: 'brand' },
-  { label: 'Hypnotiq', type: 'brand' },
-  { label: 'Mezcal Verde', type: 'brand' },
-  { label: 'Viuda de Romero', type: 'brand' },
-]
+export type RotatingEntry = { label: string; href?: string }
 
 const PIXELS_PER_SECOND = 70
 
-export const RotatingBar: React.FC = () => {
+export const RotatingBar: React.FC<{ entries: RotatingEntry[] }> = ({ entries }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const x = useMotionValue(0)
@@ -104,21 +88,23 @@ export const RotatingBar: React.FC = () => {
           style={{ x }}
           className="flex gap-12 whitespace-nowrap"
         >
-          {[...ENTRIES, ...ENTRIES].map((entry, i) => (
-            <span
+          {[...entries, ...entries].map((entry, i) => (
+            <a
               key={`${entry.label}-${i}`}
+              href={entry.href}
+              target={entry.href ? '_blank' : undefined}
+              rel={entry.href ? 'noreferrer noopener' : undefined}
               className="inline-flex items-center gap-4 font-display text-[clamp(2rem,5vw,4rem)] text-[var(--fg)]"
             >
               {entry.label}
               <span
                 className="inline-block w-2 h-2 rounded-full"
                 style={{
-                  background:
-                    entry.type === 'project' ? 'var(--accent)' : 'var(--accent-soft)',
+                  background: entry.href ? 'var(--accent)' : 'var(--accent-soft)',
                   opacity: 0.7,
                 }}
               />
-            </span>
+            </a>
           ))}
         </motion.div>
       </div>
