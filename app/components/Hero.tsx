@@ -95,8 +95,16 @@ export const Hero: React.FC = () => {
   const isActive = useMotionValue(0)
   const activeLetterRef = useRef<number>(-1)
   const [roleIndex, setRoleIndex] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
 
   const { playNote, primeOnInteraction } = usePianoDock()
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check, { passive: true })
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -126,6 +134,7 @@ export const Hero: React.FC = () => {
 
   const handleMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (isMobile) return
       const container = containerRef.current
       if (!container) return
       const rect = container.getBoundingClientRect()
@@ -162,8 +171,9 @@ export const Hero: React.FC = () => {
   }, [reset])
 
   const handleEnter = useCallback(() => {
+    if (isMobile) return
     void primeOnInteraction()
-  }, [primeOnInteraction])
+  }, [primeOnInteraction, isMobile])
 
   const handleCTA = (target: 'reserva' | 'eventos' | 'artistas') => {
     const el = document.getElementById(target)
@@ -187,7 +197,7 @@ export const Hero: React.FC = () => {
           onPointerMove={handleMove}
           onPointerLeave={handleLeave}
           onPointerEnter={handleEnter}
-          className="fluid-title font-display font-normal no-break-title text-[var(--fg)] mb-8 touch-none"
+          className={`fluid-title font-display font-normal text-[var(--fg)] mb-8 touch-none${isMobile ? '' : ' no-break-title'}`}
           style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}
         >
           {TITLE.split('').map((char, i) => (

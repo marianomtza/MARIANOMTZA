@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useRef } from 'react'
+import React, { useMemo, useRef, useState, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import {
   Environment,
@@ -106,61 +106,74 @@ function FloatingText() {
 }
 
 export function LabScene() {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check, { passive: true })
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   return (
     <Canvas
-      shadows
+      shadows={!isMobile}
       camera={{ position: [0, 0.3, 6], fov: 42 }}
       gl={{
-        antialias: true,
+        antialias: !isMobile,
         preserveDrawingBuffer: false,
-        powerPreference: 'high-performance',
+        powerPreference: isMobile ? 'default' : 'high-performance',
       }}
-      dpr={[1, 2]}
+      dpr={isMobile ? 1 : [1, 2]}
     >
       <color attach="background" args={['#0a0712']} />
       <fog attach="fog" args={['#0a0712', 5, 20]} />
 
       <ambientLight intensity={0.35} />
-      <directionalLight position={[4, 5, 3]} intensity={1.1} castShadow />
+      <directionalLight position={[4, 5, 3]} intensity={1.1} castShadow={!isMobile} />
       <pointLight position={[-4, 2, -2]} intensity={0.6} color="#a78bfa" />
       <pointLight position={[4, -2, 3]} intensity={0.6} color="#38bdf8" />
 
       <GlassKnot />
 
-      <DistortedSphere
-        position={[-3.2, 1.6, -1.8]}
-        color="#8b5cf6"
-        speed={1.2}
-        distort={0.5}
-        scale={0.95}
-      />
-      <DistortedSphere
-        position={[3.4, -1.4, -1.5]}
-        color="#38bdf8"
-        speed={1.8}
-        distort={0.4}
-        scale={0.7}
-      />
-      <DistortedSphere
-        position={[2.6, 2.4, -3]}
-        color="#ef4444"
-        speed={0.9}
-        distort={0.3}
-        scale={0.5}
-      />
-      <DistortedSphere
-        position={[-2.8, -2.1, -2.5]}
-        color="#f0abfc"
-        speed={1.4}
-        distort={0.6}
-        scale={0.6}
-      />
+      {!isMobile && (
+        <>
+          <DistortedSphere
+            position={[-3.2, 1.6, -1.8]}
+            color="#8b5cf6"
+            speed={1.2}
+            distort={0.5}
+            scale={0.95}
+          />
+          <DistortedSphere
+            position={[3.4, -1.4, -1.5]}
+            color="#38bdf8"
+            speed={1.8}
+            distort={0.4}
+            scale={0.7}
+          />
+          <DistortedSphere
+            position={[2.6, 2.4, -3]}
+            color="#ef4444"
+            speed={0.9}
+            distort={0.3}
+            scale={0.5}
+          />
+          <DistortedSphere
+            position={[-2.8, -2.1, -2.5]}
+            color="#f0abfc"
+            speed={1.4}
+            distort={0.6}
+            scale={0.6}
+          />
+        </>
+      )}
 
       <FloatingText />
 
       <Environment preset="city" />
 
-      <CursorCamera />
+      {!isMobile && <CursorCamera />}
     </Canvas>
   )
 }
