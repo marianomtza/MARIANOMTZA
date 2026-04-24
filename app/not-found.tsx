@@ -3,66 +3,61 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
-/**
- * 404 — "Señal perdida"
- * Chrome offline dino vibe but editorial: monochrome, serif, on-brand.
- * Mechanic: jump with Space / click to dodge barrels.
- */
+type Obstacle = { x: number; w: number; h: number; scored: boolean }
 
-const GROUND_Y = 112
-const JUMP_VELOCITY = -9.5
-const GRAVITY = 0.55
-const OBSTACLE_SPEED_BASE = 4.2
-const OBSTACLE_MIN_GAP = 260
-const OBSTACLE_MAX_GAP = 460
-
-type Obstacle = { id: number; x: number; w: number; h: number }
+const WIDTH = 920
+const HEIGHT = 260
+const GROUND_Y = 210
+const PLAYER_X = 112
+const PLAYER_W = 34
+const PLAYER_H = 58
 
 export default function NotFound() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const rafRef = useRef(0)
+  const statusRef = useRef<'idle' | 'playing' | 'over'>('idle')
+  const touchDownRef = useRef(false)
+
+  const playerY = useRef(0)
+  const vy = useRef(0)
+  const speed = useRef(5.2)
+  const spawnIn = useRef(120)
+  const obstacles = useRef<Obstacle[]>([])
+
   const [state, setState] = useState<'idle' | 'playing' | 'over'>('idle')
   const [score, setScore] = useState(0)
-  const [high, setHigh] = useState(0)
-
-  const playerY = useRef(GROUND_Y)
-  const vy = useRef(0)
-  const obstacles = useRef<Obstacle[]>([])
-  const nextId = useRef(1)
-  const frameRef = useRef<number>(0)
-  const speedRef = useRef(OBSTACLE_SPEED_BASE)
-  const stateRef = useRef(state)
-  stateRef.current = state
-
-  const containerRef = useRef<HTMLDivElement>(null)
-  const playerRef = useRef<HTMLDivElement>(null)
-  const obstaclesContainerRef = useRef<HTMLDivElement>(null)
+  const [hi, setHi] = useState(0)
 
   useEffect(() => {
-    const stored = Number(localStorage.getItem('mmtza-404-high') ?? 0)
-    if (!Number.isNaN(stored)) setHigh(stored)
+    statusRef.current = state
+  }, [state])
+
+  useEffect(() => {
+    const v = Number(localStorage.getItem('mmtza-404-high') ?? 0)
+    if (!Number.isNaN(v)) setHi(v)
   }, [])
 
   const reset = useCallback(() => {
-    playerY.current = GROUND_Y
+    playerY.current = 0
     vy.current = 0
+    speed.current = 5.2
+    spawnIn.current = 100
     obstacles.current = []
-    speedRef.current = OBSTACLE_SPEED_BASE
-    nextId.current = 1
     setScore(0)
   }, [])
 
   const jump = useCallback(() => {
-    if (stateRef.current === 'idle') {
-      setState('playing')
-      return
-    }
-    if (stateRef.current === 'over') {
+    if (statusRef.current === 'idle') {
       reset()
       setState('playing')
       return
     }
-    if (playerY.current >= GROUND_Y - 1) {
-      vy.current = JUMP_VELOCITY
+    if (statusRef.current === 'over') {
+      reset()
+      setState('playing')
+      return
     }
+    if (playerY.current <= 0.5) vy.current = 11.8
   }, [reset])
 
   useEffect(() => {
@@ -77,189 +72,160 @@ export default function NotFound() {
   }, [jump])
 
   useEffect(() => {
-    if (state !== 'playing') return
-    let last = performance.now()
-    let sinceSpawn = 0
-    let nextGap = OBSTACLE_MIN_GAP + Math.random() * (OBSTACLE_MAX_GAP - OBSTACLE_MIN_GAP)
-    let tickScore = 0
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-    const loop = (now: number) => {
-      const dt = Math.min((now - last) / 16.666, 2)
-      last = now
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect()
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      canvas.width = Math.floor(rect.width * dpr)
+      canvas.height = Math.floor((rect.width * HEIGHT / WIDTH) * dpr)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
 
-      // Physics
-      vy.current += GRAVITY * dt
-      playerY.current = Math.min(playerY.current + vy.current * dt, GROUND_Y)
-      if (playerY.current >= GROUND_Y) {
-        playerY.current = GROUND_Y
-        vy.current = 0
-      }
-      if (playerRef.current) {
-        playerRef.current.style.transform = `translate3d(0, ${playerY.current}px, 0)`
-      }
+    const drawStick = (x: number, baseY: number) => {
+      const y = baseY - playerY.current
+      ctx.strokeStyle = 'var(--fg)'
+      ctx.lineWidth = 3
+      ctx.lineCap = 'round'
 
-      // Spawn
-      sinceSpawn += speedRef.current * dt
-      if (sinceSpawn >= nextGap) {
-        sinceSpawn = 0
-        nextGap = OBSTACLE_MIN_GAP + Math.random() * (OBSTACLE_MAX_GAP - OBSTACLE_MIN_GAP)
-        const h = 24 + Math.random() * 28
-        obstacles.current.push({
-          id: nextId.current++,
-          x: 840,
-          w: 14 + Math.random() * 10,
-          h,
-        })
-      }
+      ctx.beginPath()
+      ctx.arc(x + 17, y - 42, 9, 0, Math.PI * 2)
+      ctx.stroke()
 
-      // Move obstacles
-      obstacles.current.forEach((o) => {
-        o.x -= speedRef.current * dt
-      })
-      obstacles.current = obstacles.current.filter((o) => o.x > -60)
+      ctx.beginPath()
+      ctx.moveTo(x + 17, y - 33)
+      ctx.lineTo(x + 17, y - 15)
+      ctx.moveTo(x + 17, y - 28)
+      ctx.lineTo(x + 5, y - 22)
+      ctx.moveTo(x + 17, y - 28)
+      ctx.lineTo(x + 29, y - 22)
+      ctx.moveTo(x + 17, y - 15)
+      ctx.lineTo(x + 8, y)
+      ctx.moveTo(x + 17, y - 15)
+      ctx.lineTo(x + 28, y)
+      ctx.stroke()
+    }
 
-      // Collision (player is at x=90, width 42, height ~42 at bottom)
-      const playerLeft = 88
-      const playerRight = 88 + 42
-      const playerTop = GROUND_Y - 40 + (playerY.current - GROUND_Y)
-      const playerBottom = playerTop + 44
+    const loop = () => {
+      rafRef.current = 0
 
-      let hit = false
-      for (const o of obstacles.current) {
-        const oLeft = o.x
-        const oRight = o.x + o.w
-        const oTop = GROUND_Y - o.h + 40
-        const oBottom = oTop + o.h
-        const overlap =
-          playerRight > oLeft + 6 &&
-          playerLeft < oRight - 6 &&
-          playerBottom > oTop + 4 &&
-          playerTop < oBottom - 4
-        if (overlap) {
-          hit = true
-          break
+      const w = canvas.clientWidth
+      const h = canvas.clientHeight
+      const sx = w / WIDTH
+      const sy = h / HEIGHT
+      const ground = GROUND_Y * sy
+
+      if (statusRef.current === 'playing') {
+        vy.current -= 0.62
+        playerY.current = Math.max(0, playerY.current + vy.current)
+        if (playerY.current <= 0) {
+          playerY.current = 0
+          vy.current = 0
+        }
+
+        spawnIn.current -= speed.current
+        if (spawnIn.current <= 0) {
+          spawnIn.current = 110 + Math.random() * 120
+          obstacles.current.push({ x: WIDTH + 40, w: 24 + Math.random() * 20, h: 28 + Math.random() * 32, scored: false })
+        }
+
+        obstacles.current.forEach((o) => { o.x -= speed.current })
+        obstacles.current = obstacles.current.filter((o) => o.x + o.w > -20)
+
+        for (const o of obstacles.current) {
+          if (!o.scored && o.x + o.w < PLAYER_X) {
+            o.scored = true
+            setScore((s) => s + 1)
+            speed.current = Math.min(11, speed.current + 0.08)
+          }
+        }
+
+        const playerTop = GROUND_Y - PLAYER_H - playerY.current
+        const playerBottom = GROUND_Y - playerY.current
+        for (const o of obstacles.current) {
+          const oTop = GROUND_Y - o.h
+          const hit = PLAYER_X + PLAYER_W > o.x + 3 && PLAYER_X < o.x + o.w - 3 && playerBottom > oTop + 4 && playerTop < GROUND_Y - 2
+          if (hit) {
+            setState('over')
+            setHi((prev) => {
+              const next = Math.max(prev, score)
+              localStorage.setItem('mmtza-404-high', String(next))
+              return next
+            })
+            break
+          }
         }
       }
 
-      // Render obstacles via direct DOM (avoid re-render)
-      if (obstaclesContainerRef.current) {
-        obstaclesContainerRef.current.innerHTML = obstacles.current
-          .map(
-            (o) =>
-              `<div style="position:absolute;bottom:0;left:${o.x}px;width:${o.w}px;height:${o.h}px;background:var(--fg);border-radius:2px;"></div>`
-          )
-          .join('')
+      ctx.clearRect(0, 0, w, h)
+      ctx.fillStyle = '#08090f'
+      ctx.fillRect(0, 0, w, h)
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(0, ground)
+      ctx.lineTo(w, ground)
+      ctx.stroke()
+
+      // skyline accents
+      ctx.strokeStyle = 'rgba(139,92,246,0.25)'
+      for (let i = 0; i < 9; i++) {
+        const x = (i * 130 - (score * 5) % 130) * sx
+        ctx.beginPath()
+        ctx.moveTo(x, ground)
+        ctx.lineTo(x, ground - (28 + (i % 3) * 15) * sy)
+        ctx.stroke()
       }
 
-      // Score
-      tickScore += dt
-      if (tickScore >= 6) {
-        tickScore = 0
-        setScore((s) => s + 1)
-        speedRef.current = Math.min(OBSTACLE_SPEED_BASE + (score + 1) / 20, 9)
-      }
+      obstacles.current.forEach((o) => {
+        ctx.fillStyle = '#8b5cf6'
+        ctx.fillRect(o.x * sx, (GROUND_Y - o.h) * sy, o.w * sx, o.h * sy)
+      })
 
-      if (hit) {
-        setState('over')
-        setScore((s) => {
-          setHigh((h) => {
-            const next = Math.max(h, s)
-            localStorage.setItem('mmtza-404-high', String(next))
-            return next
-          })
-          return s
-        })
-        return
-      }
+      drawStick(PLAYER_X * sx, ground)
 
-      frameRef.current = requestAnimationFrame(loop)
+      rafRef.current = requestAnimationFrame(loop)
     }
 
-    frameRef.current = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(frameRef.current)
-  }, [state, score])
+    const ro = new ResizeObserver(resize)
+    ro.observe(canvas)
+    resize()
+    rafRef.current = requestAnimationFrame(loop)
+    return () => {
+      ro.disconnect()
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  }, [jump, reset, score])
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[var(--bg)] text-[var(--fg)] p-6">
-      <div className="max-w-[720px] w-full">
-        <div className="font-mono text-[11px] tracking-[0.28em] text-[var(--accent)] mb-4 uppercase">
-          Error 404
-        </div>
-        <h1 className="font-display text-[clamp(3rem,9vw,6rem)] leading-[0.92] tracking-[-0.02em] text-[var(--fg)] mb-5">
-          Señal perdida.
-        </h1>
-        <p className="font-editorial text-lg text-[var(--fg-muted)] max-w-[42ch] mb-10">
-          Ruta inexistente. Mientras encuentras el camino, salta los obstáculos con la barra
-          espaciadora.
-        </p>
+      <div className="max-w-[860px] w-full">
+        <div className="font-mono text-[11px] tracking-[0.28em] text-[var(--accent)] mb-4 uppercase">Error 404</div>
+        <h1 className="font-display text-[clamp(3rem,9vw,6rem)] leading-[0.92] mb-4">Señal perdida.</h1>
+        <p className="font-editorial text-lg text-[var(--fg-muted)] mb-8">Salta obstáculos con espacio, flecha arriba o toque táctil.</p>
 
         <div
-          ref={containerRef}
+          className="surface p-3"
           onClick={jump}
-          className="relative h-[220px] w-full rounded-2xl border border-[var(--line)] bg-[var(--bg-elevated)] overflow-hidden cursor-pointer select-none"
+          onTouchStart={() => {
+            if (!touchDownRef.current) jump()
+            touchDownRef.current = true
+          }}
+          onTouchEnd={() => { touchDownRef.current = false }}
           role="button"
           tabIndex={0}
         >
-          {/* Ground line */}
-          <div
-            className="absolute left-0 right-0 h-px bg-[var(--line-strong)]"
-            style={{ bottom: 40 }}
-          />
-
-          {/* Score */}
-          <div className="absolute top-4 right-5 font-mono text-[11px] tracking-[0.22em] text-[var(--fg-muted)] uppercase tabular-nums">
-            <span className="text-[var(--fg)]">{String(score).padStart(4, '0')}</span>
-            <span className="mx-2 opacity-30">·</span>
-            <span>Hi {String(high).padStart(4, '0')}</span>
-          </div>
-
-          {/* Status */}
-          {state === 'idle' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-center">
-                <div className="font-display text-3xl text-[var(--fg)] mb-1">Presiona</div>
-                <div className="font-mono text-[11px] tracking-[0.28em] text-[var(--fg-muted)] uppercase">
-                  Espacio para empezar
-                </div>
-              </div>
-            </div>
-          )}
-          {state === 'over' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-center">
-                <div className="font-display text-3xl text-[var(--fg)] mb-1">Game over</div>
-                <div className="font-mono text-[11px] tracking-[0.28em] text-[var(--fg-muted)] uppercase">
-                  Espacio para repetir
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Player */}
-          <div
-            ref={playerRef}
-            className="absolute left-[88px] w-[42px] h-[42px] bg-[var(--accent)] rounded-[3px] will-change-transform"
-            style={{ top: 0, transform: `translate3d(0, ${GROUND_Y}px, 0)` }}
-          >
-            <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[var(--bg)]" />
-          </div>
-
-          {/* Obstacles */}
-          <div ref={obstaclesContainerRef} className="absolute inset-0 pointer-events-none" />
-        </div>
-
-        <div className="mt-8 flex items-center justify-between flex-wrap gap-4">
-          <Link
-            href="/"
-            className="btn btn-ghost"
-          >
-            <span>Volver al inicio</span>
-            <span aria-hidden>→</span>
-          </Link>
-          <div className="font-mono text-[10px] tracking-[0.22em] text-[var(--fg-muted)] uppercase">
-            Tip · Click o espacio
+          <canvas ref={canvasRef} className="w-full h-auto rounded-xl border border-[var(--line)] touch-none" />
+          <div className="mt-3 flex items-center justify-between font-mono text-xs tracking-[0.2em] uppercase text-[var(--fg-muted)]">
+            <span>{state === 'over' ? 'Game over · toca para reiniciar' : state === 'idle' ? 'Toca para empezar' : 'Corriendo'}</span>
+            <span className="tabular-nums">Score {String(score).padStart(4, '0')} · Hi {String(hi).padStart(4, '0')}</span>
           </div>
         </div>
+
+        <div className="mt-8"><Link href="/" className="btn btn-ghost"><span>Volver al inicio</span><span aria-hidden>→</span></Link></div>
       </div>
     </main>
   )

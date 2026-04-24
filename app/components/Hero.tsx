@@ -23,12 +23,13 @@ interface LetterProps {
   mouseX: MotionValue<number>
   isActive: MotionValue<number>
   containerRef: React.RefObject<HTMLDivElement | null>
+  onTrigger: (index: number) => void
 }
 
 const FALLOFF = 140
 const COLOR_FALLOFF = 70
 
-const Letter: React.FC<LetterProps> = ({ char, index, mouseX, isActive, containerRef }) => {
+const Letter: React.FC<LetterProps> = ({ char, index, mouseX, isActive, containerRef, onTrigger }) => {
   const letterRef = useRef<HTMLSpanElement>(null)
 
   const rawScale = useTransform<number, number>([mouseX, isActive], (values) => {
@@ -81,8 +82,13 @@ const Letter: React.FC<LetterProps> = ({ char, index, mouseX, isActive, containe
     <motion.span
       ref={letterRef}
       data-letter={index}
-      className="inline-block select-none will-change-transform"
+      role="button"
+      tabIndex={0}
+      aria-label={`Nota ${index + 1}`}
+      className="inline-block select-none will-change-transform outline-none focus-visible:rounded-sm focus-visible:ring-1 focus-visible:ring-[var(--accent)]"
       style={{ scale, y, color, display: 'inline-block' }}
+      onPointerEnter={() => onTrigger(index)}
+      onFocus={() => onTrigger(index)}
     >
       {char === ' ' ? '\u00A0' : char}
     </motion.span>
@@ -161,6 +167,11 @@ export const Hero: React.FC = () => {
     reset()
   }, [reset])
 
+  const triggerNote = useCallback((idx: number) => {
+    activeLetterRef.current = idx
+    void playNote(idx)
+  }, [playNote])
+
   const handleEnter = useCallback(() => {
     void primeOnInteraction()
   }, [primeOnInteraction])
@@ -188,6 +199,7 @@ export const Hero: React.FC = () => {
           onPointerLeave={handleLeave}
           onPointerEnter={handleEnter}
           className="fluid-title font-display font-normal no-break-title text-[var(--fg)] mb-8 touch-none"
+          aria-label="MARIANOMTZA"
           style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}
         >
           {TITLE.split('').map((char, i) => (
@@ -198,6 +210,7 @@ export const Hero: React.FC = () => {
               mouseX={mouseX}
               isActive={isActive}
               containerRef={containerRef}
+              onTrigger={triggerNote}
             />
           ))}
         </div>

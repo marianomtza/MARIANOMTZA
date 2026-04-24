@@ -29,7 +29,7 @@ export const Footer: React.FC = () => {
               <span>{CONTACT.email}</span>
               <span aria-hidden>↗</span>
             </a>
-            <a href={`tel:${CONTACT.phoneClean}`} className="btn btn-ghost">
+            <a href={`https://wa.me/${CONTACT.phoneClean.replace('+', '')}`} className="btn btn-ghost">
               <span>{CONTACT.phone}</span>
               <span aria-hidden>→</span>
             </a>
@@ -50,8 +50,8 @@ export const Footer: React.FC = () => {
             <Link href="#reserva" className="link-underline text-[var(--fg)]">
               Booking
             </Link>
-            <Link href="/lab" className="link-underline text-[var(--fg)]">
-              Lab
+            <Link href="/inspiracion" className="link-underline text-[var(--fg)]">
+              Inspiración
             </Link>
           </div>
         </nav>

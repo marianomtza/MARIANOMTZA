@@ -140,8 +140,9 @@ export const Booking: React.FC = () => {
                   {CONTACT.email}
                 </a>
                 <a
-                  href={`tel:${CONTACT.phoneClean}`}
+                  href={`https://wa.me/${CONTACT.phoneClean.replace('+', '')}`}
                   className="link-underline block text-[var(--fg-muted)] font-mono text-sm py-1 tracking-wide"
+                  aria-label="WhatsApp +52 443 426 4931"
                 >
                   {CONTACT.phone}
                 </a>
@@ -293,9 +294,11 @@ export const Booking: React.FC = () => {
                     className="form-input"
                   >
                     <option value="">Selecciona</option>
-                    <option value="$3,000 - $6,000 USD">$3k – $6k USD</option>
-                    <option value="$6,000 - $12,000 USD">$6k – $12k USD</option>
-                    <option value="$12,000+ USD">$12k+ USD</option>
+                    <option value="$2,000–$5,000 MXN">$2,000–$5,000 MXN</option>
+                    <option value="$5,000–$10,000 MXN">$5,000–$10,000 MXN</option>
+                    <option value="$10,000–$25,000 MXN">$10,000–$25,000 MXN</option>
+                    <option value="$25,000–$50,000 MXN">$25,000–$50,000 MXN</option>
+                    <option value="$50,000+ MXN">$50,000+ MXN</option>
                   </select>
                 </div>
               </div>
