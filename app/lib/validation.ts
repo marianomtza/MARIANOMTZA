@@ -2,7 +2,7 @@ import { BookingPayload, DrawingInput } from './types'
 
 const MAX_TEXT = 400
 const MAX_NOTES = 1500
-const MAX_IMAGE_BYTES = 1_200_000
+const MAX_IMAGE_BYTES = 1_400_000
 
 export class ValidationError extends Error {
   constructor(
@@ -21,6 +21,31 @@ function sanitizeText(input: unknown, max = MAX_TEXT) {
 
 export function sanitizeOptionalText(input: unknown, max = MAX_TEXT) {
   return sanitizeText(input, max)
+}
+
+export function sanitizeDrawingText(input: unknown, max: number) {
+  const base = sanitizeText(input, max)
+  if (!base) return ''
+
+  const withoutHtml = base
+    .replace(/<[^>]*>/g, '')
+    .replace(/&[#a-zA-Z0-9]+;/g, ' ')
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!withoutHtml) return ''
+  if (/(https?:\/\/|www\.|\.com\b|\.net\b|\.io\b)/i.test(withoutHtml)) {
+    throw new ValidationError('No se permiten URLs en firma o mensaje')
+  }
+  if (/(.)\1{8,}/.test(withoutHtml)) {
+    throw new ValidationError('Texto inválido: repetición excesiva')
+  }
+  if (/(free money|viagra|casino|crypto giveaway)/i.test(withoutHtml)) {
+    throw new ValidationError('Texto bloqueado por moderación básica')
+  }
+
+  return withoutHtml.slice(0, max)
 }
 
 export function validateEmail(email: string) {
@@ -74,34 +99,37 @@ export function validateBookingPayload(input: unknown): BookingPayload {
 export function validateDrawingPayload(input: unknown): DrawingInput {
   const raw = parseJSONSafely<Partial<DrawingInput>>(input)
 
-  const image = sanitizeText(raw.image, 5_000_000)
+  const image = sanitizeText(raw.image, 6_000_000)
   if (!image || !isDataUrlImage(image)) {
     throw new ValidationError('Drawing image must be a valid PNG/JPEG/WEBP data URL')
   }
 
   const bytes = dataUrlSizeInBytes(image)
   if (bytes > MAX_IMAGE_BYTES) {
-    throw new ValidationError('Drawing image is too large (max 1.2MB)')
+    throw new ValidationError('Drawing image is too large (max 1.4MB)')
   }
 
   const tool = sanitizeOptionalText(raw.tool, 20) as DrawingInput['tool']
-  if (tool && !['pencil', 'marker', 'ink'].includes(tool)) {
+  if (tool && !['pencil', 'marker', 'ink', 'eraser'].includes(tool)) {
     throw new ValidationError('Invalid drawing tool')
   }
 
+  const name = sanitizeDrawingText(raw.name || 'Anónimo', 80) || 'Anónimo'
+  const message = sanitizeDrawingText(raw.message, 220)
+
   return {
     image,
-    name: sanitizeOptionalText(raw.name || 'Anónimo', 80) || 'Anónimo',
-    message: sanitizeOptionalText(raw.message, 220),
+    name,
+    message,
     tool: tool || 'pencil',
   }
 }
 
 export function getSafePagination(searchParams: URLSearchParams) {
-  const rawLimit = Number(searchParams.get('limit') ?? 20)
+  const rawLimit = Number(searchParams.get('limit') ?? 24)
   const rawOffset = Number(searchParams.get('offset') ?? 0)
 
-  const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(Math.floor(rawLimit), 1), 40) : 20
+  const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(Math.floor(rawLimit), 1), 40) : 24
   const offset = Number.isFinite(rawOffset) ? Math.max(Math.floor(rawOffset), 0) : 0
 
   return { limit, offset }
