@@ -1,8 +1,7 @@
-import { BookingPayload, DrawingInput } from './types'
+import type { BookingPayload } from './types'
 
 const MAX_TEXT = 400
 const MAX_NOTES = 1500
-const MAX_IMAGE_BYTES = 1_200_000
 
 export class ValidationError extends Error {
   constructor(
@@ -69,32 +68,6 @@ export function validateBookingPayload(input: unknown): BookingPayload {
   }
 
   return payload
-}
-
-export function validateDrawingPayload(input: unknown): DrawingInput {
-  const raw = parseJSONSafely<Partial<DrawingInput>>(input)
-
-  const image = sanitizeText(raw.image, 5_000_000)
-  if (!image || !isDataUrlImage(image)) {
-    throw new ValidationError('Drawing image must be a valid PNG/JPEG/WEBP data URL')
-  }
-
-  const bytes = dataUrlSizeInBytes(image)
-  if (bytes > MAX_IMAGE_BYTES) {
-    throw new ValidationError('Drawing image is too large (max 1.2MB)')
-  }
-
-  const tool = sanitizeOptionalText(raw.tool, 20) as DrawingInput['tool']
-  if (tool && !['pencil', 'marker', 'ink'].includes(tool)) {
-    throw new ValidationError('Invalid drawing tool')
-  }
-
-  return {
-    image,
-    name: sanitizeOptionalText(raw.name || 'Anónimo', 80) || 'Anónimo',
-    message: sanitizeOptionalText(raw.message, 220),
-    tool: tool || 'pencil',
-  }
 }
 
 export function getSafePagination(searchParams: URLSearchParams) {
