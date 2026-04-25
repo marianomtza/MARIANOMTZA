@@ -1,15 +1,22 @@
+import React from 'react'
 import Link from 'next/link'
 
 export default function InspiracionPage() {
   return (
-    <main className="min-h-screen bg-[var(--bg)] px-6 py-16 text-[var(--fg)] md:px-12">
-      <div className="mx-auto max-w-3xl">
-        <h1 className="font-display text-5xl">INSPIRACIÓN</h1>
-        <p className="mt-4 text-[var(--fg-muted)]">Archivo en construcción.</p>
-        <Link href="/" className="btn btn-ghost mt-8 inline-flex min-h-11 items-center">
-          Volver al inicio
-        </Link>
-      </div>
+    <main className="min-h-screen flex flex-col items-center justify-center bg-black text-white px-6 text-center">
+      <h1 className="font-mono text-[10px] tracking-[0.3em] text-white/30 mb-6">
+        INSPIRACIÓN
+      </h1>
+      <p className="text-white/40 text-sm mb-10">
+        Archivo en construcción.
+      </p>
+      <Link
+        href="/"
+        className="text-xs font-mono tracking-widest border border-white/15 px-6 py-3 rounded-full
+                   text-white/50 hover:border-white/40 hover:text-white transition"
+      >
+        Volver al inicio
+      </Link>
     </main>
   )
 }

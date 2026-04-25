@@ -1,127 +1,242 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
-import { Environment, Float, MeshDistortMaterial, MeshTransmissionMaterial } from '@react-three/drei'
+import React, { useRef, useMemo } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Environment, Float, MeshDistortMaterial } from '@react-three/drei'
 import * as THREE from 'three'
-import { useTheme } from '../../contexts/ThemeContext'
-import { ThemeName } from '../../lib/design-tokens'
 
-const SCENE_CONFIGS: Record<ThemeName, { bg: string; knot: string; spheres: string[] }> = {
-  base: { bg: '#08050f', knot: '#101010', spheres: ['#8B5CF6', '#3772FF', '#DF2935', '#C4B5FD'] },
-  dark: { bg: '#050505', knot: '#060606', spheres: ['#6366f1', '#3b82f6', '#ef4444', '#a78bfa'] },
-  light: { bg: '#f2efe8', knot: '#111111', spheres: ['#8B5CF6', '#3772FF', '#DF2935', '#C4B5FD'] },
-  rojo: { bg: '#0f0606', knot: '#0d0d0d', spheres: ['#ef4444', '#fb7185', '#8B5CF6', '#3772FF'] },
-  azul: { bg: '#050d18', knot: '#090909', spheres: ['#3772FF', '#38bdf8', '#8B5CF6', '#DF2935'] },
-}
+// ─── GlassKnot ────────────────────────────────────────────────────────────────
 
-function DistortedSphere({ color, position }: { color: string; position: [number, number, number] }) {
-  return (
-    <Float speed={1.2} rotationIntensity={0.25} floatIntensity={0.7}>
-      <mesh position={position}>
-        <icosahedronGeometry args={[0.45, 10]} />
-        <MeshDistortMaterial color={color} roughness={0.25} metalness={0.45} distort={0.35} speed={2} />
-      </mesh>
-    </Float>
-  )
-}
-
-function SubwooferCore() {
-  const ref = useRef<THREE.Group>(null)
-
-  useFrame(({ clock }) => {
-    if (!ref.current) return
-    const t = clock.getElapsedTime()
-    const pulse = 1 + Math.sin(t * 2.2) * 0.012
-    ref.current.scale.setScalar(pulse)
-  })
-
-  return (
-    <Float speed={0.6} rotationIntensity={0.08} floatIntensity={0.14}>
-      <group ref={ref} position={[0, -0.1, -1.2]} rotation={[-0.15, 0, 0]}>
-        <mesh>
-          <cylinderGeometry args={[1.18, 1.18, 0.24, 64]} />
-          <meshStandardMaterial color="#0d0d0f" metalness={0.92} roughness={0.32} emissive="#1a1024" emissiveIntensity={0.06} />
-        </mesh>
-        <mesh position={[0, 0.07, 0.05]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.8, 0.09, 24, 120]} />
-          <meshStandardMaterial color="#17171b" metalness={0.95} roughness={0.28} />
-        </mesh>
-        <mesh position={[0, 0.02, 0.09]} rotation={[Math.PI, 0, 0]}>
-          <coneGeometry args={[0.52, 0.24, 50]} />
-          <meshStandardMaterial color="#0f0f12" metalness={0.8} roughness={0.36} emissive="#13122a" emissiveIntensity={0.04} />
-        </mesh>
-      </group>
-    </Float>
-  )
-}
-
-function GlassKnot({ color }: { color: string }) {
+function GlassKnot() {
   const ref = useRef<THREE.Mesh>(null)
+
   useFrame(({ clock }) => {
     if (!ref.current) return
-    ref.current.rotation.x = Math.sin(clock.elapsedTime * 0.4) * 0.2
-    ref.current.rotation.y += 0.0038
+    ref.current.rotation.x = clock.elapsedTime * 0.15
+    ref.current.rotation.y = clock.elapsedTime * 0.21
   })
 
   return (
-    <mesh ref={ref} position={[0, 0.05, 0]}>
-      <torusKnotGeometry args={[0.72, 0.24, 260, 24]} />
-      <MeshTransmissionMaterial
-        backside
-        transmission={0.98}
-        thickness={0.7}
-        roughness={0.06}
-        chromaticAberration={0.02}
-        ior={1.36}
-        color={color}
+    <mesh ref={ref} position={[0, 0.1, 0]} scale={1.55}>
+      <torusKnotGeometry args={[0.75, 0.26, 200, 28]} />
+      {/* Dark lacquered obsidian — glossy black */}
+      <meshPhysicalMaterial
+        color="#060606"
+        roughness={0.04}
+        metalness={0.55}
+        reflectivity={1}
+        clearcoat={1}
+        clearcoatRoughness={0.03}
+        envMapIntensity={2.4}
       />
     </mesh>
   )
 }
 
-function CursorCamera() {
-  useFrame((state) => {
-    state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, state.pointer.x * 0.45, 0.035)
-    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, state.pointer.y * 0.2, 0.035)
-    state.camera.lookAt(0, 0, 0)
+// ─── SubwooferCore ────────────────────────────────────────────────────────────
+// Realistic speaker: outer frame + surround + cone + voice coil + dust cap
+
+function SubwooferCore() {
+  const groupRef = useRef<THREE.Group>(null)
+
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return
+    const t = clock.elapsedTime
+    groupRef.current.position.z = -1.5 + Math.sin(t * 1.35) * 0.03
+    groupRef.current.rotation.z = t * 0.04
   })
+
+  return (
+    <group ref={groupRef} position={[0, 0, -1.5]}>
+      {/* Outer frame ring */}
+      <mesh>
+        <torusGeometry args={[1.7, 0.085, 14, 90]} />
+        <meshStandardMaterial
+          color="#1a0a2e"
+          metalness={0.7}
+          roughness={0.3}
+          transparent
+          opacity={0.55}
+        />
+      </mesh>
+
+      {/* Inner surround ring (suspension) */}
+      <mesh>
+        <torusGeometry args={[1.42, 0.045, 10, 80]} />
+        <meshStandardMaterial
+          color="#5b21b6"
+          emissive="#4c1d95"
+          emissiveIntensity={0.7}
+          metalness={0.5}
+          roughness={0.2}
+          transparent
+          opacity={0.5}
+        />
+      </mesh>
+
+      {/* Speaker cone — open-ended */}
+      <mesh rotation={[Math.PI, 0, 0]}>
+        <coneGeometry args={[1.35, 0.55, 60, 1, true]} />
+        <meshStandardMaterial
+          color="#0d0520"
+          metalness={0.2}
+          roughness={0.6}
+          transparent
+          opacity={0.45}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Voice coil former */}
+      <mesh position={[0, 0, 0.2]}>
+        <cylinderGeometry args={[0.28, 0.28, 0.12, 32]} />
+        <meshStandardMaterial
+          color="#2d1457"
+          metalness={0.8}
+          roughness={0.2}
+          transparent
+          opacity={0.5}
+        />
+      </mesh>
+
+      {/* Dust cap — hemisphere dome */}
+      <mesh position={[0, 0, 0.25]}>
+        <sphereGeometry args={[0.27, 28, 14, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
+        <meshStandardMaterial
+          color="#1e0d3a"
+          metalness={0.5}
+          roughness={0.3}
+          transparent
+          opacity={0.55}
+        />
+      </mesh>
+
+      {/* Accent glow ring */}
+      <mesh position={[0, 0, -0.06]}>
+        <torusGeometry args={[1.7, 0.022, 8, 90]} />
+        <meshStandardMaterial
+          color="#7c3aed"
+          emissive="#7c3aed"
+          emissiveIntensity={1.2}
+          transparent
+          opacity={0.35}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// ─── DistortedSphere ──────────────────────────────────────────────────────────
+
+function DistortedSphere({
+  position,
+  color,
+  speed,
+  distort,
+  scale,
+}: {
+  position: [number, number, number]
+  color: string
+  speed: number
+  distort: number
+  scale: number
+}) {
+  const ref = useRef<THREE.Mesh>(null)
+
+  useFrame(({ clock }) => {
+    if (!ref.current) return
+    ref.current.rotation.x = clock.elapsedTime * 0.07
+    ref.current.rotation.y = clock.elapsedTime * 0.09
+  })
+
+  return (
+    <Float speed={1.0} rotationIntensity={0.3} floatIntensity={0.8}>
+      <mesh ref={ref} position={position} scale={scale}>
+        <icosahedronGeometry args={[1, 48]} />
+        <MeshDistortMaterial
+          color={color}
+          distort={distort}
+          speed={speed}
+          roughness={0.28}
+          metalness={0.18}
+          transparent
+          opacity={0.88}
+        />
+      </mesh>
+    </Float>
+  )
+}
+
+// ─── CursorCamera ─────────────────────────────────────────────────────────────
+
+function CursorCamera() {
+  const { camera, mouse } = useThree()
+  const target = useMemo(() => new THREE.Vector3(0, 0, 0), [])
+
+  useFrame(() => {
+    camera.position.x += (mouse.x * 1.3 - camera.position.x) * 0.035
+    camera.position.y += (mouse.y * 0.75 + 0.15 - camera.position.y) * 0.035
+    camera.lookAt(target)
+  })
+
   return null
 }
 
-function SceneContent({ themeName }: { themeName: ThemeName }) {
-  const cfg = SCENE_CONFIGS[themeName] ?? SCENE_CONFIGS.base
+// ─── SceneContent ─────────────────────────────────────────────────────────────
+
+function SceneContent({ reduced = false }: { reduced?: boolean }) {
   return (
     <>
-      <color attach="background" args={[cfg.bg]} />
-      <ambientLight intensity={0.4} />
-      <directionalLight intensity={1.1} position={[2, 3, 4]} color="#d6d0ff" />
-      <pointLight position={[-3, 2, 1]} intensity={0.9} color="#6478ff" />
+      <color attach="background" args={['#0a0712']} />
+      <fog attach="fog" args={['#0a0712', 6, 22]} />
+
+      <ambientLight intensity={0.3} />
+      <directionalLight position={[4, 5, 3]} intensity={1.0} />
+      <pointLight position={[-4, 2, -2]} intensity={0.55} color="#a78bfa" />
+      <pointLight position={[4, -2, 3]} intensity={0.55} color="#38bdf8" />
+
+      <GlassKnot />
       <SubwooferCore />
-      <GlassKnot color={cfg.knot} />
-      <DistortedSphere color={cfg.spheres[0]} position={[-1.6, 0.8, -0.6]} />
-      <DistortedSphere color={cfg.spheres[1]} position={[1.85, 0.35, -0.55]} />
-      <DistortedSphere color={cfg.spheres[2]} position={[1.25, -1.05, -0.4]} />
-      <DistortedSphere color={cfg.spheres[3]} position={[-1.25, -0.95, -0.75]} />
+
+      {!reduced && (
+        <>
+          <DistortedSphere position={[-3.2, 1.6, -1.8]} color="#8b5cf6" speed={1.2} distort={0.5} scale={0.92} />
+          <DistortedSphere position={[3.4, -1.4, -1.5]} color="#38bdf8" speed={1.7} distort={0.4} scale={0.68} />
+          <DistortedSphere position={[2.6, 2.4, -3.0]} color="#ef4444" speed={0.9} distort={0.3} scale={0.50} />
+          <DistortedSphere position={[-2.8, -2.1, -2.5]} color="#c084fc" speed={1.3} distort={0.6} scale={0.58} />
+          <CursorCamera />
+        </>
+      )}
+
       <Environment preset="city" />
-      <CursorCamera />
     </>
   )
 }
 
+// ─── LabScene ─────────────────────────────────────────────────────────────────
+
+/** Mount with `asBackground` for a full-bleed hero backdrop. */
 export function LabScene({ asBackground = false }: { asBackground?: boolean }) {
-  const { theme } = useTheme()
-  const camera = useMemo(() => ({ position: [0, 0, 4.4] as [number, number, number], fov: 40 }), [])
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
 
   return (
-    <div className={asBackground ? 'absolute inset-0' : 'relative h-[520px] w-full'}>
-      <Canvas
-        dpr={[1, 1.8]}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', preserveDrawingBuffer: false }}
-        camera={camera}
-      >
-        <SceneContent themeName={theme} />
-      </Canvas>
-    </div>
+    <Canvas
+      shadows={false}
+      camera={{ position: [0, 0.3, 6], fov: 42 }}
+      gl={{
+        antialias: !isMobile,
+        preserveDrawingBuffer: false,
+        powerPreference: 'high-performance',
+        alpha: false,
+      }}
+      dpr={[1, isMobile ? 1.5 : 2]}
+      style={
+        asBackground
+          ? { position: 'absolute', inset: 0, width: '100%', height: '100%' }
+          : undefined
+      }
+    >
+      <SceneContent reduced={isMobile} />
+    </Canvas>
   )
 }
