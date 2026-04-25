@@ -1,8 +1,7 @@
-import { BookingPayload } from './types'
+import type { BookingPayload } from './types'
 
 const MAX_TEXT = 400
 const MAX_NOTES = 1500
-const MAX_IMAGE_BYTES = 1_200_000
 
 export class ValidationError extends Error {
   constructor(

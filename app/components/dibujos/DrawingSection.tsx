@@ -145,7 +145,6 @@ export function DrawingSection() {
     size,
     setSize,
     strokeCount,
-    isDrawing,
     onPointerDown,
     onPointerMove,
     onPointerUp,
@@ -351,9 +350,6 @@ export function DrawingSection() {
     clear()
     setClearing(false)
   }
-
-  // ── Suppress unused-var warning for isDrawing (used implicitly via hook) ─────
-  void isDrawing
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Render
@@ -596,23 +592,23 @@ export function DrawingSection() {
             />
 
             {/* Submit + export row */}
-            <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <button
                 onClick={handleExportPng}
                 disabled={strokeCount === 0}
                 className="text-[10px] font-mono tracking-widest border border-white/15 px-4 py-2.5
                            rounded-full text-white/50 hover:border-white/40 hover:text-white/80
-                           disabled:opacity-30 transition min-h-[44px]"
+                           disabled:opacity-30 transition min-h-[44px] w-full sm:w-auto"
               >
                 PNG ↓
               </button>
 
               <button
                 onClick={handleSubmit}
-                disabled={status === 'loading' || strokeCount === 0}
+                disabled={status === 'loading'}
                 className={`
                   flex items-center gap-3 px-8 py-3.5 rounded-full text-[11px] tracking-[2px]
-                  font-medium transition-all min-h-[48px] disabled:opacity-50
+                  font-medium transition-all min-h-[48px] disabled:opacity-50 w-full sm:w-auto justify-center
                   ${status === 'success'
                     ? 'bg-emerald-500 text-white'
                     : status === 'local'
